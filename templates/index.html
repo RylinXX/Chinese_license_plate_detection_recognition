@@ -1,0 +1,1137 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智慧工地车辆通行看板 - 数据大屏</title>
+    <!-- 引入高档 Google Fonts 字体 -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Noto+Sans+SC:wght@300;400;600;900&display=swap" rel="stylesheet">
+    <!-- 移除 Chart.js 引入 -->
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --card-bg: rgba(20, 26, 46, 0.6);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --color-in: #00ff87;
+            --color-out: #00f0ff;
+            --color-accent: #ff8c00;
+            --font-family: 'Outfit', 'Noto Sans SC', sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            font-family: var(--font-family);
+            min-height: 100vh;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(at 10% 20%, rgba(0, 240, 255, 0.05) 0px, transparent 50%),
+                radial-gradient(at 90% 80%, rgba(255, 140, 0, 0.03) 0px, transparent 50%),
+                radial-gradient(at 50% 50%, rgba(11, 15, 25, 1) 0px, rgba(5, 7, 12, 1) 100%);
+            background-attachment: fixed;
+        }
+
+        /* 大屏核心网格布局 */
+        .dashboard-container {
+            display: grid;
+            grid-template-rows: 80px 1fr;
+            height: 100vh;
+            padding: 0 20px 20px 20px;
+            gap: 20px;
+        }
+
+        /* 顶部 Header */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.05);
+            background: rgba(11, 15, 25, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 0 10px;
+        }
+
+        .header-title-area {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .header-logo {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--color-out), var(--color-in));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 20px;
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.4);
+        }
+
+        header h1 {
+            font-size: 24px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            background: linear-gradient(90deg, #fff, var(--color-out));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header-info {
+            display: flex;
+            align-items: center;
+            gap: 25px;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .info-item span {
+            color: var(--color-out);
+            font-weight: 600;
+        }
+
+        /* 内容主体布局 */
+        .main-content {
+            display: grid;
+            grid-template-columns: 350px 1fr 400px;
+            gap: 20px;
+            height: calc(100vh - 120px);
+            min-height: 0; /* 允许网格项在溢出时收缩 */
+        }
+
+        /* 通用卡片容器 */
+        .glass-panel {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            backdrop-filter: blur(16px);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .glass-panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, transparent, var(--card-border), transparent);
+        }
+
+        .panel-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-left: 4px solid var(--color-out);
+            padding-left: 10px;
+        }
+
+        /* 左侧：统计与调试模拟 */
+        .left-column {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            height: 100%;
+        }
+
+        /* KPIs 数据卡片 */
+        .kpi-wrapper {
+            display: grid;
+            grid-template-rows: repeat(3, 1fr);
+            gap: 15px;
+        }
+
+        .kpi-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .kpi-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .kpi-label {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .kpi-value {
+            font-size: 32px;
+            font-weight: 800;
+            line-height: 1;
+        }
+
+        .kpi-in { color: var(--color-in); }
+        .kpi-out { color: var(--color-out); }
+        .kpi-stay { color: var(--color-accent); }
+
+        /* 调试模拟面板 */
+        .control-card {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, rgba(0, 240, 255, 0.2), rgba(0, 240, 255, 0.05));
+            border: 1px solid rgba(0, 240, 255, 0.3);
+            color: #fff;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 15px;
+            width: 100%;
+        }
+
+        .btn:hover {
+            background: linear-gradient(135deg, rgba(0, 240, 255, 0.4), rgba(0, 240, 255, 0.1));
+            border-color: var(--color-out);
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.3);
+        }
+
+        .btn-export {
+            background: linear-gradient(135deg, rgba(255, 140, 0, 0.2), rgba(255, 140, 0, 0.05));
+            border-color: rgba(255, 140, 0, 0.3);
+        }
+
+        .btn-export:hover {
+            background: linear-gradient(135deg, rgba(255, 140, 0, 0.4), rgba(255, 140, 0, 0.1));
+            border-color: var(--color-accent);
+            box-shadow: 0 0 15px rgba(255, 140, 0, 0.3);
+        }
+
+        .file-upload-input {
+            display: none;
+        }
+
+        .simulate-label {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            margin-top: 15px;
+        }
+
+        .select-direction {
+            background: rgba(11, 15, 25, 0.6);
+            border: 1px solid var(--card-border);
+            color: #fff;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 13px;
+            outline: none;
+            width: 100%;
+        }
+
+        /* 中间：通行图表与统计分析 */
+        .center-column {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .chart-panel {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .chart-container {
+            position: relative;
+            flex-grow: 1;
+            width: 100%;
+            height: 300px;
+        }
+
+        /* 右侧：实时通行流（核心展示区） */
+        .right-column {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .feed-panel {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .feed-list {
+            flex-grow: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding-right: 5px;
+        }
+
+        /* 隐藏滚动条 */
+        .feed-list::-webkit-scrollbar {
+            width: 4px;
+        }
+        .feed-list::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .feed-list::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+        }
+
+        /* 单条记录卡片 */
+        .feed-item {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 12px;
+            display: grid;
+            grid-template-columns: 80px 1fr 65px;
+            gap: 12px;
+            align-items: center;
+            transition: all 0.3s ease;
+            animation: slideIn 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+        }
+
+        .feed-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.15);
+            transform: scale(1.01);
+        }
+
+        /* 通行事件微动效 */
+        @keyframes slideIn {
+            0% {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+            100% {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .feed-thumb-container {
+            width: 80px;
+            height: 60px;
+            border-radius: 6px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .feed-thumb {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .feed-info {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .feed-plate-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .feed-plate {
+            font-size: 16px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .badge-color {
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: rgba(255,255,255,0.1);
+            color: var(--text-secondary);
+        }
+
+        .feed-time {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .feed-badge-area {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 6px;
+        }
+
+        .badge-direction {
+            font-size: 12px;
+            font-weight: 800;
+            padding: 4px 10px;
+            border-radius: 20px;
+            text-align: center;
+            width: 60px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.2);
+        }
+
+        .badge-in {
+            background: rgba(0, 255, 135, 0.15);
+            border: 1px solid var(--color-in);
+            color: var(--color-in);
+        }
+
+        .badge-out {
+            background: rgba(0, 240, 255, 0.15);
+            border: 1px solid var(--color-out);
+            color: var(--color-out);
+        }
+
+        .badge-conf {
+            font-size: 10px;
+            color: var(--text-secondary);
+        }
+
+        .no-records {
+            color: var(--text-secondary);
+            font-size: 14px;
+            text-align: center;
+            margin: auto;
+        }
+
+        /* 趟数统计排行 */
+        .trips-panel {
+            margin-top: 20px;
+            flex-grow: 1;
+            height: auto;
+            min-height: 0;
+        }
+
+        .trips-list {
+            flex-grow: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .trips-list::-webkit-scrollbar {
+            width: 4px;
+        }
+        .trips-list::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+        }
+
+        .trip-item {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
+            padding: 10px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+
+        .trip-item:hover {
+            background: rgba(255, 255, 255, 0.04);
+            border-color: rgba(255, 255, 255, 0.12);
+        }
+
+        .trip-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .trip-rank {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.08);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 800;
+            color: var(--text-secondary);
+        }
+
+        .trip-rank.top-1 { background: #ffd700; color: #000; }
+        .trip-rank.top-2 { background: #c0c0c0; color: #000; }
+        .trip-rank.top-3 { background: #cd7f32; color: #000; }
+
+        .trip-plate {
+            font-size: 15px;
+            font-weight: 700;
+        }
+
+        .trip-right {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .trip-badge-total {
+            background: rgba(255, 140, 0, 0.15);
+            border: 1px solid var(--color-accent);
+            color: var(--color-accent);
+            padding: 3px 10px;
+            border-radius: 4px;
+            font-weight: 800;
+            font-size: 13px;
+        }
+
+        /* 历史检索中心 */
+        .query-panel {
+            flex-grow: 0;
+            margin-bottom: 0px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .query-row {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            width: 100%;
+        }
+
+        .date-picker-label {
+            font-size: 14px;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+
+        .input-date {
+            background: rgba(11, 15, 25, 0.8);
+            border: 1px solid var(--card-border);
+            color: #fff;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-family: var(--font-family);
+            font-size: 14px;
+            outline: none;
+            flex-grow: 1;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .input-date:focus {
+            border-color: var(--color-out);
+            box-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
+        }
+
+        .query-kpis {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 5px;
+        }
+
+        .query-kpi-sub {
+            background: rgba(255,255,255,0.02);
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        .query-kpi-num {
+            font-size: 22px;
+            font-weight: 800;
+        }
+
+        /* 弹窗遮罩层 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(5, 7, 12, 0.85);
+            backdrop-filter: blur(20px);
+            z-index: 9999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+        }
+
+        .modal-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            width: 100%;
+            max-width: 900px;
+            height: 80vh;
+            display: flex;
+            flex-direction: column;
+            padding: 30px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            animation: modalScale 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+        }
+
+        @keyframes modalScale {
+            0% { transform: scale(0.9); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            padding-bottom: 15px;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 700;
+            background: linear-gradient(90deg, #fff, var(--color-out));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .modal-close-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 32px;
+            cursor: pointer;
+            line-height: 1;
+            transition: color 0.2s;
+        }
+
+        .modal-close-btn:hover {
+            color: #fff;
+        }
+
+        /* 弹窗表格样式 */
+        .modal-table-container {
+            flex-grow: 1;
+            overflow-y: auto;
+            border-radius: 12px;
+            border: 1px solid var(--card-border);
+            background: rgba(11, 15, 25, 0.4);
+        }
+
+        .modal-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 14px;
+        }
+
+        .modal-table th {
+            background: rgba(255,255,255,0.04);
+            color: var(--text-secondary);
+            padding: 14px 18px;
+            font-weight: 600;
+            border-bottom: 1px solid var(--card-border);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            backdrop-filter: blur(10px);
+        }
+
+        .modal-table td {
+            padding: 14px 18px;
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+            color: var(--text-primary);
+        }
+
+        .modal-table tr:hover {
+            background: rgba(255,255,255,0.02);
+        }
+
+        /* 响应式调整 */
+        @media (max-width: 1400px) {
+            .main-content {
+                grid-template-columns: 300px 1fr 350px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- 头部 Header -->
+        <header>
+            <div class="header-title-area">
+                <div class="header-logo">🏗️</div>
+                <h1>智慧工地车辆通行云端统计看板</h1>
+            </div>
+            <div class="header-info">
+                <div class="info-item">系统状态：<span>🟢 运行良好 (Cloud Connected)</span></div>
+                <div class="info-item">今日时间：<span id="live-clock">获取中...</span></div>
+            </div>
+        </header>
+
+        <!-- 内容主体 -->
+        <div class="main-content">
+            <!-- 左侧：统计与调试 -->
+            <div class="left-column">
+                <div class="glass-panel">
+                    <div class="panel-title">今日核心指标</div>
+                    <div class="kpi-wrapper">
+                        <div class="kpi-card">
+                            <div class="kpi-label">今日累计入场</div>
+                            <div class="kpi-value kpi-in" id="kpi-total-in">0</div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-label">今日累计出场</div>
+                            <div class="kpi-value kpi-out" id="kpi-total-out">0</div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-label">当前场内滞留</div>
+                            <div class="kpi-value kpi-stay" id="kpi-current-stay">0</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-panel control-card" style="height: auto; flex-grow: 1;">
+                    <div class="panel-title">演示与补录控制中心</div>
+                    <div style="display: flex; flex-direction: column; gap: 15px; overflow-y: auto; flex-grow: 1; padding-right: 5px;">
+                        <!-- 子版块一：摄像头抓拍模拟 -->
+                        <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--card-border); border-radius: 10px; padding: 12px;">
+                            <div style="font-size:13px; font-weight:600; color:var(--color-out); margin-bottom:8px;">📷 智能摄像头抓拍模拟</div>
+                            <select class="select-direction" id="select-dir" style="margin-bottom: 10px;">
+                                <option value="OUT">出场 (OUT) - 模拟车辆驶离</option>
+                                <option value="IN">进场 (IN) - 模拟车辆进入</option>
+                            </select>
+                            <input type="file" id="file-uploader" class="file-upload-input" accept="image/*">
+                            <button class="btn" style="margin-top: 0;" onclick="triggerFileSelect()">
+                                触发摄像头拍照上传
+                            </button>
+                        </div>
+                        
+                        <!-- 子版块二：人工手动账目补录 -->
+                        <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--card-border); border-radius: 10px; padding: 12px;">
+                            <div style="font-size:13px; font-weight:600; color:var(--color-accent); margin-bottom:8px;">✍️ 手工记账 / 历史补录</div>
+                            
+                            <input type="text" id="manual-plate" placeholder="输入车牌号(如 粤B9988D)" class="select-direction" style="margin-bottom: 8px; text-transform: uppercase;">
+                            
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+                                <select id="manual-color" class="select-direction">
+                                    <option value="黄色">黄色</option>
+                                    <option value="蓝色">蓝色</option>
+                                    <option value="绿色">绿色</option>
+                                    <option value="白色">白色</option>
+                                    <option value="黑色">黑色</option>
+                                </select>
+                                <select id="manual-dir" class="select-direction">
+                                    <option value="OUT">出场 (OUT)</option>
+                                    <option value="IN">进场 (IN)</option>
+                                </select>
+                            </div>
+                            <button class="btn btn-export" style="margin-top: 5px; width: 100%;" onclick="submitManualRecord()">
+                                确认手工录入当日账目
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 中间：历史查询与趟数明细 -->
+            <div class="center-column">
+                <div class="glass-panel query-panel">
+                    <div class="panel-title">历史车辆通行检索中心</div>
+                    <div class="query-row">
+                        <span class="date-picker-label">选择查询日期:</span>
+                        <input type="date" class="input-date" id="query-date-picker">
+                        <button class="btn btn-export" style="margin-top: 0; width: 140px;" id="btn-export-day">
+                            📥 导出当日报表
+                        </button>
+                    </div>
+                    <div class="query-kpis">
+                        <div class="query-kpi-sub">
+                            <span style="font-size:12px; color:var(--text-secondary);">该日累计入场</span>
+                            <span class="query-kpi-num" style="color:var(--color-in);" id="query-kpi-in">0</span>
+                        </div>
+                        <div class="query-kpi-sub">
+                            <span style="font-size:12px; color:var(--text-secondary);">该日累计出场</span>
+                            <span class="query-kpi-num" style="color:var(--color-out);" id="query-kpi-out">0</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="glass-panel trips-panel">
+                    <div class="panel-title" id="trips-panel-title">今日车辆运载趟数排行榜 (一天一统计)</div>
+                    <div class="trips-list" id="trips-container">
+                        <div class="no-records">⏰ 暂无今日运载趟数统计，等待车辆出场...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧：实时通行流 -->
+            <div class="right-column">
+                <div class="glass-panel feed-panel">
+                    <div class="panel-title">实时通行记录流</div>
+                    <div class="feed-list" id="feed-container" style="flex-grow: 1;">
+                        <div class="no-records">⏰ 暂无今日通行记录，正在监听边缘端上传...</div>
+                    </div>
+                    <button class="btn" style="margin-top: 15px; background: rgba(255, 255, 255, 0.03); border-color: rgba(255,255,255,0.1); width: 100%;" onclick="openDetailModal()">
+                        🔍 展开查阅当日全部明细
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 车辆通行历史明细大弹窗 Modal -->
+    <div class="modal-overlay" id="detail-modal" onclick="if(event.target === this) closeDetailModal()">
+        <div class="modal-card">
+            <div class="modal-header">
+                <div class="modal-title" id="modal-title-text">历史通行明细全日志</div>
+                <button class="modal-close-btn" onclick="closeDetailModal()">&times;</button>
+            </div>
+            <div class="modal-table-container">
+                <table class="modal-table">
+                    <thead>
+                        <tr>
+                            <th>序号</th>
+                            <th>车牌号码</th>
+                            <th>车牌颜色</th>
+                            <th>通行方向</th>
+                            <th>通行精确时间</th>
+                            <th>记录类型</th>
+                        </tr>
+                    </thead>
+                    <tbody id="modal-table-body">
+                        <!-- 由 JS 渲染明细 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 时钟显示
+        function updateClock() {
+            const now = new Date();
+            const timeStr = now.toLocaleDateString('zh-CN', { 
+                year: 'numeric', 
+                month: '2-digit', 
+                day: '2-digit' 
+            }) + ' ' + now.toLocaleTimeString('zh-CN', { hour12: false });
+            document.getElementById('live-clock').innerText = timeStr;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // 按钮触发本地文件选择
+        function triggerFileSelect() {
+            document.getElementById('file-uploader').click();
+        }
+
+        // 文件选择监听，触发模拟上传
+        document.getElementById('file-uploader').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const direction = document.getElementById('select-dir').value;
+            const formData = new FormData();
+            formData.append('file', file);
+
+            // 构造上传提示状态
+            const tempBtn = document.querySelector('.btn');
+            const originalText = tempBtn.innerHTML;
+            tempBtn.innerHTML = '⚡ 正在上传至云端并提取...';
+            tempBtn.disabled = true;
+
+            fetch(`/api/upload?direction=${direction}`, {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                tempBtn.innerHTML = originalText;
+                tempBtn.disabled = false;
+                
+                if (data.success) {
+                    if (data.detected) {
+                        alert(`识别成功！提取车牌: ${data.results.map(r => r.plate_no + ' (' + r.status + ')').join(', ')}`);
+                    } else {
+                        alert("图片解析成功，但未在图像中检测到车牌。");
+                    }
+                    refreshDashboard(); // 瞬间更新页面
+                } else {
+                    alert(`模拟识别异常: ${data.message}`);
+                }
+            })
+            .catch(err => {
+                tempBtn.innerHTML = originalText;
+                tempBtn.disabled = false;
+                alert(`网络异常: ${err}`);
+            });
+            
+            // 清空 input 确保同一张图能连续测试
+            e.target.value = '';
+        });
+
+        // 导出报表
+        function exportData() {
+            window.location.href = `/api/export?date=${selectedQueryDate}`;
+        }
+
+        // 绑定查询面板的导出按钮
+        document.getElementById('btn-export-day').addEventListener('click', exportData);
+
+        // ----------------- 人工手动补录提交逻辑 -----------------
+        function submitManualRecord() {
+            const plateInput = document.getElementById('manual-plate');
+            const plateNo = plateInput.value.trim().toUpperCase();
+            if (!plateNo) {
+                alert("请输入合法的车牌号码！");
+                return;
+            }
+            
+            const color = document.getElementById('manual-color').value;
+            const direction = document.getElementById('manual-dir').value;
+            
+            // 构造出所选日期的精确时间（使用当前时间的时分秒）
+            const now = new Date();
+            const timePart = now.toTimeString().split(' ')[0]; // 获取 HH:MM:SS
+            const passTime = `${selectedQueryDate} ${timePart}`;
+            
+            const postData = {
+                plate_no: plateNo,
+                plate_color: color,
+                direction: direction,
+                pass_time: passTime
+            };
+            
+            const submitBtn = document.querySelector('.control-card .btn-export');
+            submitBtn.innerHTML = '⚡ 正在写入系统数据库...';
+            submitBtn.disabled = true;
+            
+            fetch('/api/manual_import', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(postData)
+            })
+            .then(res => res.json())
+            .then(data => {
+                submitBtn.innerHTML = '确认手工录入当日账目';
+                submitBtn.disabled = false;
+                
+                if (data.success) {
+                    alert(data.message);
+                    plateInput.value = ''; // 清空车牌号
+                    refreshDashboard(); // 立即刷新大屏
+                } else {
+                    alert("补录失败: " + data.message);
+                }
+            })
+            .catch(err => {
+                submitBtn.innerHTML = '确认手工录入当日账目';
+                submitBtn.disabled = false;
+                alert("网络错误: " + err);
+            });
+        }
+
+        // ----------------- 明细弹窗控制逻辑 -----------------
+        function openDetailModal() {
+            fetch(`/api/records?date=${selectedQueryDate}&limit=1000`)
+            .then(res => res.json())
+            .then(data => {
+                if (!data.success) return;
+                
+                document.getElementById('modal-title-text').innerText = `🏗️ 【${selectedQueryDate}】 车辆通行明细全日志`;
+                const tableBody = document.getElementById('modal-table-body');
+                
+                if (data.records.length === 0) {
+                    tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--text-secondary); padding: 30px;">⏰ 暂无 ${data.selected_date} 的车辆通行明细日志</td></tr>`;
+                } else {
+                    let tableHtml = '';
+                    data.records.forEach((r, idx) => {
+                        const dirText = r.direction === 'IN' ? '进场 (IN)' : '出场 (OUT)';
+                        const dirColor = r.direction === 'IN' ? 'var(--color-in)' : 'var(--color-out)';
+                        const typeText = r.image_url ? '📷 自动摄像头抓拍' : '✍️ 管理员手工补录';
+                        
+                        tableHtml += `
+                            <tr>
+                                <td>${idx + 1}</td>
+                                <td style="font-weight:700; letter-spacing:0.5px;">${r.plate_no}</td>
+                                <td><span class="badge-color" style="background:rgba(255,255,255,0.06); color:#fff; padding:3px 8px; border-radius:4px;">${r.plate_color}</span></td>
+                                <td style="color:${dirColor}; font-weight:800;">${dirText}</td>
+                                <td>🕒 ${r.pass_time}</td>
+                                <td style="color:var(--text-secondary);">${typeText}</td>
+                            </tr>
+                        `;
+                    });
+                    tableBody.innerHTML = tableHtml;
+                }
+                
+                document.getElementById('detail-modal').style.display = 'flex';
+            })
+            .catch(err => alert("拉取历史日志失败: " + err));
+        }
+
+        function closeDetailModal() {
+            document.getElementById('detail-modal').style.display = 'none';
+        }
+
+        // ----------------- 看板指标动态刷新 -----------------
+        let existingRecordIds = new Set(); // 缓存已有记录 id 用于防闪烁
+        
+        // 全局管理查询日期
+        let selectedQueryDate = new Date().toISOString().split('T')[0];
+        document.getElementById('query-date-picker').value = selectedQueryDate;
+
+        // 监听日期变化事件
+        document.getElementById('query-date-picker').addEventListener('change', function(e) {
+            selectedQueryDate = e.target.value;
+            const isToday = selectedQueryDate === new Date().toISOString().split('T')[0];
+            
+            // 动态改写大屏标题
+            document.getElementById('trips-panel-title').innerText = isToday ? 
+                "今日车辆运载趟数排行榜 (一天一统计)" : 
+                `${selectedQueryDate} 车辆运载趟数排行榜`;
+                
+            document.querySelector('.feed-panel .panel-title').innerText = isToday ? 
+                "实时通行记录流" : 
+                `${selectedQueryDate} 通行明细记录流`;
+
+            refreshDashboard();
+        });
+
+        function refreshDashboard() {
+            fetch(`/api/records?date=${selectedQueryDate}`)
+            .then(res => res.json())
+            .then(data => {
+                if (!data.success) return;
+
+                // 1. 更新今日大屏 KPIs 指标
+                document.getElementById('kpi-total-in').innerText = data.kpis.total_in;
+                document.getElementById('kpi-total-out').innerText = data.kpis.total_out;
+                document.getElementById('kpi-current-stay').innerText = data.kpis.current_stay;
+
+                // 2. 更新所选日期的 KPIs 指标
+                document.getElementById('query-kpi-in').innerText = data.kpis.total_in;
+                document.getElementById('query-kpi-out').innerText = data.kpis.total_out;
+
+                // 2.5 渲染趟数排行榜
+                const tripsContainer = document.getElementById('trips-container');
+                if (!data.trips || data.trips.length === 0) {
+                    tripsContainer.innerHTML = `<div class="no-records">⏰ 暂无 ${data.selected_date} 的运载趟数统计。</div>`;
+                } else {
+                    let tripsHtml = '';
+                    data.trips.forEach((t, index) => {
+                        const rankClass = index === 0 ? 'top-1' : (index === 1 ? 'top-2' : (index === 2 ? 'top-3' : ''));
+                        tripsHtml += `
+                            <div class="trip-item">
+                                <div class="trip-left">
+                                    <div class="trip-rank ${rankClass}">${index + 1}</div>
+                                    <span class="trip-plate">${t.plate_no}</span>
+                                    <span class="badge-color">${t.plate_color}</span>
+                                </div>
+                                <div class="trip-right">
+                                    <span>进: <span style="color:var(--color-in); font-weight:600;">${t.in_cnt}</span> 次</span>
+                                    <span>出: <span style="color:var(--color-out); font-weight:600;">${t.out_cnt}</span> 次</span>
+                                    <div class="trip-badge-total">累计: ${t.total_trips} 趟</div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    tripsContainer.innerHTML = tripsHtml;
+                }
+
+                // 3. 渲染实时通行流列表 (主页大屏仅渲染最新的前 5 条以保持极简，想看完整可通过 Modal 展开)
+                const container = document.getElementById('feed-container');
+                if (data.records.length === 0) {
+                    container.innerHTML = `<div class="no-records">⏰ 暂无 ${data.selected_date} 的通行明细记录。</div>`;
+                    existingRecordIds.clear();
+                    return;
+                }
+
+                // 仅截取最新的前 5 条大屏展示
+                const displayRecords = data.records.slice(0, 5);
+                let html = '';
+                displayRecords.forEach(r => {
+                    const dirClass = r.direction === 'IN' ? 'badge-in' : 'badge-out';
+                    const dirText = r.direction === 'IN' ? '入场' : '出场';
+                    const thumbUrl = r.image_url ? r.image_url : 'https://placehold.co/80x60/000/fff?text=No+Img';
+                    
+                    html += `
+                        <div class="feed-item" data-id="${r.id}">
+                            <div class="feed-thumb-container">
+                                <img src="${thumbUrl}" class="feed-thumb" alt="抓拍图片" onclick="window.open('${thumbUrl}')">
+                            </div>
+                            <div class="feed-info">
+                                <div class="feed-plate-row">
+                                    <span class="feed-plate">${r.plate_no}</span>
+                                    <span class="badge-color">${r.plate_color}</span>
+                                </div>
+                                <div class="feed-time">🕒 通行时间: ${r.pass_time}</div>
+                            </div>
+                            <div class="feed-badge-area">
+                                <div class="badge-direction ${dirClass}">${dirText}</div>
+                                <span class="badge-conf">置信度: ${r.confidence}</span>
+                            </div>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+            })
+            .catch(err => console.error("刷新数据出错:", err));
+        }
+
+        // 初始化载入并开启定时轮询（仅在选定日期为“今天”时，每 3 秒刷新大屏，其余日期保持静止）
+        refreshDashboard();
+        setInterval(function() {
+            const todayStr = new Date().toISOString().split('T')[0];
+            if (selectedQueryDate === todayStr) {
+                refreshDashboard();
+            }
+        }, 3000);
+    </script>
+</body>
+</html>
