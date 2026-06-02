@@ -17,6 +17,7 @@ gangao/
 extra/
 ccpd/
 *.pyc
+
 # 不忽略下面指定的文件类型
 !*.cpp
 !*.h
@@ -34,4 +35,14 @@ ccpd/
 !*.yaml
 !*.md
 !*.html
-!*.db
+
+# 依赖与环境
+.venv/
+__pycache__/
+*.pyc
+
+# 本地数据与上传
+*.db
+worksite_plate.db
+uploaded_imgs/
+*.log
