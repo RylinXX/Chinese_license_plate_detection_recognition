@@ -99,7 +99,93 @@
             --border-radius-lg: 20px;
             --border-radius-md: 14px;
             --border-radius-sm: 8px;
+        }
 
+        :root[data-theme="light"] {
+            color-scheme: light;
+            --bg-color: #f0f5ff;
+            --header-bg: rgba(255, 255, 255, 0.75);
+            --card-bg: rgba(255, 255, 255, 0.8);
+            --card-hover-bg: rgba(255, 255, 255, 0.95);
+            --card-border: rgba(147, 197, 253, 0.35);
+            --card-border-hover: rgba(99, 102, 241, 0.6);
+            
+            --text-primary: #1e293b;
+            --text-secondary: #475569;
+            --text-muted: #64748b;
+            
+            --color-primary: #6366f1;
+            --color-primary-hover: #4f46e5;
+            --color-primary-active-bg: rgba(99, 102, 241, 0.1);
+            --color-primary-active-border: rgba(99, 102, 241, 0.2);
+            --color-primary-hover-bg: rgba(99, 102, 241, 0.05);
+            --color-primary-active-shadow: rgba(99, 102, 241, 0.15);
+            
+            --color-in: #10b981;
+            --color-in-light: rgba(16, 185, 129, 0.15);
+            
+            --color-out: #0ea5e9;
+            --color-out-light: rgba(14, 165, 233, 0.15);
+            
+            --color-stay: #f59e0b;
+            --color-stay-light: rgba(245, 158, 11, 0.15);
+            
+            --color-danger: #ef4444;
+            --color-danger-light: rgba(239, 68, 68, 0.15);
+
+            --bg-image: radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.08) 0px, transparent 50%),
+                        radial-gradient(at 100% 100%, rgba(56, 189, 248, 0.08) 0px, transparent 50%),
+                        radial-gradient(at 50% 50%, #f0f5ff 0px, #e0ebff 100%);
+            
+            --kpi-bg: rgba(255, 255, 255, 0.85);
+            --kpi-hover-bg: rgba(255, 255, 255, 0.98);
+            --kpi-shadow: 0 8px 32px rgba(147, 197, 253, 0.12);
+            
+            --sub-panel-bg: rgba(255, 255, 255, 0.45);
+            --input-bg: #ffffff;
+            --input-focus-shadow: rgba(99, 102, 241, 0.18);
+            
+            --btn-sec-bg: rgba(147, 197, 253, 0.2);
+            --btn-sec-border: rgba(147, 197, 253, 0.35);
+            --btn-sec-color: #334155;
+            --btn-sec-hover-bg: rgba(147, 197, 253, 0.35);
+            --btn-sec-hover-border: rgba(99, 102, 241, 0.35);
+            --btn-sec-hover-color: #1e293b;
+            
+            --suggestions-bg: #ffffff;
+            --suggestions-border: rgba(147, 197, 253, 0.35);
+            --suggestions-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
+            --suggestions-hover-bg: rgba(147, 197, 253, 0.12);
+            
+            --rank-badge-bg: rgba(147, 197, 253, 0.2);
+            --rank-trips-bg: rgba(14, 165, 233, 0.1);
+            --rank-trips-border: rgba(14, 165, 233, 0.2);
+            --rank-trips-color: #0284c7;
+            
+            --filter-bar-bg: rgba(255, 255, 255, 0.5);
+            --table-bg: transparent;
+            --table-th-bg: rgba(219, 234, 254, 0.55);
+            --table-border: rgba(147, 197, 253, 0.3);
+            --table-hover-bg: rgba(219, 234, 254, 0.2);
+            
+            --summary-bar-bg: rgba(16, 185, 129, 0.08);
+            --summary-bar-border: rgba(16, 185, 129, 0.25);
+            
+            --card-shadow: 0 8px 24px rgba(147, 197, 253, 0.08);
+            --card-hover-shadow: 0 12px 36px rgba(147, 197, 253, 0.18);
+            
+            --modal-bg: rgba(255, 255, 255, 0.9);
+            --modal-shadow: 0 25px 60px rgba(147, 197, 253, 0.18);
+            --modal-overlay-bg: rgba(15, 23, 42, 0.35);
+            
+            --chart-grid-stroke: rgba(0, 0, 0, 0.06);
+            --chart-bar-bg: rgba(147, 197, 253, 0.25);
+            --chart-line-start: #4f46e5;
+            --chart-line-end: #0284c7;
+            --chart-area-start: rgba(79, 70, 229, 0.15);
+            --chart-area-end: rgba(79, 70, 229, 0);
+            --chart-node-fill: #4f46e5;
+        }
 
         :root[data-theme="dark"] {
             color-scheme: dark;
@@ -311,13 +397,7 @@
             z-index: 10;
         }
 
-        @media (min-width: 1200px) {
-            .nav-links {
-                position: absolute;
-                left: 50%;
-                transform: translateX(-50%);
-            }
-        }
+
 
         :root[data-theme="dark"] .nav-links {
             background: rgba(255, 255, 255, 0.02);
@@ -352,6 +432,11 @@
             display: flex;
             align-items: center;
             gap: 16px;
+            flex-shrink: 0;
+        }
+
+        .navbar-actions > * {
+            flex-shrink: 0;
         }
 
         .date-selector-wrapper {
@@ -458,17 +543,10 @@
         /* 3. 系统参数配置 */
         #panel-config.active {
             display: grid;
-            grid-template-columns: 1.1fr 0.9fr;
+            grid-template-columns: 1fr;
             gap: 20px;
         }
 
-        /* 5. AI智能识图对账面板 */
-        #panel-ai-import.active {
-            display: grid;
-            grid-template-columns: 1fr 1.6fr;
-            gap: 20px;
-            min-height: 560px;
-        }
 
         /* 玻璃面板卡片样式 */
         .glass-card {
@@ -881,7 +959,7 @@
         }
 
         .plate-green {
-            background: linear-gradient(180deg, #ffffff 0%, #ffffff 20%, #4ade80 25%, #16a34a 100%);
+            background: linear-gradient(180deg, #ffffff 0%, #86efac 35%, #15803d 100%);
             color: #0f172a;
             border-color: #22c55e;
         }
@@ -1078,8 +1156,8 @@
         }
 
         .modal-card {
-            background: rgba(10, 15, 30, 0.88) !important;
-            border: 1px solid rgba(255, 255, 255, 0.08) !important;
+            background: var(--modal-bg) !important;
+            border: 1px solid var(--card-border) !important;
             border-radius: var(--border-radius-lg);
             width: 100%;
             max-width: 950px;
@@ -1087,7 +1165,7 @@
             display: flex;
             flex-direction: column;
             padding: 28px;
-            box-shadow: 0 30px 70px rgba(0, 0, 0, 0.7), 0 0 40px rgba(99, 102, 241, 0.12) !important;
+            box-shadow: var(--modal-shadow) !important;
             animation: modalScale 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
             position: relative;
             backdrop-filter: blur(25px) !important;
@@ -1478,6 +1556,16 @@
             .ledger-left-col {
                 width: 100% !important;
                 gap: 14px !important;
+                display: flex !important;
+                flex-direction: column !important;
+            }
+
+            #ledger-form-card {
+                order: 1 !important;
+            }
+
+            #ledger-kpis-card {
+                order: 2 !important;
             }
 
             /* 表单输入控件高度对齐 */
@@ -1750,10 +1838,6 @@
                 <i data-lucide="settings" style="width:14px; height:14px;"></i>
                 <span>系统参数配置</span>
             </a>
-            <a class="nav-item" id="menu-ai-import" onclick="switchTab('ai-import')">
-                <i data-lucide="camera" style="width:14px; height:14px;"></i>
-                <span>AI识图记账</span>
-            </a>
         </div>
         
         <div class="navbar-actions">
@@ -1930,7 +2014,7 @@
         <section class="main-content" id="panel-ledger">
             <!-- 左侧：检索及手工录入补录 -->
             <div class="ledger-left-col">
-                <div class="glass-card">
+                <div class="glass-card" id="ledger-kpis-card">
                     <h3 class="card-header-title">
                         <i data-lucide="calendar"></i>通行与对账指标一览
                     </h3>
@@ -1966,7 +2050,7 @@
                     </div>
                 </div>
 
-                <div class="glass-card" style="flex-grow:1; min-height:0; display:flex; flex-direction:column;">
+                <div class="glass-card" id="ledger-form-card" style="flex-grow:1; min-height:0; display:flex; flex-direction:column;">
                     <h3 class="card-header-title">
                         <i data-lucide="edit-3"></i>现场快速记账 / 补录
                     </h3>
@@ -2014,10 +2098,21 @@
                         <i data-lucide="file-spreadsheet" style="color:var(--color-out);"></i>对账单明细
                     </h3>
                     <div style="display:flex; align-items:center; gap:12px;">
+                        <!-- 新增：展示样式切换按钮组 -->
+                        <div id="ledger-layout-toggle-container" style="display:none; align-items:center; border: 1px solid var(--card-border); border-radius: var(--border-radius-sm); padding: 2px; background: rgba(255,255,255,0.02); gap: 2px;">
+                            <button id="btn-layout-table" class="btn" onclick="setLedgerLayoutMode('table')" style="padding: 4px 8px; font-size: 12px; height: 32px; border:none; background:transparent; display: flex; align-items: center; justify-content: center; gap: 4px; color: var(--text-secondary);" title="表格视图">
+                                <i data-lucide="list" style="width:14px; height:14px;"></i>
+                                <span style="font-size:11px; font-weight:700;">列表</span>
+                            </button>
+                            <button id="btn-layout-card" class="btn" onclick="setLedgerLayoutMode('card')" style="padding: 4px 8px; font-size: 12px; height: 32px; border:none; background:transparent; display: flex; align-items: center; justify-content: center; gap: 4px; color: var(--text-secondary);" title="卡片视图">
+                                <i data-lucide="layout-grid" style="width:14px; height:14px;"></i>
+                                <span style="font-size:11px; font-weight:700;">卡片</span>
+                            </button>
+                        </div>
                         <span class="form-label" style="margin-bottom:0;">账单视图:</span>
                         <select class="input-control" id="ledger-site-filter" style="width: 220px; padding: 6px 12px; font-size: 13px; height: 38px;" onchange="handleLedgerFilterChange(this.value)">
-                            <option value="全盘汇总">全盘汇总</option>
                             <option value="车辆账单">车辆账单</option>
+                            <option value="全盘汇总">全盘汇总</option>
                             <!-- 动态土点名册 -->
                         </select>
                     </div>
@@ -2050,6 +2145,10 @@
                     </div>
                 </div>
 
+                <!-- 新增：台账对账大列表分页控件 -->
+                <div id="ledger-pagination" style="display:none; justify-content:center; align-items:center; gap:12px; margin-top:16px; padding:8px 0;">
+                </div>
+
                 <!-- 下方结算总额横幅 -->
                 <div class="ledger-summary-bar" id="ledger-summary-bar">
                     <!-- 动态指标 -->
@@ -2063,10 +2162,10 @@
             <div class="glass-card" style="display:flex; flex-direction:column; min-height:0;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
                     <h3 class="card-header-title" style="margin-bottom:0; border-left-color: var(--color-out);">
-                        <i data-lucide="truck" style="color: var(--color-out); margin-right: 8px;"></i>应付车队运费结算单
+                        <i data-lucide="truck" style="color: var(--color-out); margin-right: 8px;"></i>应付单车运费结算单
                     </h3>
                     <div style="display: flex; gap: 8px;">
-                        <input type="text" id="recon-fleet-search" placeholder="检索车队..." class="input-control" style="width: 140px; height: 32px; padding: 4px 8px; font-size:12px;" oninput="filterReconciliation()">
+                        <input type="text" id="recon-fleet-search" placeholder="检索车牌..." class="input-control" style="width: 140px; height: 32px; padding: 4px 8px; font-size:12px;" oninput="filterReconciliation()">
                         <button class="btn btn-secondary" onclick="refreshReconciliation()" style="height:32px; padding: 0 10px; font-size: 12px; display: flex; align-items: center; gap: 4px;">
                             <i data-lucide="refresh-cw" style="width: 12px; height: 12px;"></i>刷新
                         </button>
@@ -2097,7 +2196,7 @@
                     <table class="ledger-table">
                         <thead>
                             <tr>
-                                <th>车队/车主</th>
+                                <th>车牌号码</th>
                                 <th>总运量</th>
                                 <th>应付总额</th>
                                 <th>已付金额</th>
@@ -2166,101 +2265,6 @@
             </div>
         </section>
 
-        <!-- 📸 面板五: AI识图智能历史补录 -->
-        <section class="main-content" id="panel-ai-import">
-            <!-- 左栏：拖拽上传与AI解析器 -->
-            <div class="glass-card" style="display:flex; flex-direction:column; min-height:0;">
-                <h3 class="card-header-title">
-                    <i data-lucide="camera" style="color:var(--color-primary);"></i>AI 智能识图解析中心
-                </h3>
-                <p style="font-size:12px; color:var(--text-secondary); margin-bottom:16px;">
-                    拖拽或点击上传手写/纸质台账照片，AI 视觉模型将自动分析、关联系统内备案车队与土方场地，智能转化为结构化明细供您核对。
-                </p>
-                
-                <!-- 拖拽上传区 -->
-                <div class="upload-dropzone" id="ai-upload-zone" style="flex-grow:1; display:flex; flex-direction:column; align-items:center; justify-content:center; border:2px dashed var(--card-border); border-radius:16px; padding:30px; background:rgba(255,255,255,0.01); cursor:pointer; transition: all 0.3s ease; position:relative; min-height:220px;">
-                    <input type="file" id="ai-file-input" accept="image/*" style="display:none;">
-                    <div id="ai-upload-prompt" style="text-align:center;">
-                        <div style="background:rgba(99, 102, 241, 0.1); width:64px; height:64px; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 16px auto;">
-                            <i data-lucide="upload-cloud" style="color:var(--color-primary); width:32px; height:32px;"></i>
-                        </div>
-                        <span style="display:block; font-size:14px; font-weight:700; color:var(--text-primary); margin-bottom:6px;">拖拽或点击上传账本图片</span>
-                        <span style="font-size:11px; color:var(--text-secondary);">支持 JPG, PNG 格式</span>
-                    </div>
-                    <!-- 图片预览区 -->
-                    <div id="ai-image-preview-container" style="display:none; width:100%; height:100%; position:absolute; top:0; left:0; padding:12px;">
-                        <img id="ai-image-preview" style="width:100%; height:100%; object-fit:contain; border-radius:12px; background:rgba(0,0,0,0.2);">
-                        <button class="btn btn-secondary btn-xs" style="position:absolute; top:20px; right:20px; background:rgba(15,23,42,0.8); border:1px solid var(--card-border); padding:6px;" onclick="resetAiUpload(event)">
-                            <i data-lucide="x" style="width:12px; height:12px;"></i>清除
-                        </button>
-                    </div>
-                </div>
-
-                <!-- 识别状态日志区 -->
-                <div id="ai-status-box" style="margin-top:16px; background:rgba(15, 23, 42, 0.3); border:1px solid var(--card-border); border-radius:12px; padding:12px; display:none;">
-                    <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-                        <div class="spinner" style="width:14px; height:14px; border-width:2px; border-top-color:var(--color-primary);"></div>
-                        <span id="ai-status-title" style="font-size:12px; font-weight:700; color:var(--text-primary);">AI分析中...</span>
-                    </div>
-                    <div id="ai-status-log" style="font-family:monospace; font-size:11px; color:var(--color-primary); height:40px; overflow-y:auto; line-height:1.4;">
-                        <!-- 动态日志流 -->
-                    </div>
-                </div>
-
-                <button class="btn btn-accent" id="btn-start-ai-ocr" style="width:100%; margin-top:16px; height:42px; display:none; align-items:center; justify-content:center; gap:8px;" onclick="runAiLedgerOcr()">
-                    <i data-lucide="sparkles"></i>开始 AI 智能识别
-                </button>
-            </div>
-
-            <!-- 右栏：明细复核与可编辑表格 -->
-            <div class="glass-card" style="display:flex; flex-direction:column; min-height:0;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid var(--card-border); padding-bottom:8px;">
-                    <h3 class="card-header-title" style="margin-bottom:0; border-left-color: var(--color-in);">
-                        <i data-lucide="edit-3" style="color:var(--color-in); margin-right:8px;"></i>账本结构化明细复核 (可编辑)
-                    </h3>
-                    
-                    <div style="display:flex; align-items:center; gap:8px;">
-                        <span class="navbar-label" style="font-size:11px;">记账日期:</span>
-                        <input type="date" class="input-control" id="ai-import-date" style="width:130px; height:30px; font-size:11px; padding:4px 8px;">
-                    </div>
-                </div>
-
-                <!-- 提示区域 -->
-                <div id="ai-empty-tip" style="flex-grow:1; display:flex; flex-direction:column; align-items:center; justify-content:center; color:var(--text-secondary); text-align:center; padding:40px 0;">
-                    <i data-lucide="table" style="width:48px; height:48px; margin-bottom:12px; opacity:0.3;"></i>
-                    <span style="font-size:13px;">请在左侧上传并识别账本照片，明细网格将在此渲染。</span>
-                </div>
-
-                <!-- 可编辑数据表 -->
-                <div id="ai-table-container" style="display:none; flex-grow:1; overflow-y:auto; margin-bottom:16px; border:1px solid var(--card-border); border-radius:12px; background:rgba(0,0,0,0.15);">
-                    <table class="data-table" style="border-collapse: collapse; width:100%; border:none;">
-                        <thead>
-                            <tr style="background:rgba(255,255,255,0.015); border-bottom:1px solid var(--card-border);">
-                                <th style="width: 140px; padding: 10px;">车牌号码</th>
-                                <th style="width: 100px; padding: 10px;">车牌颜色</th>
-                                <th style="width: 120px; padding: 10px;">运费土方</th>
-                                <th style="width: 150px; padding: 10px;">卸土场地</th>
-                                <th style="width: 90px; padding: 10px; text-align:center;">趟数</th>
-                                <th style="width: 60px; padding: 10px; text-align:center;">操作</th>
-                            </tr>
-                        </thead>
-                        <tbody id="ai-table-tbody">
-                            <!-- 动态编辑明细行 -->
-                        </tbody>
-                    </table>
-                </div>
-
-                <!-- 操作栏 -->
-                <div id="ai-action-bar" style="display:none; justify-content:space-between; align-items:center;">
-                    <button class="btn btn-secondary btn-xs" style="height:32px; padding:0 12px; font-size:12px; display:inline-flex; align-items:center; gap:4px;" onclick="addAiGridRow()">
-                        <i data-lucide="plus" style="width:12px; height:12px;"></i>添加明细行
-                    </button>
-                    <button class="btn btn-accent" style="height:36px; padding:0 20px; font-size:13px; display:inline-flex; align-items:center; gap:6px; font-weight:700;" onclick="submitBatchImportLedger()">
-                        <i data-lucide="check-circle-2"></i>一键确认审核入库
-                    </button>
-                </div>
-            </div>
-        </section>
 
         <!-- 📊 面板三: 系统参数配置 -->
         <section class="main-content" id="panel-config">
@@ -2318,50 +2322,7 @@
                 </div>
             </div>
 
-            <!-- 右侧：车队归属与手动对账绑定 -->
-            <div class="glass-card config-panel" style="display:flex; flex-direction:column; min-height: 550px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; border-bottom: 1px solid var(--card-border); padding-bottom: 8px;">
-                    <h3 class="card-header-title" style="margin-bottom:0; border-left:none; padding-left:0;">
-                        <i data-lucide="users" style="color:var(--color-out); margin-right:6px;"></i>车队与车辆名册管理
-                    </h3>
-                    <button class="btn btn-secondary" style="padding: 4px 10px; font-size:11px; display:inline-flex; align-items:center; gap:4px; height: 26px;" onclick="syncRegisteredVehicles()" id="btn-sync-vehicles">
-                        <i data-lucide="refresh-cw" style="width:10px; height:10px;"></i>同步备案车辆
-                    </button>
-                </div>
 
-                <!-- 手动录入/绑定车队表单 -->
-                <div style="background:rgba(255, 255, 255, 0.015); border:1px solid var(--card-border); border-radius:12px; padding:12px; margin-bottom:16px;">
-                    <span class="form-label" style="display:block; margin-bottom:8px; font-weight:700; color:var(--color-out); font-size:12px;">手动绑定车辆至指定车队</span>
-                    <div style="display:grid; grid-template-columns: 1fr 1.2fr auto; gap:8px; align-items:flex-end;">
-                        <div class="form-group" style="margin-bottom:0; position:relative;" id="bind-plate-autocomplete-container">
-                            <label class="form-label" for="bind-plate-no" style="font-size:10px;">车牌号码</label>
-                            <input type="text" id="bind-plate-no" placeholder="京A..." class="input-control" style="height:32px; font-size:12px; width: 100%;" oninput="showFleetPlateSuggestions(this.value)" onfocus="showFleetPlateSuggestions(this.value)" autocomplete="off">
-                            <div id="plate-suggestions-dropdown" class="glass-dropdown" style="display:none; position: absolute; top: calc(100% + 2px); left: 0; right: 0; max-height: 180px; overflow-y: auto; background: var(--header-bg); backdrop-filter: blur(25px); border: 1px solid var(--card-border); border-radius: 6px; z-index: 1001; box-shadow: var(--card-shadow);">
-                                <!-- 动态建议菜单 -->
-                            </div>
-                        </div>
-                        <div class="form-group" style="margin-bottom:0;">
-                            <label class="form-label" for="bind-fleet-select" style="font-size:10px;">选择车队 (或手填新名)</label>
-                            <div style="display:flex; gap:4px;">
-                                <select id="bind-fleet-select" class="input-control" style="height:32px; font-size:12px; padding:4px; flex: 1;" onchange="handleFleetSelectChange()">
-                                    <!-- 动态填充 -->
-                                </select>
-                                <input type="text" id="bind-fleet-custom" placeholder="手填车队名" class="input-control" style="height:32px; font-size:12px; width: 90px; display: none;">
-                            </div>
-                        </div>
-                        <button class="btn btn-accent" onclick="submitBindVehicleFleet()" style="height:32px; padding:0 12px; font-size:12px;">绑定车辆</button>
-                    </div>
-                </div>
-
-                <div class="form-group" style="margin-bottom: 12px;">
-                    <input type="text" id="config-vehicle-search" placeholder="输入车牌号或车队名称进行筛选检索..." class="input-control" style="height:35px; font-size:12px;" oninput="filterFleetManager()">
-                </div>
-                
-                <!-- 车队折叠卡片列表 -->
-                <div class="config-scroll-wrapper" id="frequent-plates-settings-list" style="flex-grow:1; overflow-y:auto; display:flex; flex-direction:column; gap:10px; max-height: 380px; padding-right:4px;">
-                    <!-- 常用车辆名册绑定动态加载 -->
-                </div>
-            </div>
         </section>
     </div>
 
@@ -2416,16 +2377,7 @@
                     </div>
                 </div>
 
-                <!-- 车队归属配置 -->
-                <div class="form-group">
-                    <label class="form-label" for="adjust-vehicle-fleet">绑定归属车队 (车队老板名称结账)</label>
-                    <div style="display:flex; gap:8px;">
-                        <select id="adjust-vehicle-fleet" class="input-control" style="flex-grow:1;">
-                            <option value="个人车主">个人车主 (个人散车)</option>
-                        </select>
-                        <button class="btn btn-secondary" onclick="submitModalFleetBinding()" style="flex-shrink:0;">绑定车队</button>
-                    </div>
-                </div>
+
 
                 <!-- 默认分账路由 -->
                 <div class="form-group">
@@ -2458,19 +2410,24 @@
         function renderPlateBadge(plateNo, plateColor) {
             if (!plateNo) return '-';
             plateNo = plateNo.trim().toUpperCase();
-            const colorClass = plateNo.length === 8 ? 'plate-green' : 'plate-yellow';
+            const colorClass = plateNo.length === 8 ? 'plate-green' : 'plate-blue';
             return `<span class="plate-badge ${colorClass}"><span class="plate-inner-border"></span>${plateNo}</span>`;
         }
     
         // 时钟
         // ------------------ 主题切换逻辑 ------------------
-        let currentTheme = localStorage.getItem('theme') || 'light';
+        function getAutoThemeByTime() {
+            const hour = new Date().getHours();
+            return (hour >= 6 && hour < 18) ? 'light' : 'dark';
+        }
+
+        let currentTheme = sessionStorage.getItem('theme') || getAutoThemeByTime();
         document.documentElement.setAttribute('data-theme', currentTheme);
 
         function toggleTheme() {
             currentTheme = currentTheme === 'light' ? 'dark' : 'light';
             document.documentElement.setAttribute('data-theme', currentTheme);
-            localStorage.setItem('theme', currentTheme);
+            sessionStorage.setItem('theme', currentTheme);
             updateThemeToggleUI();
             if (currentTab === 'monitor') {
                 refreshDashboard();
@@ -2574,7 +2531,10 @@
         let currentFrequentPlatesList = [];
         let currentSitesList = [];
         let currentSoilsList = []; // 全局土方列表
-        let activeSiteFilter = "今日流水";
+        let activeSiteFilter = "车辆账单";
+        let ledgerPageSize = 15;
+        let ledgerCurrentPage = 1;
+        let ledgerTotalPages = 1;
 
         function switchTab(tab) {
             currentTab = tab;
@@ -2617,11 +2577,8 @@
                 if (headerTitle) headerTitle.innerText = "结算汇总对账";
                 if (headerIcon) headerIcon.setAttribute('data-lucide', 'check-square');
                 refreshReconciliation();
-            } else if (tab === 'ai-import') {
-                if (headerTitle) headerTitle.innerText = "AI 智能识图对账";
-                if (headerIcon) headerIcon.setAttribute('data-lucide', 'camera');
-                initAiImportTab();
             }
+
             lucide.createIcons({attrs: {"stroke-width": 2}});
         }
 
@@ -2814,17 +2771,17 @@
             }
 
             let filterHtml = `
-                <option value="今日流水">今日流水</option>
-                <option value="全盘汇总">全盘汇总</option>
                 <option value="车辆账单">车辆账单</option>
+                <option value="全盘汇总">全盘汇总</option>
             `;
             currentSitesList.forEach(s => {
                 filterHtml += `<option value="${s.name}">${s.name} (单价: ￥${s.unit_price})</option>`;
             });
+            filterHtml += `<option value="今日流水">今日流水</option>`;
             if (ledgerSiteFilter) {
                 const prevFilter = ledgerSiteFilter.value;
                 ledgerSiteFilter.innerHTML = filterHtml;
-                ledgerSiteFilter.value = prevFilter || '今日流水';
+                ledgerSiteFilter.value = prevFilter || '车辆账单';
             }
         }
 
@@ -3237,9 +3194,90 @@
             });
         }
 
+        function renderLedgerPagination(totalItems) {
+            const container = document.getElementById('ledger-pagination');
+            if (!container) return;
+
+            const totalPages = Math.ceil(totalItems / ledgerPageSize) || 1;
+            ledgerTotalPages = totalPages;
+
+            if (totalPages <= 1) {
+                container.style.display = 'none';
+                return;
+            }
+
+            container.style.display = 'flex';
+            
+            let html = `
+                <button class="btn btn-secondary" style="padding: 4px 10px; height: 32px; font-size: 12px; display: inline-flex; align-items: center; gap: 4px;" 
+                        ${ledgerCurrentPage === 1 ? 'disabled style="opacity: 0.5; cursor: not-allowed;"' : ''} 
+                        onclick="changeLedgerPage(${ledgerCurrentPage - 1})">
+                    <i data-lucide="chevron-left" style="width:14px; height:14px;"></i>上一页
+                </button>
+                <span style="font-size: 13px; font-weight: 700; color: var(--text-secondary); min-width: 80px; text-align: center;">
+                    ${ledgerCurrentPage} / ${totalPages} 页
+                </span>
+                <button class="btn btn-secondary" style="padding: 4px 10px; height: 32px; font-size: 12px; display: inline-flex; align-items: center; gap: 4px;" 
+                        ${ledgerCurrentPage === totalPages ? 'disabled style="opacity: 0.5; cursor: not-allowed;"' : ''} 
+                        onclick="changeLedgerPage(${ledgerCurrentPage + 1})">
+                    下一页<i data-lucide="chevron-right" style="width:14px; height:14px;"></i>
+                </button>
+            `;
+            container.innerHTML = html;
+            lucide.createIcons({attrs: {"stroke-width": 2}});
+        }
+
+        function changeLedgerPage(page) {
+            if (page < 1 || page > ledgerTotalPages) return;
+            ledgerCurrentPage = page;
+            refreshLedger();
+        }
+
         function handleLedgerFilterChange(val) {
             activeSiteFilter = val;
+            ledgerCurrentPage = 1; // 重置页码
             refreshLedger();
+        }
+
+        function toggleTripTimesDetail(key) {
+            const panel = document.getElementById(`times-detail-${key}`);
+            const chevron = document.getElementById(`chevron-times-${key}`);
+            if (panel) {
+                if (panel.style.display === 'none') {
+                    panel.style.display = 'flex';
+                    if (chevron) chevron.style.transform = 'rotate(180deg)';
+                } else {
+                    panel.style.display = 'none';
+                    if (chevron) chevron.style.transform = 'rotate(0deg)';
+                }
+            }
+        }
+
+        function togglePaymentStatusBatch(ids, feeType, currentStatus) {
+            const newStatus = currentStatus === 1 ? 0 : 1;
+            const promises = ids.map(id => {
+                return fetch('/api/toggle_payment', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        record_id: id,
+                        fee_type: feeType,
+                        status: newStatus
+                    })
+                }).then(res => res.json());
+            });
+            
+            Promise.all(promises)
+            .then(results => {
+                showToast("状态更新", `已批量切换该组 ${ids.length} 趟流水的付款状态`, "success");
+                refreshLedger();
+            })
+            .catch(err => {
+                console.error("批量切换付款状态异常:", err);
+                showToast("异常", "批量切换付款状态异常: " + err.toString(), "error");
+            });
         }
 
         function togglePaymentStatus(recordId, feeType, currentStatus) {
@@ -3277,12 +3315,49 @@
                 showToast("异常", "切换付款状态异常: " + err.toString(), "error");
             });
         }
+        let ledgerLayoutMode = 'table'; // 默认列表视图，省空间
+
+        function setLedgerLayoutMode(mode) {
+            ledgerLayoutMode = mode;
+            refreshLedger();
+        }
 
         function refreshLedger() {
             fetch(`/api/records?date=${selectedQueryDate}&limit=1000`)
             .then(res => res.json())
             .then(data => {
                 if (!data.success) return;
+
+                // 新增：切换按钮容器的显示和隐藏及样式控制
+                const toggleContainer = document.getElementById('ledger-layout-toggle-container');
+                const siteList = currentSitesList || [];
+                const isCardOrSite = ["车辆账单", ...siteList.map(s => s ? s.name : "")].includes(activeSiteFilter) || (!["今日流水", "全盘汇总"].includes(activeSiteFilter));
+                
+                if (toggleContainer) {
+                    toggleContainer.style.display = isCardOrSite ? 'flex' : 'none';
+                    
+                    const btnTable = document.getElementById('btn-layout-table');
+                    const btnCard = document.getElementById('btn-layout-card');
+                    if (btnTable && btnCard) {
+                        if (ledgerLayoutMode === 'table') {
+                            btnTable.style.background = 'var(--color-primary)';
+                            btnTable.style.borderColor = 'var(--color-primary)';
+                            btnTable.style.color = '#ffffff';
+                            
+                            btnCard.style.background = 'transparent';
+                            btnCard.style.borderColor = 'transparent';
+                            btnCard.style.color = 'var(--text-secondary)';
+                        } else {
+                            btnCard.style.background = 'var(--color-primary)';
+                            btnCard.style.borderColor = 'var(--color-primary)';
+                            btnCard.style.color = '#ffffff';
+                            
+                            btnTable.style.background = 'transparent';
+                            btnTable.style.borderColor = 'transparent';
+                            btnTable.style.color = 'var(--text-secondary)';
+                        }
+                    }
+                }
 
                 if (document.getElementById('query-kpi-out')) document.getElementById('query-kpi-out').innerText = data.kpis.total_out;
                 if (document.getElementById('query-kpi-cost')) document.getElementById('query-kpi-cost').innerText = '￥' + data.kpis.total_cost.toLocaleString('zh-CN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
@@ -3310,9 +3385,11 @@
                         <tr>
                             <th>序号</th>
                             <th>车牌号码</th>
-                            <th>记账时间</th>
-                            <th>卸土点</th>
+                            <th>通行时间</th>
+                            <th>消纳场</th>
                             <th>土方类型</th>
+                            <th>运费付款 (单价×趟数)</th>
+                            <th>卸土费付款 (单价×趟数)</th>
                             <th>操作</th>
                         </tr>
                     `;
@@ -3325,9 +3402,38 @@
                     }
 
                     if (!outRecords || outRecords.length === 0) {
-                        html = `<tr><td colspan="6" style="color:var(--text-secondary); padding: 40px 10px; text-align:center;">暂无任何通行流水记录</td></tr>`;
+                        html = `<tr><td colspan="8" style="color:var(--text-secondary); padding: 40px 10px; text-align:center;">暂无任何通行流水记录</td></tr>`;
                     } else {
-                        outRecords.forEach((r, idx) => {
+                        // 按车牌 + 卸土点 + 土方进行合并
+                        const groupedMap = {};
+                        outRecords.forEach(r => {
+                            const key = `${r.plate_no}_${r.dump_site || '未分配'}_${r.soil_type || '渣土'}`;
+                            if (!groupedMap[key]) {
+                                groupedMap[key] = {
+                                    plate_no: r.plate_no,
+                                    plate_color: r.plate_color,
+                                    dump_site: r.dump_site,
+                                    soil_type: r.soil_type,
+                                    dump_paid: r.dump_paid,
+                                    soil_paid: r.soil_paid,
+                                    trips: []
+                                };
+                            }
+                            groupedMap[key].trips.push({
+                                id: r.id,
+                                pass_time: r.pass_time,
+                                image_url: r.image_url
+                            });
+                        });
+
+                        const groupedRecords = Object.values(groupedMap);
+                        const totalGroupedItems = groupedRecords.length;
+
+                        // 客户端分页截取
+                        const displayRecords = groupedRecords.slice((ledgerCurrentPage - 1) * ledgerPageSize, ledgerCurrentPage * ledgerPageSize);
+
+                        displayRecords.forEach((r, idx) => {
+                            const globalIdx = (ledgerCurrentPage - 1) * ledgerPageSize + idx + 1;
                             const isUnassigned = (r.dump_site === '未分配' || !r.dump_site);
                             const siteName = r.dump_site || '未分配';
                             const siteColor = isUnassigned ? 'var(--color-danger)' : 'var(--text-primary)';
@@ -3336,12 +3442,9 @@
                             const dumpPrice = matchSite ? matchSite.unit_price : 0.00;
                             const dumpPaidClass = r.dump_paid === 1 ? 'paid' : 'unpaid';
                             const dumpPaidText = r.dump_paid === 1 ? '已付' : '未付';
-                            const dumpPaymentHtml = isUnassigned ? '' : `
-                                <div style="font-size:11px; color:var(--text-secondary); margin-top:2px;">
-                                    ￥${dumpPrice.toFixed(2)}
-                                    <span class="payment-badge ${dumpPaidClass}" onclick="event.stopPropagation(); togglePaymentStatus(${r.id}, 'dump', ${r.dump_paid})">${dumpPaidText}</span>
-                                </div>
-                            `;
+                            
+                            // 构造这一组所有的 id 列表作为 JSON 字符串，传递给批量付款更改
+                            const idsJson = JSON.stringify(r.trips.map(t => t.id));
                             
                             const matchSoil = currentSoilsList.find(s => s.name === r.soil_type);
                             const soilPrice = matchSoil ? matchSoil.unit_price : 0.00;
@@ -3350,21 +3453,83 @@
                             const soilPaidText = r.soil_paid === 1 ? '已付' : '未付';
                             const priceSign = isInc === 1 ? '+' : '-';
                             const priceColor = isInc === 1 ? 'var(--color-in)' : 'var(--color-danger)';
+
+                            // 修改运费和消纳费成独立列，并展示“单价 × 趟数 = 总额”
+                            const totalSoilCost = soilPrice * r.trips.length;
+                            const soilDetailText = r.trips.length > 1 
+                                ? `￥${soilPrice.toFixed(2)} × ${r.trips.length} 趟 = ￥${totalSoilCost.toFixed(2)}` 
+                                : `￥${soilPrice.toFixed(2)}`;
+                            
                             const soilPaymentHtml = `
-                                <div style="font-size:11px; color:var(--text-secondary); margin-top:2px;">
-                                    <span style="color:${priceColor}; font-weight:700;">${priceSign}￥${soilPrice.toFixed(2)}</span>
-                                    <span class="payment-badge ${soilPaidClass}" onclick="event.stopPropagation(); togglePaymentStatus(${r.id}, 'soil', ${r.soil_paid})">${soilPaidText}</span>
+                                <div style="font-size:12px; display:flex; align-items:center; gap:8px;">
+                                    <span style="color:${priceColor}; font-weight:700;">${priceSign}${soilDetailText}</span>
+                                    <span class="payment-badge ${soilPaidClass}" onclick="event.stopPropagation(); togglePaymentStatusBatch(${idsJson}, 'soil', ${r.soil_paid})">${soilPaidText}</span>
                                 </div>
                             `;
+                            
+                            let dumpPaymentHtml = '';
+                            if (isUnassigned) {
+                                dumpPaymentHtml = `<span style="color:var(--text-muted); font-size:12px;">—</span>`;
+                            } else {
+                                const totalDumpCost = dumpPrice * r.trips.length;
+                                const dumpDetailText = r.trips.length > 1 
+                                    ? `￥${dumpPrice.toFixed(2)} × ${r.trips.length} 趟 = ￥${totalDumpCost.toFixed(2)}` 
+                                    : `￥${dumpPrice.toFixed(2)}`;
+                                dumpPaymentHtml = `
+                                    <div style="font-size:12px; display:flex; align-items:center; gap:8px;">
+                                        <span style="font-weight:700; color:var(--text-primary);">-￥${dumpDetailText}</span>
+                                        <span class="payment-badge ${dumpPaidClass}" onclick="event.stopPropagation(); togglePaymentStatusBatch(${idsJson}, 'dump', ${r.dump_paid})">${dumpPaidText}</span>
+                                    </div>
+                                `;
+                            }
                             const soilText = r.soil_type || '渣土';
                                 
+                            // 提取各单趟记账的时间记录，按时间正序排序
+                            const times = r.trips.map(t => t.pass_time.split(' ')[1]).sort();
+                            const groupKey = `${r.plate_no.replace(/\s+/g, '')}_${globalIdx}`;
+                            
+                            let passTimeHtml = '';
+                            if (r.trips.length === 1) {
+                                passTimeHtml = `<span style="font-family:monospace;">${times[0]}</span>`;
+                            } else {
+                                passTimeHtml = `
+                                    <div style="display:flex; flex-direction:column; gap:4px; align-items:flex-start;">
+                                        <span style="font-family:monospace; font-weight:700;">${times[times.length - 1]}</span>
+                                        <span class="trips-count-badge" onclick="event.stopPropagation(); toggleTripTimesDetail('${groupKey}')" style="cursor:pointer; display:inline-flex; align-items:center; gap:2px; font-size:10px; padding:2px 6px; background:rgba(99,102,241,0.12); color:var(--color-primary); border:1px solid rgba(99,102,241,0.2); border-radius:4px; font-weight:700;" title="点击展开/收起各趟记账时间">
+                                            共 ${r.trips.length} 趟
+                                            <i data-lucide="chevron-down" id="chevron-times-${groupKey}" style="width:10px; height:10px; transition: transform 0.2s;"></i>
+                                        </span>
+                                        <div id="times-detail-${groupKey}" style="display:none; flex-direction:column; gap:4px; margin-top:4px; padding:6px; background:rgba(15,23,42,0.6); border:1px solid var(--card-border); border-radius:6px; min-width:140px; box-shadow:var(--card-shadow);">
+                                            <div style="font-weight:700; color:var(--text-secondary); font-size:9px; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:2px; margin-bottom:2px; display:flex; justify-content:space-between;">
+                                                <span>单次记账明细</span>
+                                                <span style="color:var(--text-muted);">操作</span>
+                                            </div>
+                                            ${r.trips.map(trip => {
+                                                const singleTime = trip.pass_time.split(' ')[1];
+                                                return `
+                                                <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; font-family:monospace; font-size:11px; padding: 2px 0;">
+                                                    <span>${singleTime}</span>
+                                                    ${!trip.image_url ? `
+                                                    <button class="btn btn-secondary" style="padding:1px 3px; height:18px; min-height:18px; border:none; background:transparent; color:var(--color-danger); box-shadow:none; cursor:pointer;" onclick="event.stopPropagation(); submitDeleteRecord(${trip.id})" title="删除此趟">
+                                                        <i data-lucide="trash-2" style="width:10px; height:10px;"></i>
+                                                    </button>
+                                                    ` : `<span style="font-size:9px; color:var(--color-in);">AI识别</span>`}
+                                                </div>
+                                                `;
+                                            }).join('')}
+                                        </div>
+                                    </div>
+                                `;
+                            }
+
+                            const firstTrip = r.trips[0];
                             let actionHtml = `
                                 <div style="display:flex; justify-content:center; gap:6px;">
                                     <button class="btn btn-secondary" style="padding: 2px 6px; font-size:11px; display:inline-flex; align-items:center; gap:2px;" onclick="openAdjustModal('${r.plate_no}')">
                                         <i data-lucide="edit-3" style="width:10px; height:10px;"></i>对账
                                     </button>
-                                    ${!r.image_url ? `
-                                    <button class="btn btn-danger" style="padding: 2px 6px; font-size:11px; display:inline-flex; align-items:center; gap:2px;" onclick="submitDeleteRecord(${r.id})">
+                                    ${(r.trips.length === 1 && !firstTrip.image_url) ? `
+                                    <button class="btn btn-danger" style="padding: 2px 6px; font-size:11px; display:inline-flex; align-items:center; gap:2px;" onclick="submitDeleteRecord(${firstTrip.id})">
                                         <i data-lucide="trash-2" style="width:10px; height:10px;"></i>
                                     </button>
                                     ` : ''}
@@ -3373,23 +3538,20 @@
                             
                             html += `
                                 <tr>
-                                    <td>${idx + 1}</td>
+                                    <td>${globalIdx}</td>
                                     <td style="font-weight:700; padding: 6px 12px;">${renderPlateBadge(r.plate_no, r.plate_color)}</td>
-                                    <td style="font-family:monospace;">${r.pass_time.split(' ')[1]}</td>
-                                    <td style="color:${siteColor};">
-                                        ${siteName}
-                                        ${dumpPaymentHtml}
-                                    </td>
-                                    <td style="font-weight:600; color:var(--color-primary);">
-                                        ${soilText}
-                                        ${soilPaymentHtml}
-                                    </td>
+                                    <td>${passTimeHtml}</td>
+                                    <td style="color:${siteColor}; font-weight:600;">${siteName}</td>
+                                    <td style="font-weight:600; color:var(--color-primary);">${soilText}</td>
+                                    <td>${soilPaymentHtml}</td>
+                                    <td>${dumpPaymentHtml}</td>
                                     <td>${actionHtml}</td>
                                 </tr>
                             `;
                         });
                     }
                     document.getElementById('ledger-table-body').innerHTML = html;
+                    renderLedgerPagination(totalGroupedItems);
                     lucide.createIcons({attrs: {"stroke-width": 2}});
 
                     // 统计流水账单
@@ -3486,6 +3648,9 @@
 
                     tbody.innerHTML = html + unassignedRow;
 
+                    const pContainer = document.getElementById('ledger-pagination');
+                    if (pContainer) pContainer.style.display = 'none';
+
                     const totalTrips = grandTrips + unassignedTrips;
                     const sign = grandCost >= 0 ? '+' : '';
                     summaryBar.innerHTML = `
@@ -3499,19 +3664,9 @@
                     `;
 
                 } else {
-                    tableWrapper.style.display = 'none';
-                    cardsWrapper.style.display = 'block';
-
-                    const grid = document.getElementById('ledger-cards-grid');
-                    let cardsHtml = '';
-                    let grandTrips = 0;
-                    let grandCost = 0.0;
-                    let grandIncome = 0.0;
-                    let grandExpense = 0.0;
-                    let numVehicles = 0;
-
+                    // 首先，计算完整匹配的车辆数据集（全部车辆，用于最下面全部汇总）
                     const ledgerRows = data.ledger_rows || [];
-                    
+                    const matchedRows = [];
                     ledgerRows.forEach(row => {
                         let matchesFilter = false;
                         if (activeSiteFilter === "车辆账单") {
@@ -3521,8 +3676,61 @@
                                 matchesFilter = true;
                             }
                         }
-
                         if (matchesFilter) {
+                            matchedRows.push(row);
+                        }
+                    });
+
+                    const totalItems = matchedRows.length;
+
+                    // 计算全体的汇总（全部汇总）
+                    let grandTrips = 0;
+                    let grandCost = 0.0;
+                    let grandIncome = 0.0;
+                    let grandExpense = 0.0;
+                    let numVehicles = totalItems;
+
+                    matchedRows.forEach(row => {
+                        let vTrips = row.total_trips;
+                        let vCost = row.total_cost;
+                        let vIncome = row.total_income || 0;
+                        let vExpense = row.total_expense || 0;
+
+                        if (activeSiteFilter !== "车辆账单") {
+                            vTrips = row.site_trips[activeSiteFilter];
+                            let siteInc = 0;
+                            let siteExp = 0;
+                            data.records.forEach(rec => {
+                                if (rec.direction === 'OUT' && rec.plate_no === row.plate_no && rec.dump_site === activeSiteFilter) {
+                                    const mSoil = currentSoilsList.find(s => s.name === rec.soil_type);
+                                    if (mSoil) {
+                                        if (mSoil.is_income === 1) siteInc += mSoil.unit_price;
+                                        else siteExp += mSoil.unit_price;
+                                    }
+                                }
+                            });
+                            vCost = siteInc - siteExp;
+                            vIncome = siteInc;
+                            vExpense = siteExp;
+                        }
+
+                        grandTrips += vTrips;
+                        grandCost += vCost;
+                        grandIncome += vIncome;
+                        grandExpense += vExpense;
+                    });
+
+                    // 客户端分页截取
+                    const displayRows = matchedRows.slice((ledgerCurrentPage - 1) * ledgerPageSize, ledgerCurrentPage * ledgerPageSize);
+
+                    if (ledgerLayoutMode === 'card') {
+                        tableWrapper.style.display = 'none';
+                        cardsWrapper.style.display = 'block';
+
+                        const grid = document.getElementById('ledger-cards-grid');
+                        let cardsHtml = '';
+
+                        displayRows.forEach(row => {
                             let vTrips = row.total_trips;
                             let vCost = row.total_cost;
                             let vIncome = row.total_income || 0;
@@ -3547,12 +3755,6 @@
                                 vExpense = siteExp;
                                 vUnassigned = 0;
                             }
-
-                            grandTrips += vTrips;
-                            grandCost += vCost;
-                            grandIncome += vIncome;
-                            grandExpense += vExpense;
-                            numVehicles++;
 
                             const warnBorder = vUnassigned > 0 ? 'border:1px solid rgba(239,68,68,0.2); box-shadow: 0 4px 12px rgba(239,68,68,0.08);' : '';
                             const unassignedBadge = vUnassigned > 0 ? `<div style="font-size:10px; color:var(--color-danger); font-weight:700; margin-top:2px;">待分账趟数: ${vUnassigned}趟</div>` : '';
@@ -3585,15 +3787,125 @@
                                     </button>
                                 </div>
                             `;
-                        }
-                    });
+                        });
 
-                    if (numVehicles === 0) {
-                        grid.innerHTML = `<div class="ranking-empty" style="grid-column:1/-1;">当前筛选条件下没有出运的泥头车记录</div>`;
+                        if (totalItems === 0) {
+                            grid.innerHTML = `<div class="ranking-empty" style="grid-column:1/-1;">当前筛选条件下没有出运的泥头车记录</div>`;
+                        } else {
+                            grid.innerHTML = cardsHtml;
+                        }
+
                     } else {
-                        grid.innerHTML = cardsHtml;
+                        // 表格/列表视图
+                        tableWrapper.style.display = 'block';
+                        cardsWrapper.style.display = 'none';
+
+                        let headerHtml = '';
+                        if (activeSiteFilter === "车辆账单") {
+                            headerHtml = `
+                                <tr>
+                                    <th>序号</th>
+                                    <th>车牌号码</th>
+                                    <th>累计趟数</th>
+                                    <th>累计运费</th>
+                                    <th>累计消纳费</th>
+                                    <th>净收支 (结算额)</th>
+                                    <th>待分配去向</th>
+                                    <th>操作</th>
+                                </tr>
+                            `;
+                        } else {
+                            headerHtml = `
+                                <tr>
+                                    <th>序号</th>
+                                    <th>车牌号码</th>
+                                    <th>该场出运</th>
+                                    <th>场地净结算</th>
+                                    <th>操作</th>
+                                </tr>
+                            `;
+                        }
+                        tableWrapper.querySelector('thead').innerHTML = headerHtml;
+
+                        let tbodyHtml = '';
+
+                        displayRows.forEach((row, idx) => {
+                            const globalIdx = (ledgerCurrentPage - 1) * ledgerPageSize + idx + 1;
+                            let vTrips = row.total_trips;
+                            let vCost = row.total_cost;
+                            let vIncome = row.total_income || 0;
+                            let vExpense = row.total_expense || 0;
+                            let vUnassigned = row.unassigned_trips;
+
+                            if (activeSiteFilter !== "车辆账单") {
+                                vTrips = row.site_trips[activeSiteFilter];
+                                let siteInc = 0;
+                                let siteExp = 0;
+                                data.records.forEach(rec => {
+                                    if (rec.direction === 'OUT' && rec.plate_no === row.plate_no && rec.dump_site === activeSiteFilter) {
+                                        const mSoil = currentSoilsList.find(s => s.name === rec.soil_type);
+                                        if (mSoil) {
+                                            if (mSoil.is_income === 1) siteInc += mSoil.unit_price;
+                                            else siteExp += mSoil.unit_price;
+                                        }
+                                    }
+                                });
+                                vCost = siteInc - siteExp;
+                                vIncome = siteInc;
+                                vExpense = siteExp;
+                                vUnassigned = 0;
+                            }
+
+                            // 动态计算累计运费的符号和颜色 (代数收支)
+                            const netSoilCost = row.total_income - row.total_expense;
+                            const soilSign = netSoilCost >= 0 ? '+' : '';
+                            const soilCostColor = netSoilCost >= 0 ? 'var(--color-in)' : 'var(--color-danger)';
+
+                            const plateBadgeHTML = renderPlateBadge(row.plate_no, row.plate_color);
+                            const vSign = vCost >= 0 ? '+' : '';
+                            const costColor = vCost >= 0 ? 'var(--color-in)' : 'var(--color-danger)';
+
+                            let actionHtml = `
+                                <button class="btn btn-secondary" style="padding: 2px 6px; font-size:11px; display:inline-flex; align-items:center; gap:2px;" onclick="openAdjustModal('${row.plate_no}')">
+                                    <i data-lucide="edit-3" style="width:10px; height:10px;"></i>账目明细
+                                </button>
+                            `;
+
+                            if (activeSiteFilter === "车辆账单") {
+                                const unassignedText = vUnassigned > 0 ? `<span style="color:var(--color-danger); font-weight:700;">${vUnassigned} 趟</span>` : `<span style="color:var(--text-muted); font-size:11px;">无</span>`;
+                                tbodyHtml += `
+                                    <tr>
+                                        <td>${globalIdx}</td>
+                                        <td style="font-weight:700; padding: 6px 12px;">${plateBadgeHTML}</td>
+                                        <td style="color:var(--color-out); font-weight:700;">${vTrips} 趟</td>
+                                        <td style="font-weight:700; color:${soilCostColor};">${soilSign}￥${Math.abs(netSoilCost).toFixed(2)}</td>
+                                        <td style="font-weight:700; color:var(--text-primary);">-￥${row.total_dump_cost.toFixed(2)}</td>
+                                        <td style="font-weight:700; color:${costColor};">${vSign}￥${vCost.toFixed(2)}</td>
+                                        <td>${unassignedText}</td>
+                                        <td>${actionHtml}</td>
+                                    </tr>
+                                `;
+                            } else {
+                                tbodyHtml += `
+                                    <tr>
+                                        <td>${globalIdx}</td>
+                                        <td style="font-weight:700; padding: 6px 12px;">${plateBadgeHTML}</td>
+                                        <td style="color:var(--color-out); font-weight:700;">${vTrips} 趟</td>
+                                        <td style="font-weight:700; color:${costColor};">${vSign}￥${vCost.toFixed(2)}</td>
+                                        <td>${actionHtml}</td>
+                                    </tr>
+                                `;
+                            }
+                        });
+
+                        if (totalItems === 0) {
+                            document.getElementById('ledger-table-body').innerHTML = `<tr><td colspan="8" style="color:var(--text-secondary); padding: 40px 10px; text-align:center;">当前筛选条件下没有出运的泥头车记录</td></tr>`;
+                        } else {
+                            document.getElementById('ledger-table-body').innerHTML = tbodyHtml;
+                        }
                     }
 
+                    // 全部汇总横幅依然基于完整的累计数值渲染
                     const sign = grandCost >= 0 ? '+' : '';
                     if (activeSiteFilter === "车辆账单") {
                         summaryBar.innerHTML = `
@@ -3616,6 +3928,9 @@
                             </div>
                         `;
                     }
+
+                    renderLedgerPagination(totalItems);
+                    lucide.createIcons({attrs: {"stroke-width": 2}});
                 }
             })
             .catch(err => console.error("加载台账异常:", err));
@@ -4223,7 +4538,10 @@
                 datePicker.addEventListener('change', function(e) {
                     selectedQueryDate = e.target.value;
                     if (currentTab === 'monitor') refreshDashboard();
-                    if (currentTab === 'ledger') refreshLedger();
+                    if (currentTab === 'ledger') {
+                        ledgerCurrentPage = 1;
+                        refreshLedger();
+                    }
                     if (currentTab === 'reconcile') refreshReconciliation();
                 });
             }
@@ -4293,7 +4611,7 @@
             document.getElementById('recon-fleet-unpaid-cost').innerText = `￥${totalFleetUnpaid.toFixed(2)}`;
 
             if (fleets.length === 0) {
-                fleetHtml = `<tr><td colspan="6" style="text-align:center; color:var(--text-secondary); padding:20px;">当日无车队拉运数据</td></tr>`;
+                fleetHtml = `<tr><td colspan="6" style="text-align:center; color:var(--text-secondary); padding:20px;">当日无车辆拉运数据</td></tr>`;
             } else {
                 fleets.forEach(f => {
                     const fleetName = f.company_name || '个人散车';
@@ -4301,9 +4619,11 @@
                     const badgeClass = isPaid ? 'badge-in' : 'badge-stay';
                     const badgeText = isPaid ? '已结清' : '未结清';
                     
+                    const plateBadgeHtml = renderPlateBadge(fleetName, '黄色');
+                    
                     fleetHtml += `
                         <tr>
-                            <td style="font-weight:700;">${fleetName}</td>
+                            <td style="padding: 6px 12px;">${plateBadgeHtml}</td>
                             <td style="color:var(--color-out); font-weight:700;">${f.total_trips} 趟</td>
                             <td style="font-weight:700; color:var(--color-primary);">￥${f.total_cost.toFixed(2)}</td>
                             <td style="color:var(--color-in);">￥${f.paid_cost.toFixed(2)}</td>
@@ -4452,86 +4772,11 @@
         }
 
         function submitBindVehicleFleet() {
-            const plateNo = document.getElementById('bind-plate-no').value.toUpperCase().trim();
-            const selectEl = document.getElementById('bind-fleet-select');
-            const customInput = document.getElementById('bind-fleet-custom');
-            
-            if (!plateNo) {
-                showToast('输入错误', '车牌号码不能为空', 'error');
-                return;
-            }
-            if (plateNo.length < 5) {
-                showToast('输入错误', '请输入正确格式的车牌号', 'error');
-                return;
-            }
-            
-            let fleetName = "个人车主";
-            if (selectEl) {
-                if (selectEl.value === '[CUSTOM]') {
-                    fleetName = customInput.value.trim();
-                } else {
-                    fleetName = selectEl.value;
-                }
-            }
-            
-            if (!fleetName) {
-                showToast('输入错误', '车队名称不能为空', 'error');
-                return;
-            }
-            
-            fetch('/api/bind_vehicle_fleet', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    plate_no: plateNo,
-                    company_name: fleetName
-                })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    showToast('绑定成功', `${plateNo} 已成功划分至车队 【${fleetName}】`, 'success');
-                    document.getElementById('bind-plate-no').value = '';
-                    if (customInput) customInput.value = '';
-                    if (selectEl) {
-                        selectEl.value = '个人车主';
-                        handleFleetSelectChange();
-                    }
-                    refreshFrequentPlates();
-                    if(currentTab === 'reconcile') refreshReconciliation();
-                    if(currentTab === 'ledger') refreshLedger();
-                } else {
-                    showToast('绑定失败', data.message || '操作失败', 'error');
-                }
-            })
-            .catch(err => showToast('绑定异常', err.toString(), 'error'));
+            // 已废弃车队绑定
         }
 
         function unbindVehicleFromFleet(plateNo) {
-            if (!confirm(`确定要将车辆 ${plateNo} 从当前车队移出并设为【个人散车】吗？`)) {
-                return;
-            }
-            
-            fetch('/api/bind_vehicle_fleet', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    plate_no: plateNo,
-                    company_name: '个人车主'
-                })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    showToast('解绑成功', `车辆 ${plateNo} 已移为个人散车`, 'success');
-                    refreshFrequentPlates();
-                    if(currentTab === 'reconcile') refreshReconciliation();
-                    if(currentTab === 'ledger') refreshLedger();
-                } else {
-                    showToast('解绑失败', data.message || '操作失败', 'error');
-                }
-            })
-            .catch(err => showToast('解绑异常', err.toString(), 'error'));
+            // 已废弃车队解绑
         }
 
         function filterFleetManager() {
@@ -4555,475 +4800,9 @@
         }
 
         function renderFleetManager() {
-            const container = document.getElementById('frequent-plates-settings-list');
-            const selectEl = document.getElementById('bind-fleet-select');
-            
-            if (!container) return;
-            
-            // 1. 按车队分组
-            const groups = {};
-            currentFrequentPlatesList.forEach(p => {
-                const fName = p.company_name || '个人车主';
-                if (!groups[fName]) {
-                    groups[fName] = [];
-                }
-                groups[fName].push(p);
-            });
-            
-            // 2. 收集非空车队名更新选择下拉框
-            if (selectEl) {
-                const prevSelectVal = selectEl.value;
-                let selectHtml = `<option value="个人车主">个人车主 (个人散车)</option>`;
-                
-                Object.keys(groups).sort().forEach(f => {
-                    if (f !== "个人车主" && f !== "个人" && f !== "个人散车") {
-                        selectHtml += `<option value="${f}">${f}</option>`;
-                    }
-                });
-                selectHtml += `<option value="[CUSTOM]">(新建手动录入车队...)</option>`;
-                selectEl.innerHTML = selectHtml;
-                
-                // 恢复之前的选中状态
-                if ([...selectEl.options].some(opt => opt.value === prevSelectVal)) {
-                    selectEl.value = prevSelectVal;
-                } else {
-                    selectEl.value = '个人车主';
-                }
-            }
-            
-            // 3. 构建车队折叠列表
-            let html = '';
-            
-            // 排序：个人车主在最前，其余拼音排序
-            const sortedFleetNames = Object.keys(groups).sort((a, b) => {
-                if (a === '个人车主' || a === '个人') return -1;
-                if (b === '个人车主' || b === '个人') return 1;
-                return a.localeCompare(b, 'zh');
-            });
-            
-            let matchedAny = false;
-            
-            sortedFleetNames.forEach(fleetName => {
-                const vehicles = groups[fleetName] || [];
-                
-                // 模糊筛选
-                const matchedVehicles = vehicles.filter(v => 
-                    v.plate_no.toLowerCase().includes(rawFleetQuery) || 
-                    fleetName.toLowerCase().includes(rawFleetQuery)
-                );
-                
-                // 如果进行了搜索且当前车队和车辆无一匹配，则隐藏
-                if (rawFleetQuery && matchedVehicles.length === 0) {
-                    return;
-                }
-                
-                matchedAny = true;
-                
-                // 搜索时默认展开，不搜索时按原本折叠状态（默认折叠）
-                if (rawFleetQuery) {
-                    fleetCollapsedState[fleetName] = true; 
-                } else if (fleetCollapsedState[fleetName] === undefined) {
-                    fleetCollapsedState[fleetName] = false; 
-                }
-                
-                const isExpanded = fleetCollapsedState[fleetName];
-                const listStyle = isExpanded ? 'display:flex;' : 'display:none;';
-                const chevStyle = isExpanded ? 'transform:none;' : 'transform:rotate(-90deg);';
-                
-                let vehicleRowsHtml = '';
-                matchedVehicles.forEach(v => {
-                    vehicleRowsHtml += `
-                        <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.01); border:1px solid var(--card-border); border-radius:6px; padding:6px 10px; font-size:12px;">
-                            <span style="font-weight:700; color:var(--text-primary); font-size:12px; display:inline-flex; align-items:center; gap:6px;">
-                                <span class="plate-badge" style="background:#0ea5e9; color:#fff; min-width:unset; padding:1px 6px; font-size:10px; border-radius:4px;">${v.plate_no}</span>
-                                <span style="font-size:11px; color:var(--text-secondary); font-weight:normal;">${v.plate_color}</span>
-                            </span>
-                            ${fleetName !== '个人车主' ? `
-                                <button class="btn btn-secondary" style="padding:2px 6px; font-size:10px; height:20px; min-height:unset; color:var(--color-danger); border-color:rgba(239,68,68,0.15); background:rgba(239,68,68,0.02);" onclick="unbindVehicleFromFleet('${v.plate_no}')" title="解绑并设为散车">
-                                    <i data-lucide="log-out" style="width:10px; height:10px; display:inline-block; margin-right:2px; margin-top:-1px;"></i>移出
-                                </button>
-                            ` : ''}
-                        </div>
-                    `;
-                });
-                
-                html += `
-                    <div class="glass-card" style="flex-shrink: 0; padding: 12px; border:1px solid var(--card-border); background: rgba(255,255,255,0.015); border-radius:12px; box-shadow:none;">
-                        <div style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;" onclick="toggleFleetCollapse('${fleetName}')">
-                            <span style="font-weight:800; font-size:13px; display:flex; align-items:center; gap:6px; color:var(--text-primary);">
-                                <i data-lucide="${fleetName === '个人车主' ? 'user' : 'users'}" style="width:14px; height:14px; color:${fleetName === '个人车主' ? 'var(--text-muted)' : 'var(--color-out)'};"></i>
-                                ${fleetName}
-                            </span>
-                            <div style="display:flex; align-items:center; gap:8px;">
-                                <span class="plate-badge ${fleetName === '个人车主' ? 'badge-stay' : 'badge-in'}" style="min-width: unset; padding: 1px 6px; font-size:10px; font-weight:700;">${vehicles.length} 辆</span>
-                                <i data-lucide="chevron-down" id="chevron-${fleetName}" style="width:14px; height:14px; color:var(--text-muted); transition: transform 0.2s; ${chevStyle}"></i>
-                            </div>
-                        </div>
-                        <div id="fleet-list-${fleetName}" style="margin-top: 10px; ${listStyle} flex-direction:column; gap:6px; padding-left:8px; border-left:1px dashed var(--card-border);">
-                            ${vehicleRowsHtml}
-                        </div>
-                    </div>
-                `;
-            });
-            
-            if (!matchedAny) {
-                container.innerHTML = `<div style="text-align:center; color:var(--text-secondary); padding:20px; font-size:12px;">未检索到匹配的车队或车牌</div>`;
-            } else {
-                container.innerHTML = html;
-            }
-            lucide.createIcons({attrs: {"stroke-width": 2}});
+            // 已废弃车队管理
         }
 
-        // ==========================================================================
-        // 📸 新增：AI 识图智能记账前端交互逻辑
-        // ==========================================================================
-        let aiFileToUpload = null;
-        let aiParsedItems = [];
-
-        function initAiImportTab() {
-            // 初始化/重置 AI 界面状态
-            resetAiUpload(null);
-            
-            // 绑定拖拽上传事件
-            const dropzone = document.getElementById('ai-upload-zone');
-            const fileInput = document.getElementById('ai-file-input');
-
-            if (dropzone) {
-                dropzone.onclick = () => fileInput.click();
-
-                dropzone.ondragover = (e) => {
-                    e.preventDefault();
-                    dropzone.style.borderColor = 'var(--color-primary)';
-                    dropzone.style.background = 'rgba(99, 102, 241, 0.05)';
-                };
-
-                dropzone.ondragleave = (e) => {
-                    e.preventDefault();
-                    dropzone.style.borderColor = 'var(--card-border)';
-                    dropzone.style.background = 'rgba(255, 255, 255, 0.01)';
-                };
-
-                dropzone.ondrop = (e) => {
-                    e.preventDefault();
-                    dropzone.style.borderColor = 'var(--card-border)';
-                    dropzone.style.background = 'rgba(255, 255, 255, 0.01)';
-                    if (e.dataTransfer.files.length > 0) {
-                        handleAiFileSelect(e.dataTransfer.files[0]);
-                    }
-                };
-            }
-
-            if (fileInput) {
-                fileInput.onchange = (e) => {
-                    if (e.target.files.length > 0) {
-                        handleAiFileSelect(e.target.files[0]);
-                    }
-                };
-            }
-            
-            // 预设今天为默认日期
-            document.getElementById('ai-import-date').value = new Date().toISOString().substring(0, 10);
-        }
-
-        function handleAiFileSelect(file) {
-            if (!file.type.startsWith('image/')) {
-                showToast('上传错误', '只能上传图片文件', 'error');
-                return;
-            }
-            aiFileToUpload = file;
-            
-            // 展示预览图
-            const preview = document.getElementById('ai-image-preview');
-            const previewContainer = document.getElementById('ai-image-preview-container');
-            const prompt = document.getElementById('ai-upload-prompt');
-            const startBtn = document.getElementById('btn-start-ai-ocr');
-
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                preview.src = e.target.result;
-                prompt.style.opacity = 0;
-                setTimeout(() => prompt.style.display = 'none', 200);
-                previewContainer.style.display = 'block';
-                previewContainer.style.opacity = 0;
-                setTimeout(() => previewContainer.style.opacity = 1, 50);
-                startBtn.style.display = 'flex';
-            };
-            reader.readAsDataURL(file);
-        }
-
-        function resetAiUpload(e) {
-            if (e) e.stopPropagation();
-            aiFileToUpload = null;
-            aiParsedItems = [];
-
-            document.getElementById('ai-file-input').value = '';
-            document.getElementById('ai-image-preview').src = '';
-            document.getElementById('ai-image-preview-container').style.display = 'none';
-            document.getElementById('ai-upload-prompt').style.display = 'block';
-            document.getElementById('ai-upload-prompt').style.opacity = 1;
-            document.getElementById('btn-start-ai-ocr').style.display = 'none';
-
-            // 状态隐藏
-            document.getElementById('ai-status-box').style.display = 'none';
-            document.getElementById('ai-status-log').innerHTML = '';
-
-            // 表格清空与重置提示
-            document.getElementById('ai-empty-tip').style.display = 'flex';
-            document.getElementById('ai-table-container').style.display = 'none';
-            document.getElementById('ai-action-bar').style.display = 'none';
-            document.getElementById('ai-table-tbody').innerHTML = '';
-        }
-
-        function writeAiLog(msg, type='info') {
-            const logBox = document.getElementById('ai-status-log');
-            const time = new Date().toLocaleTimeString();
-            let color = 'var(--color-primary)';
-            if (type === 'success') color = 'var(--color-in)';
-            if (type === 'error') color = 'var(--color-danger)';
-            
-            logBox.innerHTML += `<div style="color:${color}; margin-bottom:4px;">[${time}] ${msg}</div>`;
-            logBox.scrollTop = logBox.scrollHeight;
-        }
-
-        function runAiLedgerOcr() {
-            if (!aiFileToUpload) {
-                showToast('提示', '请先上传账本图片', 'info');
-                return;
-            }
-
-            const statusBox = document.getElementById('ai-status-box');
-            const startBtn = document.getElementById('btn-start-ai-ocr');
-            const statusTitle = document.getElementById('ai-status-title');
-            
-            statusBox.style.display = 'block';
-            startBtn.style.display = 'none';
-            statusTitle.innerText = "AI 正在识别账本...";
-            
-            writeAiLog("🚀 初始化 AI 识图解析模块...");
-            writeAiLog("📂 读取并压缩账本图片数据...");
-            
-            // 模拟视觉推理步骤进度词
-            let steps = [
-                "🔍 扫描手写字体边界与对齐网络...",
-                "✍️ 识别提取车牌号及高频特征文字...",
-                "📊 匹配系统内备案消纳点场地名册...",
-                "🛠 运费单价与收支类型映射匹配中...",
-                "✨ 数据校验与排版规范化重构中..."
-            ];
-            
-            let stepIdx = 0;
-            const logInterval = setInterval(() => {
-                if (stepIdx < steps.length) {
-                    writeAiLog(steps[stepIdx]);
-                    stepIdx++;
-                } else {
-                    clearInterval(logInterval);
-                }
-            }, 800);
-
-            // 发起真正的文件上传解析请求
-            const formData = new FormData();
-            formData.append('file', aiFileToUpload);
-
-            fetch('/api/ai_recognize_ledger', {
-                method: 'POST',
-                body: formData
-            })
-            .then(res => res.json())
-            .then(data => {
-                clearInterval(logInterval);
-                if (data.success) {
-                    writeAiLog("🏆 AI 视觉分析识别成功！已生成结构化表格。", "success");
-                    statusTitle.innerText = "分析完成！请在右侧明细表格复核";
-                    document.getElementById('ai-status-box').querySelector('.spinner').style.display = 'none';
-                    
-                    // 填入日期
-                    if (data.date) {
-                        document.getElementById('ai-import-date').value = data.date;
-                    }
-                    
-                    aiParsedItems = data.items || [];
-                    renderAiParsedGrid();
-                } else {
-                    writeAiLog(`❌ 识别失败: ${data.message || "未知原因"}`, "error");
-                    showToast('识别失败', data.message || 'AI 识图失败，请核对格式。', 'error');
-                    resetAiStatusSpinner();
-                }
-            })
-            .catch(err => {
-                clearInterval(logInterval);
-                console.error("AI OCR error:", err);
-                writeAiLog(`❌ 请求异常: ${err.toString()}`, "error");
-                showToast('识别异常', err.toString(), 'error');
-                resetAiStatusSpinner();
-            });
-        }
-
-        function resetAiStatusSpinner() {
-            const statusBox = document.getElementById('ai-status-box');
-            const startBtn = document.getElementById('btn-start-ai-ocr');
-            const spinner = statusBox.querySelector('.spinner');
-            if (spinner) spinner.style.display = 'none';
-            document.getElementById('ai-status-title').innerText = "识别异常，请清除重试";
-        }
-
-        function renderAiParsedGrid() {
-            const tbody = document.getElementById('ai-table-tbody');
-            const emptyTip = document.getElementById('ai-empty-tip');
-            const tableContainer = document.getElementById('ai-table-container');
-            const actionBar = document.getElementById('ai-action-bar');
-            
-            emptyTip.style.display = 'none';
-            tableContainer.style.display = 'block';
-            actionBar.style.display = 'flex';
-            
-            tbody.innerHTML = '';
-            
-            if (aiParsedItems.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--text-secondary);">明细表格为空，请手动添加明细</td></tr>`;
-                return;
-            }
-
-            aiParsedItems.forEach((item, index) => {
-                tbody.appendChild(createAiGridRowElement(item, index));
-            });
-            lucide.createIcons({attrs: {"stroke-width": 2}});
-        }
-
-        function createAiGridRowElement(item, index) {
-            const tr = document.createElement('tr');
-            tr.style.borderBottom = '1px solid var(--card-border)';
-            tr.dataset.index = index;
-
-            // 车辆颜色候选项
-            const colors = ["黄色", "绿色", "蓝色", "白色", "黑色"];
-            let colorOptions = '';
-            colors.forEach(c => {
-                colorOptions += `<option value="${c}" ${item.plate_color === c ? 'selected' : ''}>${c}</option>`;
-            });
-
-            // 土方类型下拉框，动态从全局 currentSoilsList 提取
-            let soilOptions = '';
-            currentSoilsList.forEach(s => {
-                soilOptions += `<option value="${s.name}" ${item.soil_type === s.name ? 'selected' : ''}>${s.name}</option>`;
-            });
-            if (!soilOptions) {
-                soilOptions = `<option value="渣土" selected>渣土</option><option value="好土">好土</option><option value="二混子">二混子</option>`;
-            }
-
-            // 卸土对账场地下拉框，动态从全局 currentSitesList 提取
-            let siteOptions = '';
-            currentSitesList.forEach(s => {
-                siteOptions += `<option value="${s.name}" ${item.dump_site === s.name ? 'selected' : ''}>${s.name}</option>`;
-            });
-            if (!siteOptions) {
-                siteOptions = `<option value="河堤堆场" selected>河堤堆场</option><option value="外运消纳点">外运消纳点</option>`;
-            }
-
-            tr.innerHTML = `
-                <td style="padding: 10px;">
-                    <input type="text" class="input-control" style="height: 30px; font-size:12px; font-weight:700; width:100%; border:none; background:transparent; padding:0; box-shadow:none;" value="${item.plate_no}" onchange="updateAiGridItem(${index}, 'plate_no', this.value)">
-                </td>
-                <td style="padding: 10px;">
-                    <select class="input-control" style="height: 30px; font-size:11px; width:100%; border:none; background:transparent; padding:0; box-shadow:none;" onchange="updateAiGridItem(${index}, 'plate_color', this.value)">
-                        ${colorOptions}
-                    </select>
-                </td>
-                <td style="padding: 10px;">
-                    <select class="input-control" style="height: 30px; font-size:11px; width:100%; border:none; background:transparent; padding:0; box-shadow:none;" onchange="updateAiGridItem(${index}, 'soil_type', this.value)">
-                        ${soilOptions}
-                    </select>
-                </td>
-                <td style="padding: 10px;">
-                    <select class="input-control" style="height: 30px; font-size:11px; width:100%; border:none; background:transparent; padding:0; box-shadow:none;" onchange="updateAiGridItem(${index}, 'dump_site', this.value)">
-                        ${siteOptions}
-                    </select>
-                </td>
-                <td style="padding: 10px; text-align:center;">
-                    <input type="number" class="input-control" style="height: 30px; font-size:12px; font-weight:700; text-align:center; width:60px; border:none; background:transparent; padding:0; margin:0 auto; box-shadow:none;" value="${item.trips}" onchange="updateAiGridItem(${index}, 'trips', parseInt(this.value) || 0)">
-                </td>
-                <td style="padding: 10px; text-align:center;">
-                    <button class="btn btn-secondary" style="padding: 4px; height: 26px; min-width: 26px; border: none; background: transparent; color: var(--color-danger); box-shadow:none;" onclick="deleteAiGridRow(${index})" title="删除明细行">
-                        <i data-lucide="trash-2" style="width: 13px; height: 13px;"></i>
-                    </button>
-                </td>
-            `;
-
-            return tr;
-        }
-
-        function updateAiGridItem(index, key, val) {
-            if (aiParsedItems[index]) {
-                aiParsedItems[index][key] = val;
-                console.log(`[AI Grid] Updated row ${index}: ${key} = ${val}`);
-            }
-        }
-
-        function addAiGridRow() {
-            let refItem = aiParsedItems[aiParsedItems.length - 1] || {plate_color: "黄色", soil_type: "渣土", dump_site: "河堤堆场"};
-            
-            const newItem = {
-                plate_no: "京A",
-                plate_color: refItem.plate_color,
-                soil_type: refItem.soil_type,
-                dump_site: refItem.dump_site,
-                trips: 1
-            };
-            
-            aiParsedItems.push(newItem);
-            
-            const tbody = document.getElementById('ai-table-tbody');
-            const rowIdx = aiParsedItems.length - 1;
-            tbody.appendChild(createAiGridRowElement(newItem, rowIdx));
-            lucide.createIcons({attrs: {"stroke-width": 2}});
-            
-            tbody.scrollTop = tbody.scrollHeight;
-        }
-
-        function deleteAiGridRow(index) {
-            aiParsedItems.splice(index, 1);
-            renderAiParsedGrid();
-        }
-
-        function submitBatchImportLedger() {
-            if (aiParsedItems.length === 0) {
-                showToast('空数据', '没有可批量入库的对账数据', 'info');
-                return;
-            }
-            
-            const date = document.getElementById('ai-import-date').value;
-            if (!date) {
-                showToast('请选择日期', '日期不能为空，必须指定批量录入的日期', 'error');
-                return;
-            }
-            
-            showToast('数据提交中', '正在将人工表格智能转换为趟数记录并入库...', 'info');
-
-            fetch('/api/batch_import_ledger', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    date: date,
-                    items: aiParsedItems
-                })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    showToast('审核入库成功', data.message, 'success');
-                    resetAiUpload(null);
-                    switchTab('ledger');
-                } else {
-                    showToast('入库失败', data.message || '后台入库发生异常。', 'error');
-                }
-            })
-            .catch(err => {
-                console.error("Batch import error:", err);
-                showToast('网络异常', err.toString(), 'error');
-            });
-        }
 </script>
 </body>
 </html>

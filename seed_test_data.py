@@ -2,7 +2,9 @@ import sqlite3
 import random
 from datetime import datetime, timedelta
 
-DB_PATH = r"C:\Users\RM\.gemini\antigravity\scratch\worksite_bookkeeping_app\worksite_plate.db"
+import os
+current_dir = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.path.join(current_dir, "worksite_plate.db")
 
 def seed_demo_data():
     conn = sqlite3.connect(DB_PATH)
@@ -25,20 +27,17 @@ def seed_demo_data():
     for site, price in dump_sites:
         cursor.execute("INSERT INTO dump_sites (name, unit_price) VALUES (?, ?)", (site, price))
         
-    # 车队与车辆 (每车队3-5辆车)
+    # 车队与车辆 (所有测试车辆统归为个人车主)
     fleets = {
-        "豫林腾达": ["京A88888", "京A99999", "京A66666", "京A12345"],
-        "顺丰基建": ["粤B11111", "粤B22222", "粤B33333"],
-        "个人散车": ["冀C77777", "豫D88888"]
+        "个人车主": ["京A88888", "京A99999", "京A66666", "京A12345", "粤B11111", "粤B22222", "粤B33333", "冀C77777", "豫D88888"]
     }
     
     plates = []
     for fleet, fleet_plates in fleets.items():
-        company = fleet if fleet != "个人散车" else ""
+        company = "个人车主"
         for plate in fleet_plates:
             plates.append((plate, company))
-            if company:
-                cursor.execute("INSERT INTO frequent_plates (plate_no, company_name) VALUES (?, ?)", (plate, company))
+            cursor.execute("INSERT INTO frequent_plates (plate_no, company_name) VALUES (?, ?)", (plate, company))
                 
     # 生成今天的流水记录 (50条)
     today_str = "2026-06-01"
@@ -55,9 +54,9 @@ def seed_demo_data():
         second = random.randint(0, 59)
         pass_time = f"{today_str} {hour:02d}:{minute:02d}:{second:02d}"
         
-        # 随机付款状态
+        # 随机付款状态，级配石默认为已付 (1)
         dump_paid = random.choice([0, 1])
-        soil_paid = random.choice([0, 1])
+        soil_paid = 1 if soil == "级配石" else random.choice([0, 1])
         
         cursor.execute('''
             INSERT INTO vehicle_records 

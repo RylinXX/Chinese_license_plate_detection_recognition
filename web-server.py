@@ -327,9 +327,7 @@ class FrequentPlateRequest(BaseModel):
     plate_no: str
     plate_color: str = "蓝色"
 
-class BindVehicleFleetRequest(BaseModel):
-    plate_no: str
-    company_name: str
+
 
 class BatchManualTripsRequest(BaseModel):
     records: list[dict[str, Any]]
@@ -375,10 +373,12 @@ async def manual_import_record(req: ManualImportRequest) -> dict[str, Any]:
             binding = cursor.fetchone()
             dump_site = binding[0] if binding else "未分配"
     
+    # 一版级配石都是现金结账的，默认设置为已付 (1)
+    soil_paid = 1 if req.soil_type == "级配石" else 0
     # 写入数据库，image_path = None 代表人工手动补录，无抓拍照
     cursor.execute(
-        "INSERT INTO vehicle_records (plate_no, plate_color, direction, pass_time, image_path, confidence, dump_site, soil_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-        (plate_no, req.plate_color, req.direction, req.pass_time, None, 1.0, dump_site, req.soil_type)
+        "INSERT INTO vehicle_records (plate_no, plate_color, direction, pass_time, image_path, confidence, dump_site, soil_type, soil_paid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (plate_no, req.plate_color, req.direction, req.pass_time, None, 1.0, dump_site, req.soil_type, soil_paid)
     )
     conn.commit()
     conn.close()
@@ -711,10 +711,8 @@ def get_vehicle_out_records(plate_no: str, date: str = Query(..., description="�
     binding = cursor.fetchone()
     default_dump_site = binding["default_dump_site"] if binding else "未分配"
     
-    # 3. 查询所属车队
-    cursor.execute("SELECT company_name FROM frequent_plates WHERE plate_no = ?", (plate_no,))
-    fp = cursor.fetchone()
-    company_name = fp["company_name"] if fp else "个人车主"
+    # 3. 查询所属车队 (废弃原查询，一律返回个人车主)
+    company_name = "个人车主"
     
     conn.close()
     
@@ -753,7 +751,10 @@ def adjust_trip_destination(req: AdjustDestinationRequest) -> dict[str, Any]:
         raise HTTPException(status_code=404, detail="未找到指定的通行记录")
         
     if req.soil_type is not None:
-        cursor.execute("UPDATE vehicle_records SET dump_site = ?, soil_type = ? WHERE id = ?", (req.dump_site, req.soil_type, req.record_id))
+        if req.soil_type == "级配石":
+            cursor.execute("UPDATE vehicle_records SET dump_site = ?, soil_type = ?, soil_paid = 1 WHERE id = ?", (req.dump_site, req.soil_type, req.record_id))
+        else:
+            cursor.execute("UPDATE vehicle_records SET dump_site = ?, soil_type = ? WHERE id = ?", (req.dump_site, req.soil_type, req.record_id))
     else:
         cursor.execute("UPDATE vehicle_records SET dump_site = ? WHERE id = ?", (req.dump_site, req.record_id))
     conn.commit()
@@ -805,10 +806,12 @@ def add_manual_trip(req: ManualTripRequest) -> dict[str, Any]:
     if req.direction == "IN":
         dump_site = "未分配"
             
+    # 一版级配石都是现金结账的，默认设置为已付 (1)
+    soil_paid = 1 if req.soil_type == "级配石" else 0
     cursor.execute("""
-        INSERT INTO vehicle_records (plate_no, plate_color, direction, pass_time, image_path, confidence, dump_site, soil_type)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    """, (plate_no, req.plate_color, req.direction, req.pass_time, None, 1.0, dump_site, req.soil_type))
+        INSERT INTO vehicle_records (plate_no, plate_color, direction, pass_time, image_path, confidence, dump_site, soil_type, soil_paid)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (plate_no, req.plate_color, req.direction, req.pass_time, None, 1.0, dump_site, req.soil_type, soil_paid))
     conn.commit()
     conn.close()
     
@@ -882,26 +885,7 @@ def delete_frequent_plate(plate_id: int) -> dict[str, Any]:
     conn.close()
     return {"success": True, "message": f"成功删除常用车牌 {plate_no}"}
 
-@app.post("/api/bind_vehicle_fleet")
-def bind_vehicle_fleet(req: BindVehicleFleetRequest) -> dict[str, Any]:
-    """绑定车牌到指定的车队/公司名称"""
-    plate = req.plate_no.upper().strip()
-    comp = req.company_name.strip() if req.company_name else "个人车主"
-    
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    
-    # 确保车牌在 frequent_plates 中
-    cursor.execute("SELECT id FROM frequent_plates WHERE plate_no = ?", (plate,))
-    row = cursor.fetchone()
-    if row:
-        cursor.execute("UPDATE frequent_plates SET company_name = ? WHERE plate_no = ?", (comp, plate))
-    else:
-        cursor.execute("INSERT INTO frequent_plates (plate_no, plate_color, company_name) VALUES (?, '黄色', ?)", (plate, comp))
-        
-    conn.commit()
-    conn.close()
-    return {"success": True, "message": f"成功将车牌 {plate} 绑定至车队 【{comp}】"}
+
 
 @app.post("/api/bind_default_route")
 def bind_default_route(req: VehicleBindingRequest) -> dict[str, Any]:
@@ -998,10 +982,12 @@ def sync_registered_vehicles() -> dict[str, Any]:
             cursor.execute("SELECT id FROM frequent_plates WHERE plate_no = ?", (plate_no,))
             row = cursor.fetchone()
             if row:
-                cursor.execute("UPDATE frequent_plates SET plate_color = ?, company_name = ? WHERE plate_no = ?", (plate_color, company_name, plate_no))
+                # 仅更新车牌颜色，不覆盖用户已设置的车队
+                cursor.execute("UPDATE frequent_plates SET plate_color = ? WHERE plate_no = ?", (plate_color, plate_no))
                 updated_count += 1
             else:
-                cursor.execute("INSERT INTO frequent_plates (plate_no, plate_color, company_name) VALUES (?, ?, ?)", (plate_no, plate_color, company_name))
+                # 插入新车牌时，车队默认设为 '个人车主'，由用户后续自行设置
+                cursor.execute("INSERT INTO frequent_plates (plate_no, plate_color, company_name) VALUES (?, ?, ?)", (plate_no, plate_color, "个人车主"))
                 added_count += 1
         except Exception as db_err:
             print(f"[Sync] Database error inserting {plate_no}: {db_err}")
@@ -1045,10 +1031,10 @@ def get_reconciliation_data(date: str = Query(..., description="日期 YYYY-MM-D
     """, (query_start, query_end))
     records = cursor.fetchall()
     
-    # 4. 聚合车队 (运费对账)
+    # 4. 聚合单车 (运费对账，将 company_name 设为车牌号以最大化兼容前端)
     fleet_map = {}
     for r in records:
-        c_name = r["company_name"] or "个人车主"
+        c_name = r["plate_no"]
         s_type = r["soil_type"] or "渣土"
         s_paid = r["soil_paid"] or 0
         
@@ -1123,23 +1109,12 @@ def batch_toggle_reconciliation(req: BatchToggleReconciliationRequest) -> dict[s
     cursor = conn.cursor()
     
     if req.target_type == "fleet":
-        if req.target_name == "个人车主":
-            cursor.execute("""
-                UPDATE vehicle_records 
-                SET soil_paid = ?
-                WHERE direction = 'OUT' AND pass_time BETWEEN ? AND ?
-                  AND (
-                      plate_no NOT IN (SELECT plate_no FROM frequent_plates)
-                      OR plate_no IN (SELECT plate_no FROM frequent_plates WHERE company_name = '个人车主')
-                  )
-            """, (req.status, query_start, query_end))
-        else:
-            cursor.execute("""
-                UPDATE vehicle_records 
-                SET soil_paid = ?
-                WHERE direction = 'OUT' AND pass_time BETWEEN ? AND ?
-                  AND plate_no IN (SELECT plate_no FROM frequent_plates WHERE company_name = ?)
-            """, (req.status, query_start, query_end, req.target_name))
+        # 此时 target_name 即为车牌号，直接更新该车的付款状态
+        cursor.execute("""
+            UPDATE vehicle_records 
+            SET soil_paid = ?
+            WHERE direction = 'OUT' AND pass_time BETWEEN ? AND ? AND plate_no = ?
+        """, (req.status, query_start, query_end, req.target_name))
             
     elif req.target_type == "site":
         cursor.execute("""
@@ -1458,6 +1433,112 @@ def get_records_by_date(
             "total_trips": row["out_cnt"]
         })
         
+    # === 新增：台账汇总数据（供前端对账单切换视图使用） ===
+    # 1. 查询所有卸土点名称
+    cursor.execute("SELECT name FROM dump_sites ORDER BY id ASC")
+    site_names = [r[0] for r in cursor.fetchall()]
+    
+    # 2. 查询该日出场车辆及其卸土点去向与土方记录计数
+    cursor.execute("""
+        SELECT plate_no, plate_color, dump_site, soil_type, COUNT(*) as trip_cnt 
+        FROM vehicle_records 
+        WHERE direction = 'OUT' AND pass_time BETWEEN ? AND ?
+        GROUP BY plate_no, dump_site, soil_type
+    """, (query_start, query_end))
+    ledger_db_rows = cursor.fetchall()
+    
+    # 3. 按车牌聚合趟数与金额
+    ledger_map = {}
+    for r in ledger_db_rows:
+        plate_no = r["plate_no"]
+        plate_color = r["plate_color"] or "蓝色"
+        dump_site = r["dump_site"] or "未分配"
+        soil_type = r["soil_type"] or "渣土"
+        trip_cnt = r["trip_cnt"]
+        
+        # 计算消纳费 (卸土费)
+        d_price = site_prices.get(dump_site, 0.0) if dump_site != "未分配" else 0.0
+        dump_cost_val = trip_cnt * d_price
+        
+        info = soil_info.get(soil_type, {"price": 60.0, "is_income": 0})
+        price = info["price"]
+        is_inc = info["is_income"]
+        cost_val = trip_cnt * price
+        
+        if plate_no not in ledger_map:
+            ledger_map[plate_no] = {
+                "plate_no": plate_no,
+                "plate_color": plate_color,
+                "site_trips": {s_name: 0 for s_name in site_names},
+                "unassigned_trips": 0,
+                "total_trips": 0,
+                "total_income": 0.0,
+                "total_expense": 0.0,
+                "total_cost": 0.0,
+                "total_dump_cost": 0.0,
+                "total_soil_cost": 0.0
+            }
+        
+        if dump_site in site_names:
+            ledger_map[plate_no]["site_trips"][dump_site] += trip_cnt
+        else:
+            ledger_map[plate_no]["unassigned_trips"] += trip_cnt
+            
+        ledger_map[plate_no]["total_trips"] += trip_cnt
+        ledger_map[plate_no]["total_dump_cost"] += dump_cost_val
+        ledger_map[plate_no]["total_soil_cost"] += cost_val
+        
+        if is_inc == 1:
+            ledger_map[plate_no]["total_income"] += cost_val
+            ledger_map[plate_no]["total_cost"] += cost_val
+        else:
+            ledger_map[plate_no]["total_expense"] += cost_val
+            ledger_map[plate_no]["total_cost"] -= cost_val
+        
+    ledger_rows = list(ledger_map.values())
+    ledger_rows.sort(key=lambda x: (x["total_trips"], x["total_cost"]), reverse=True)
+    
+    # 4. 计算各个土点今日汇总信息（车数、趟数、总金额）
+    site_summaries = []
+    for s_name in site_names:
+        trips_sum = sum(item["site_trips"].get(s_name, 0) for item in ledger_rows)
+        trucks_sum = sum(1 for item in ledger_rows if item["site_trips"].get(s_name, 0) > 0)
+        
+        cursor.execute("""
+            SELECT vr.soil_type, COUNT(*)
+            FROM vehicle_records vr
+            WHERE vr.direction = 'OUT' AND vr.dump_site = ? AND vr.pass_time BETWEEN ? AND ?
+            GROUP BY vr.soil_type
+        """, (s_name, query_start, query_end))
+        site_soil_counts = cursor.fetchall()
+        
+        site_income = 0.0
+        site_expense = 0.0
+        for row in site_soil_counts:
+            s_type = row[0] or "渣土"
+            cnt = row[1]
+            info = soil_info.get(s_type, {"price": 60.0, "is_income": 0})
+            if info["is_income"] == 1:
+                site_income += info["price"] * cnt
+            else:
+                site_expense += info["price"] * cnt
+        
+        cost_sum = site_income - site_expense
+        
+        site_summaries.append({
+            "site_name": s_name,
+            "unit_price": 0.0,
+            "total_trips": trips_sum,
+            "total_trucks": trucks_sum,
+            "total_cost": cost_sum,
+            "total_income": site_income,
+            "total_expense": site_expense
+        })
+        
+    total_unassigned_trips = sum(item["unassigned_trips"] for item in ledger_rows)
+    unassigned_trucks = sum(1 for item in ledger_rows if item["unassigned_trips"] > 0)
+    # ===================================================
+
     conn.close()
     
     return {
@@ -1478,7 +1559,13 @@ def get_records_by_date(
             "dump_unpaid_sum": dump_unpaid_sum
         },
         "records": records,
-        "trips": trips
+        "trips": trips,
+        "ledger_rows": ledger_rows,
+        "site_summaries": site_summaries,
+        "unassigned_summary": {
+            "total_trips": total_unassigned_trips,
+            "total_trucks": unassigned_trucks
+        }
     }
 
 @app.get("/api/analytics")
@@ -1680,272 +1767,6 @@ def export_records_to_csv(
         headers={"Content-Disposition": f"attachment; filename={filename}"}
     )
 
-# ----------------- 新增：AI 识图智能记账 APIs -----------------
-
-class BatchImportItem(BaseModel):
-    plate_no: str
-    plate_color: str | None = "黄色"
-    soil_type: str | None = "渣土"
-    dump_site: str | None = "未分配"
-    trips: int
-
-class BatchImportRequest(BaseModel):
-    date: str
-    items: list[BatchImportItem]
-
-@app.post("/api/ai_recognize_ledger")
-async def ai_recognize_ledger(file: UploadFile = File(...)):
-    """
-    智能历史账本识别接口。
-    支持 OpenAI Vision API 进行通用 OCR 结构化提取；
-    同时支持针对特定演示文件的离线高保真识别防波动，保障演示丝滑。
-    """
-    file_bytes = await file.read()
-    
-    # 1. 计算文件 MD5，用于秒级高保真离线适配（演示防波动）
-    import hashlib
-    md5_hash = hashlib.md5(file_bytes).hexdigest()
-    print(f"[AI Ledger] 收到图片: {file.filename}, MD5: {md5_hash}")
-    
-    # 获取文件名特征作为双重判定依据
-    filename = file.filename.lower()
-    
-    # 对账数据预设
-    items_528 = [
-        {"plate_no": "京A00241D", "plate_color": "绿色", "soil_type": "好土", "dump_site": "河堤堆场", "trips": 5},
-        {"plate_no": "京A03740D", "plate_color": "绿色", "soil_type": "好土", "dump_site": "河堤堆场", "trips": 5},
-        {"plate_no": "京A22868D", "plate_color": "绿色", "soil_type": "好土", "dump_site": "河堤堆场", "trips": 5},
-        {"plate_no": "京A45539D", "plate_color": "绿色", "soil_type": "好土", "dump_site": "河堤堆场", "trips": 2},
-        {"plate_no": "京AIVQ785", "plate_color": "黄色", "soil_type": "好土", "dump_site": "河堤堆场", "trips": 5},
-        {"plate_no": "京AGR172", "plate_color": "黄色", "soil_type": "好土", "dump_site": "河堤堆场", "trips": 6},
-        {"plate_no": "京AMX181", "plate_color": "黄色", "soil_type": "好土", "dump_site": "河堤堆场", "trips": 6},
-        {"plate_no": "京AHR192", "plate_color": "黄色", "soil_type": "好土", "dump_site": "外运消纳点", "trips": 2},
-        {"plate_no": "京AZ2906", "plate_color": "黄色", "soil_type": "好土", "dump_site": "外运消纳点", "trips": 1},
-        {"plate_no": "京AYY989", "plate_color": "黄色", "soil_type": "渣土", "dump_site": "三号桥消纳点", "trips": 1},
-        {"plate_no": "京A22906", "plate_color": "黄色", "soil_type": "好土", "dump_site": "河堤堆场", "trips": 4},
-        {"plate_no": "京AFE851", "plate_color": "黄色", "soil_type": "好土", "dump_site": "河堤堆场", "trips": 4},
-        {"plate_no": "京AEW814", "plate_color": "黄色", "soil_type": "好土", "dump_site": "河堤堆场", "trips": 4},
-        {"plate_no": "京AG2827", "plate_color": "黄色", "soil_type": "好土", "dump_site": "河堤堆场", "trips": 4},
-        {"plate_no": "京AYY989", "plate_color": "黄色", "soil_type": "好土", "dump_site": "河堤堆场", "trips": 3}
-    ]
-    
-    items_529 = [
-        {"plate_no": "京A00241D", "plate_color": "绿色", "soil_type": "好土", "dump_site": "河堤堆场", "trips": 5},
-        {"plate_no": "京A03740D", "plate_color": "绿色", "soil_type": "好土", "dump_site": "河堤堆场", "trips": 5},
-        {"plate_no": "京A22868D", "plate_color": "绿色", "soil_type": "好土", "dump_site": "河堤堆场", "trips": 4},
-        {"plate_no": "京A45539D", "plate_color": "绿色", "soil_type": "好土", "dump_site": "河堤堆场", "trips": 4},
-        {"plate_no": "京AHR192", "plate_color": "黄色", "soil_type": "好土", "dump_site": "外运消纳点", "trips": 12},
-        {"plate_no": "京AGR172", "plate_color": "黄色", "soil_type": "好土", "dump_site": "焦化厂定点", "trips": 48},
-        {"plate_no": "京AFE851", "plate_color": "黄色", "soil_type": "二混子", "dump_site": "外运消纳点", "trips": 57},
-        {"plate_no": "京AEW814", "plate_color": "黄色", "soil_type": "二混子", "dump_site": "河堤堆场", "trips": 12}
-    ]
-    
-    items_530 = [
-        {"plate_no": "京AVR928", "plate_color": "蓝色", "soil_type": "二混子", "dump_site": "妙锋山填埋场", "trips": 10},
-        {"plate_no": "京AFL807", "plate_color": "蓝色", "soil_type": "二混子", "dump_site": "妙锋山填埋场", "trips": 10},
-        {"plate_no": "京AFL888", "plate_color": "蓝色", "soil_type": "二混子", "dump_site": "妙锋山填埋场", "trips": 11},
-        {"plate_no": "京AFE851", "plate_color": "黄色", "soil_type": "二混子", "dump_site": "外运消纳点", "trips": 43},
-        {"plate_no": "京AEW814", "plate_color": "黄色", "soil_type": "二混子", "dump_site": "焦化厂定点", "trips": 11},
-        {"plate_no": "京A00241D", "plate_color": "绿色", "soil_type": "二混子", "dump_site": "焦化厂定点", "trips": 36},
-        {"plate_no": "京A03740D", "plate_color": "绿色", "soil_type": "好土", "dump_site": "焦化厂定点", "trips": 1},
-        {"plate_no": "京AGR172", "plate_color": "黄色", "soil_type": "好土", "dump_site": "焦化厂定点", "trips": 1},
-        {"plate_no": "京AHR192", "plate_color": "黄色", "soil_type": "好土", "dump_site": "外运消纳点", "trips": 30}
-    ]
-    
-    items_531 = [
-        {"plate_no": "京AHR192", "plate_color": "黄色", "soil_type": "好土", "dump_site": "外运消纳点", "trips": 3},
-        {"plate_no": "京A31712", "plate_color": "黄色", "soil_type": "二混子", "dump_site": "外运消纳点", "trips": 12},
-        {"plate_no": "京A46462", "plate_color": "黄色", "soil_type": "二混子", "dump_site": "外运消纳点", "trips": 12},
-        {"plate_no": "京A38428", "plate_color": "黄色", "soil_type": "二混子", "dump_site": "鲁矿指定点", "trips": 30},
-        {"plate_no": "京A00241D", "plate_color": "绿色", "soil_type": "二混子", "dump_site": "鲁矿指定点", "trips": 23},
-        {"plate_no": "京A22868D", "plate_color": "绿色", "soil_type": "二混子", "dump_site": "鲁矿指定点", "trips": 23}
-    ]
-
-    # A. 演示模式：优先比对图片散列码或文件名特征以实现秒级完美结构化展示
-    # 包含了用户上传的8张真实手写记账单照片的所有高精度 MD5
-    if "5.28" in filename or "28" in filename or md5_hash in (
-        "1fa6a2d9ab6fb5da9c6f2e21c8107779", "d3b07384d113edec49eaa62cb8ad29cd",
-        "e49dd5d54b7a640fa73cc9f554892298", # 5.28.jpg
-        "4a770cca3dec838944795dfbf8911183", # d0fbbb47cd689bcdc7b9f8665361e933.jpg
-        "0b76876d6dea6f3ce2f4711cc0209de4"  # dd0d879f596f532d97410a64f4acfcbf.jpg
-    ):
-        return {"success": True, "date": "2026-05-28", "items": items_528, "mode": "demo-fallback"}
-        
-    elif "5.29" in filename or "29" in filename or md5_hash in (
-        "b1e7f6e5c5ea772df48618f972b91b54", "ab6f5da9c6f2e21c",
-        "1ebcb4de1a0dfa268df2b08194237c5d", # 5.29.jpg
-        "2a153af8170f081e11c6b7843a3b1f7f"  # 5.29日147车.jpg
-    ):
-        return {"success": True, "date": "2026-05-29", "items": items_529, "mode": "demo-fallback"}
-        
-    elif "5.30" in filename or "30" in filename or md5_hash in (
-        "5a6a2d9ab6f5da9c6f2e21c8107779", "30_file_hash",
-        "dff859b496e5596a360a14486ce3f6e1"  # 5.30.jpg
-    ):
-        return {"success": True, "date": "2026-05-30", "items": items_530, "mode": "demo-fallback"}
-        
-    elif "5.31" in filename or "31" in filename or md5_hash in (
-        "46aa592abd4b6da378de86097cc3b885", "f885da4a4dd66c5e",
-        "3c0f390b59faac537784f370be70343d", # 46aa592abd4b6da378de86097cc3b885.jpg
-        "469585ee9334e23935480518809864de"  # f885da4a4dd66c5e47771b312308515f.jpg
-    ):
-        return {"success": True, "date": "2026-05-31", "items": items_531, "mode": "demo-fallback"}
-
-    # B. 生产模式：调用 火山引擎 (Volcengine Ark) 或 OpenAI Vision API 进行真实 OCR
-    # 优先采用用户提供的火山引擎 (Doubao Multimodal Vision API)
-    volc_api_key = os.getenv("VOLC_API_KEY", "ark-5f20ce3d-45e4-407a-ae78-e6bc0357e401-5e232")
-    volc_base_url = os.getenv("VOLC_BASE_URL", "https://ark.cn-beijing.volces.com/api/v3")
-    volc_model = os.getenv("VOLC_MODEL", "doubao-seed-2-0-pro-260215")
-    
-    prompt = """你是一个专业的工地财务记账OCR助手。
-    请分析这张手写或打印的泥头车拉土台账照片，提取出“记账日期”（格式必须为 YYYY-MM-DD，若年份不详默认为2026年）和车次拉土流水的列表。
-    对于提取出的每一类记录，合并其车牌号、土质类型（只能从“渣土”、“好土”、“二混子”、“自卸”、“级配石”中匹配）、去向消纳场（如“河堤堆场”、“外运消纳点”、“三号桥消纳点”、“焦化厂定点”、“妙锋山填埋场”、“鲁矿指定点”、“108小围堆场”）以及总趟数。
-    请务必严格按如下 JSON 结构返回，不得包含任何 Markdown 格式包裹（如 ```json 等）：
-    {
-      "success": true,
-      "date": "YYYY-MM-DD",
-      "items": [
-        {"plate_no": "车牌号", "plate_color": "蓝色或黄色或绿色", "soil_type": "好土/二混子/渣土", "dump_site": "消纳场地名称", "trips": 趟数整型数字}
-      ]
-    }
-    """
-    
-    import base64
-    base64_image = base64.b64encode(file_bytes).decode('utf-8')
-    
-    # 1. 尝试使用火山引擎 (Doubao Vision)
-    if volc_api_key:
-        try:
-            print(f"[AI Ledger] 启用生产模式 火山引擎 (Doubao Vision): {volc_model}...")
-            from openai import OpenAI
-            client = OpenAI(api_key=volc_api_key, base_url=volc_base_url)
-            
-            response = client.chat.completions.create(
-                model=volc_model,
-                messages=[
-                    {
-                        "role": "user",
-                        "content": [
-                            {"type": "text", "text": prompt},
-                            {
-                                "type": "image_url",
-                                "image_url": {
-                                    "url": f"data:image/jpeg;base64,{base64_image}"
-                                }
-                            }
-                        ]
-                    }
-                ],
-                max_tokens=1000,
-                response_format={"type": "json_object"},
-                timeout=120.0 # 识别和整合数据时间较长，给足120秒超时时间
-            )
-            result_json = json.loads(response.choices[0].message.content)
-            result_json["mode"] = "volcengine-doubao-vision"
-            return result_json
-        except Exception as volc_err:
-            print(f"[AI Ledger] 火山引擎 API 异常: {volc_err}")
-            
-    # 2. 尝试使用 OpenAI Vision (若配置)
-    openai_key = os.getenv("OPENAI_API_KEY")
-    if openai_key:
-        try:
-            print("[AI Ledger] 启用备用生产模式 OpenAI Vision API...")
-            from openai import OpenAI
-            client = OpenAI(api_key=openai_key)
-            
-            response = client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[
-                    {
-                        "role": "user",
-                        "content": [
-                            {"type": "text", "text": prompt},
-                            {
-                                "type": "image_url",
-                                "image_url": {
-                                    "url": f"data:image/jpeg;base64,{base64_image}"
-                                }
-                            }
-                        ]
-                    }
-                ],
-                max_tokens=1000,
-                response_format={"type": "json_object"},
-                timeout=60.0
-            )
-            result_json = json.loads(response.choices[0].message.content)
-            result_json["mode"] = "openai-vision"
-            return result_json
-        except Exception as api_err:
-            print(f"[AI Ledger] OpenAI Vision API 异常: {api_err}")
-            
-    # C. 演示备用兜底：若无 API Key，则返回一个高质量的仿真对账结构
-    random_items = [
-        {"plate_no": "京A00241D", "plate_color": "绿色", "soil_type": "好土", "dump_site": "河堤堆场", "trips": random.randint(3, 8)},
-        {"plate_no": "京AGR172", "plate_color": "黄色", "soil_type": "好土", "dump_site": "焦化厂定点", "trips": random.randint(4, 10)},
-        {"plate_no": "京AFE851", "plate_color": "黄色", "soil_type": "二混子", "dump_site": "外运消纳点", "trips": random.randint(5, 12)}
-    ]
-    return {
-        "success": True, 
-        "date": datetime.now().strftime("%Y-%m-%d"), 
-        "items": random_items, 
-        "mode": "demo-simulation-random",
-        "message": "未配置 Vision API 密钥，已为您自动进入智能对账仿真演示模式。"
-    }
-
-@app.post("/api/batch_import_ledger")
-def batch_import_ledger(req: BatchImportRequest) -> dict[str, Any]:
-    """
-    将 AI 识图或人工表格批量录入的流水，转换为单趟记录写入数据库。
-    """
-    date = req.date.strip()
-    try:
-        datetime.strptime(date, "%Y-%m-%d")
-    except ValueError:
-        raise HTTPException(status_code=400, detail="日期格式不正确，必须为 YYYY-MM-DD")
-        
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    
-    total_inserted = 0
-    
-    for item in req.items:
-        plate_no = item.plate_no.upper().strip()
-        if not plate_no:
-            continue
-        
-        trips = item.trips
-        if trips <= 0:
-            continue
-            
-        color = item.plate_color or "黄色"
-        soil = item.soil_type or "渣土"
-        site = item.dump_site or "未分配"
-        
-        # 批量生成 trips 趟通行明细记录，虚拟时间段内均匀合理分布（如 07:00 到 18:00 之间）
-        for t in range(trips):
-            hour = 7 + int((11 / trips) * t) if trips > 1 else random.randint(8, 17)
-            minute = random.randint(0, 59)
-            second = random.randint(0, 59)
-            pass_time = f"{date} {hour:02d}:{minute:02d}:{second:02d}"
-            
-            cursor.execute("""
-                INSERT INTO vehicle_records (plate_no, plate_color, direction, pass_time, dump_site, soil_type, dump_paid, soil_paid)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            """, (plate_no, color, "OUT", pass_time, site, soil, 0, 0))
-            total_inserted += 1
-            
-            # 同时自动留存至常用车牌库
-            ensure_frequent_plate(plate_no, color)
-            
-    conn.commit()
-    conn.close()
-    
-    return {
-        "success": True,
-        "message": f"成功审核批量入库！总计将 {len(req.items)} 辆拉土车在 {date} 的 {total_inserted} 趟车次流水录入系统。"
-    }
 
 # ----------------- 静态资源托管与主页面 -----------------
 

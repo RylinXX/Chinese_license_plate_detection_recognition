@@ -4,7 +4,9 @@ import json
 import random
 from datetime import datetime
 
-DB_PATH = r"C:\Users\RM\.gemini\antigravity\scratch\worksite_bookkeeping_app\worksite_plate.db"
+import os
+current_dir = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.path.join(current_dir, "worksite_plate.db")
 REGISTRY_URL = "https://web.rlxtc.com/api/public/vehicle-query"
 
 def simplify_company_name(name):
@@ -100,11 +102,7 @@ def seed_real_vehicles():
         if not plate_no:
             continue
         
-        # 按照均匀分布随机化，分配至生活化的工地老板车队，或者作为“个人车主”
-        if idx % 7 == 0:
-            fleet = "个人车主"
-        else:
-            fleet = FLEET_NAMES[idx % (len(FLEET_NAMES) - 1)]
+        fleet = "个人车主"
             
         try:
             cursor.execute(
@@ -134,9 +132,9 @@ def seed_real_vehicles():
         second = random.randint(0, 59)
         pass_time = f"{today_str} {hour:02d}:{minute:02d}:{second:02d}"
         
-        # 随机支付状态
+        # 随机支付状态，级配石默认为已付 (1)
         dump_paid = random.choice([0, 1])
-        soil_paid = random.choice([0, 1])
+        soil_paid = 1 if soil == "级配石" else random.choice([0, 1])
         
         cursor.execute("""
             INSERT INTO vehicle_records 
