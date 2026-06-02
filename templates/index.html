@@ -3467,8 +3467,11 @@
                                 </div>
                             `;
                             
+                            const isSelfDump = (r.dump_site === '自行消纳');
                             let dumpPaymentHtml = '';
-                            if (isUnassigned) {
+                            if (isSelfDump) {
+                                dumpPaymentHtml = `<span style="color:var(--text-muted); font-size:12px;">自行消纳</span>`;
+                            } else if (isUnassigned) {
                                 dumpPaymentHtml = `<span style="color:var(--text-muted); font-size:12px;">—</span>`;
                             } else {
                                 const totalDumpCost = dumpPrice * r.trips.length;
@@ -4093,13 +4096,22 @@
             }
             let html = '';
             records.forEach(r => {
-                const siteName = r.dump_site || '未分配';
-                let selectHtml = `<select class="input-control" style="width: 150px; padding: 4px 6px; font-size:12px; height: 30px;" onchange="submitSingleAdjust(${r.id}, this.value, '${r.soil_type}')">`;
-                selectHtml += `<option value="未分配" ${siteName === '未分配' ? 'selected' : ''}>分账：未分配</option>`;
-                currentSitesList.forEach(s => {
-                    selectHtml += `<option value="${s.name}" ${siteName === s.name ? 'selected' : ''}>分账：${s.name}</option>`;
-                });
-                selectHtml += `</select>`;
+                const isGravel = (r.soil_type === '级配石');
+                const siteName = r.dump_site || (isGravel ? '自行消纳' : '未分配');
+                let selectHtml = '';
+                if (isGravel) {
+                    selectHtml = `<select class="input-control" style="width: 150px; padding: 4px 6px; font-size:12px; height: 30px;" disabled>`;
+                    selectHtml += `<option value="自行消纳" selected>分账：自行消纳</option>`;
+                    selectHtml += `</select>`;
+                } else {
+                    selectHtml = `<select class="input-control" style="width: 150px; padding: 4px 6px; font-size:12px; height: 30px;" onchange="submitSingleAdjust(${r.id}, this.value, '${r.soil_type}')">`;
+                    selectHtml += `<option value="未分配" ${siteName === '未分配' ? 'selected' : ''}>分账：未分配</option>`;
+                    selectHtml += `<option value="自行消纳" ${siteName === '自行消纳' ? 'selected' : ''}>分账：自行消纳</option>`;
+                    currentSitesList.forEach(s => {
+                        selectHtml += `<option value="${s.name}" ${siteName === s.name ? 'selected' : ''}>分账：${s.name}</option>`;
+                    });
+                    selectHtml += `</select>`;
+                }
 
                 // 土质类型选择
                 const soilType = r.soil_type || '渣土';

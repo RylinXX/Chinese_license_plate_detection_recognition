@@ -365,7 +365,9 @@ async def manual_import_record(req: ManualImportRequest) -> dict[str, Any]:
     # 如果手工对账有传入 dump_site，且为出场，且不是“未分配”，则优先采用；否则获取默认绑定
     dump_site = "未分配"
     if req.direction == "OUT":
-        if req.dump_site and req.dump_site != "未分配":
+        if req.soil_type == "级配石":
+            dump_site = "自行消纳"
+        elif req.dump_site and req.dump_site != "未分配":
             dump_site = req.dump_site
         else:
             # 从默认绑定表中获取自动分配去向
@@ -375,10 +377,11 @@ async def manual_import_record(req: ManualImportRequest) -> dict[str, Any]:
     
     # 一版级配石都是现金结账的，默认设置为已付 (1)
     soil_paid = 1 if req.soil_type == "级配石" else 0
+    dump_paid = 1 if req.soil_type == "级配石" else 0
     # 写入数据库，image_path = None 代表人工手动补录，无抓拍照
     cursor.execute(
-        "INSERT INTO vehicle_records (plate_no, plate_color, direction, pass_time, image_path, confidence, dump_site, soil_type, soil_paid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        (plate_no, req.plate_color, req.direction, req.pass_time, None, 1.0, dump_site, req.soil_type, soil_paid)
+        "INSERT INTO vehicle_records (plate_no, plate_color, direction, pass_time, image_path, confidence, dump_site, soil_type, soil_paid, dump_paid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (plate_no, req.plate_color, req.direction, req.pass_time, None, 1.0, dump_site, req.soil_type, soil_paid, dump_paid)
     )
     conn.commit()
     conn.close()
@@ -613,6 +616,8 @@ def get_daily_ledger(date: str | None = Query(None, description="格式 YYYY-MM-
         
         if dump_site in site_names:
             ledger_map[plate_no]["site_trips"][dump_site] += trip_cnt
+        elif dump_site == "自行消纳":
+            pass
         else:
             ledger_map[plate_no]["unassigned_trips"] += trip_cnt
             
@@ -752,11 +757,16 @@ def adjust_trip_destination(req: AdjustDestinationRequest) -> dict[str, Any]:
         
     if req.soil_type is not None:
         if req.soil_type == "级配石":
-            cursor.execute("UPDATE vehicle_records SET dump_site = ?, soil_type = ?, soil_paid = 1 WHERE id = ?", (req.dump_site, req.soil_type, req.record_id))
+            cursor.execute("UPDATE vehicle_records SET dump_site = '自行消纳', soil_type = ?, soil_paid = 1, dump_paid = 1 WHERE id = ?", (req.soil_type, req.record_id))
         else:
             cursor.execute("UPDATE vehicle_records SET dump_site = ?, soil_type = ? WHERE id = ?", (req.dump_site, req.soil_type, req.record_id))
     else:
-        cursor.execute("UPDATE vehicle_records SET dump_site = ? WHERE id = ?", (req.dump_site, req.record_id))
+        cursor.execute("SELECT soil_type FROM vehicle_records WHERE id = ?", (req.record_id,))
+        current_soil = cursor.fetchone()[0]
+        if current_soil == "级配石":
+            cursor.execute("UPDATE vehicle_records SET dump_site = '自行消纳', dump_paid = 1 WHERE id = ?", (req.record_id,))
+        else:
+            cursor.execute("UPDATE vehicle_records SET dump_site = ? WHERE id = ?", (req.dump_site, req.record_id))
     conn.commit()
     conn.close()
     return {"success": True, "message": "成功修改车辆去向目的地与土方类型"}
@@ -805,13 +815,16 @@ def add_manual_trip(req: ManualTripRequest) -> dict[str, Any]:
     dump_site = req.dump_site
     if req.direction == "IN":
         dump_site = "未分配"
+    elif req.soil_type == "级配石":
+        dump_site = "自行消纳"
             
     # 一版级配石都是现金结账的，默认设置为已付 (1)
     soil_paid = 1 if req.soil_type == "级配石" else 0
+    dump_paid = 1 if req.soil_type == "级配石" else 0
     cursor.execute("""
-        INSERT INTO vehicle_records (plate_no, plate_color, direction, pass_time, image_path, confidence, dump_site, soil_type, soil_paid)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """, (plate_no, req.plate_color, req.direction, req.pass_time, None, 1.0, dump_site, req.soil_type, soil_paid))
+        INSERT INTO vehicle_records (plate_no, plate_color, direction, pass_time, image_path, confidence, dump_site, soil_type, soil_paid, dump_paid)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (plate_no, req.plate_color, req.direction, req.pass_time, None, 1.0, dump_site, req.soil_type, soil_paid, dump_paid))
     conn.commit()
     conn.close()
     
@@ -1363,11 +1376,11 @@ def get_records_by_date(
             
     total_cost = total_income - total_expense
 
-    # 3.2 统计待对账出场趟数（未分配趟数）
+    # 3.2 统计待对账出场趟数（未分配趟数，排除级配石）
     cursor.execute("""
         SELECT COUNT(*)
         FROM vehicle_records
-        WHERE direction = 'OUT' AND (dump_site = '未分配' OR dump_site IS NULL) AND pass_time BETWEEN ? AND ?
+        WHERE direction = 'OUT' AND (dump_site = '未分配' OR dump_site IS NULL) AND soil_type != '级配石' AND pass_time BETWEEN ? AND ?
     """, (query_start, query_end))
     unassigned_out = cursor.fetchone()[0]
 
@@ -1481,6 +1494,8 @@ def get_records_by_date(
         
         if dump_site in site_names:
             ledger_map[plate_no]["site_trips"][dump_site] += trip_cnt
+        elif dump_site == "自行消纳":
+            pass
         else:
             ledger_map[plate_no]["unassigned_trips"] += trip_cnt
             
