@@ -40,7 +40,7 @@ def seed_demo_data():
             cursor.execute("INSERT INTO frequent_plates (plate_no, company_name) VALUES (?, ?)", (plate, company))
                 
     # 生成今天的流水记录 (50条)
-    today_str = "2026-06-01"
+    today_str = datetime.now().strftime("%Y-%m-%d")
     soil_types = ["渣土", "好土", "二混子", "级配石"]
     
     for i in range(50):

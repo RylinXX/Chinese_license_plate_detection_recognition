@@ -116,7 +116,7 @@ def seed_real_vehicles():
     print(f"Successfully seeded {len(inserted_plates)} frequent plates.")
     
     # 5. 生成今日拉运高仿真数据 (50条流水)
-    today_str = "2026-06-01"
+    today_str = datetime.now().strftime("%Y-%m-%d")
     soil_names = [s[0] for s in soil_types]
     site_names = [d[0] for d in dump_sites]
     

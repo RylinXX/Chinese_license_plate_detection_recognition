@@ -1390,7 +1390,7 @@
         @media (max-width: 768px) {
             /* 1. 视口与全局 Body 适配 */
             body {
-                padding: 104px 10px 84px 10px !important; /* 留出 fixed 导航栏的高度 (约 89px) 加上安全间距，防止内容被遮挡 */
+                padding: 108px 10px 84px 10px !important; /* 留出两行导航栏的高度 (约 90px) 加上安全间距，防止内容被遮挡 */
                 background-attachment: scroll !important; /* 提高移动端滚动性能 */
             }
 
@@ -1411,9 +1411,8 @@
                 box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05) !important;
                 flex-wrap: wrap !important;
                 margin-bottom: 0 !important; /* 脱离文档流后 margin 设为0 */
-                z-index: 9999 !important; /* 极大提升层级，防止被下方带 transform 的动画元素击穿 */
-                -webkit-transform: translate3d(0, 0, 0); /* 强制开启 3D 渲染图层 */
-                transform: translate3d(0, 0, 0);
+                -webkit-transform: none !important; /* 清除 3D 图层限制，使子级吸底 TabBar (nav-links) 能定位到屏幕最底端 */
+                transform: none !important;
             }
 
             .brand-logo-container {
@@ -1434,15 +1433,15 @@
                 display: none !important; /* 隐藏公司名称，节省空间 */
             }
 
-            /* 顶部操作区收缩 */
+            /* 顶部操作区 - 移至第一行标题右侧，免除折行 */
             .navbar-actions {
-                flex-basis: 100% !important;
-                width: 100% !important;
-                justify-content: space-between !important;
-                gap: 6px !important;
-                border-top: 1px solid var(--card-border) !important;
-                padding-top: 8px !important;
-                margin-top: 6px !important;
+                flex-basis: auto !important;
+                width: auto !important;
+                justify-content: flex-end !important;
+                gap: 4px !important;
+                border-top: none !important;
+                padding-top: 0 !important;
+                margin-top: 0 !important;
             }
 
             .date-selector-wrapper .navbar-label {
@@ -1450,10 +1449,10 @@
             }
 
             .date-selector-wrapper input[type="date"] {
-                width: 125px !important;
-                height: 34px !important;
-                font-size: 12px !important;
-                padding: 4px 8px !important;
+                width: 110px !important; /* 限制宽度，完美适配第一行排版 */
+                height: 30px !important;  /* 统一30px高度 */
+                font-size: 11px !important;
+                padding: 4px 6px !important;
                 cursor: pointer !important;
                 border-radius: var(--border-radius-sm) !important;
                 -webkit-appearance: none; /* 移动端清除默认外观 */
@@ -1462,8 +1461,8 @@
             }
 
             #header-actions-area .btn {
-                padding: 8px 10px !important;
-                height: 32px !important;
+                padding: 6px 8px !important;
+                height: 30px !important;
             }
 
             #header-actions-area .btn span {
@@ -1475,65 +1474,63 @@
             }
 
             .theme-toggle-btn {
-                width: 32px !important;
-                height: 32px !important;
+                width: 30px !important;
+                height: 30px !important;
             }
 
             .clock-display-wrapper {
                 display: none !important; /* 隐藏实时时钟 */
             }
 
-            /* 3. 底部吸底导航菜单 (TabBar) */
+            /* 3. 顶部导航链接折行排列 (不再吸底，防重叠) */
             .nav-links {
-                position: fixed !important;
-                bottom: 0 !important;
-                left: 0 !important;
-                right: 0 !important;
-                top: auto !important;
-                transform: none !important;
+                position: static !important;
                 width: 100% !important;
-                height: 60px !important;
-                border-radius: 0 !important;
-                border: none !important;
-                border-top: 1px solid var(--card-border) !important;
-                background: var(--header-bg) !important;
-                backdrop-filter: blur(25px) !important;
-                -webkit-backdrop-filter: blur(25px) !important;
+                height: auto !important;
+                border-radius: var(--border-radius-md) !important;
+                border: 1px solid var(--card-border) !important;
+                background: rgba(0, 0, 0, 0.02) !important;
+                backdrop-filter: none !important;
+                -webkit-backdrop-filter: none !important;
                 display: flex !important;
-                justify-content: space-around !important;
-                padding: 4px 0 !important;
-                z-index: 1000 !important;
-                gap: 0 !important;
-                margin: 0 !important;
-                box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.06) !important;
+                justify-content: space-between !important;
+                padding: 4px !important;
+                z-index: 10 !important;
+                gap: 4px !important;
+                margin: 4px 0 0 0 !important;
+                box-shadow: none !important;
+            }
+
+            :root[data-theme="dark"] .nav-links {
+                background: rgba(255, 255, 255, 0.02) !important;
             }
 
             .nav-item {
                 flex: 1 !important;
-                flex-direction: column !important;
+                flex-direction: row !important;
                 justify-content: center !important;
                 align-items: center !important;
-                padding: 4px 0 !important;
-                font-size: 10px !important;
+                padding: 6px 4px !important;
+                font-size: 11px !important;
                 gap: 4px !important;
-                border-radius: 0 !important;
+                border-radius: var(--border-radius-sm) !important;
                 background: transparent !important;
                 box-shadow: none !important;
                 color: var(--text-secondary) !important;
             }
 
             .nav-item:hover {
-                background-color: transparent !important;
+                background-color: rgba(99, 102, 241, 0.08) !important;
             }
 
             .nav-item.active {
-                color: var(--color-primary) !important;
-                background: transparent !important;
-                box-shadow: none !important;
+                color: #ffffff !important;
+                background: var(--color-primary) !important;
+                box-shadow: 0 2px 8px var(--color-primary-active-shadow) !important;
             }
 
             .nav-item.active i {
-                color: var(--color-primary) !important;
+                color: #ffffff !important;
             }
 
             /* 4. 面板一：多维大屏移动端适配 */
