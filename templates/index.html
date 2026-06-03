@@ -1390,7 +1390,7 @@
         @media (max-width: 768px) {
             /* 1. 视口与全局 Body 适配 */
             body {
-                padding: 108px 10px 84px 10px !important; /* 留出两行导航栏的高度 (约 90px) 加上安全间距，防止内容被遮挡 */
+                padding: 104px 10px 84px 10px !important; /* 留出两行导航栏的高度 (约 88px) 加上安全间距，防止内容被遮挡 */
                 background-attachment: scroll !important; /* 提高移动端滚动性能 */
             }
 
@@ -1413,20 +1413,23 @@
                 margin-bottom: 0 !important; /* 脱离文档流后 margin 设为0 */
                 -webkit-transform: none !important; /* 清除 3D 图层限制，使子级吸底 TabBar (nav-links) 能定位到屏幕最底端 */
                 transform: none !important;
+                display: flex !important;
+                align-items: center !important;
+            }
+
+            .navbar-brand {
+                order: 1 !important; /* 强制排在第一项 */
+                display: flex !important;
+                align-items: center !important;
             }
 
             .brand-logo-container {
-                width: 28px !important;
-                height: 28px !important;
-            }
-
-            .brand-logo-container i {
-                width: 14px !important;
-                height: 14px !important;
+                display: none !important; /* 手机端隐藏 Logo，为第一行右侧日期操作栏留出充裕空间 */
             }
 
             .brand-title {
                 font-size: 13px !important;
+                white-space: nowrap !important;
             }
 
             .brand-subtitle {
@@ -1435,6 +1438,7 @@
 
             /* 顶部操作区 - 移至第一行标题右侧，免除折行 */
             .navbar-actions {
+                order: 2 !important; /* 强制排在第二项，与标题在一行 */
                 flex-basis: auto !important;
                 width: auto !important;
                 justify-content: flex-end !important;
@@ -1442,6 +1446,8 @@
                 border-top: none !important;
                 padding-top: 0 !important;
                 margin-top: 0 !important;
+                display: flex !important;
+                align-items: center !important;
             }
 
             .date-selector-wrapper .navbar-label {
@@ -1484,6 +1490,7 @@
 
             /* 3. 顶部导航链接折行排列 (不再吸底，防重叠) */
             .nav-links {
+                order: 3 !important; /* 强制排在第三项，另起一行 */
                 position: static !important;
                 width: 100% !important;
                 height: auto !important;
