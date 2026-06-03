@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>智慧工地系统 - LPR & Pass Billing Platform</title>
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.loli.net/css2?family=Outfit:wght@300;400;500;600;700;800&family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
     <!-- Lucide Icons CDN -->
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.zhimg.com/lucide@0.453.0/dist/lucide.min.js"></script>
     <style>
         
         :root {
@@ -1541,6 +1541,9 @@
             }
 
             /* 移动端台账表格防换行与紧凑排版 */
+            .table-responsive {
+                overflow-x: auto !important;
+            }
             .ledger-table td, .ledger-table th {
                 white-space: nowrap !important;
                 padding: 10px 8px !important;
@@ -2033,7 +2036,7 @@
                             <i data-lucide="expand"></i>展开历史全日志
                         </button>
                     </div>
-                    <div class="table-responsive" style="flex-grow:1; overflow-y:auto; max-height: 280px;">
+                    <div class="table-responsive" style="flex-grow:1; overflow-y:auto; overflow-x:auto; max-height: 280px;">
                         <table class="ledger-table">
                             <thead>
                                 <tr>
@@ -2237,20 +2240,18 @@
                     </div>
                 </div>
 
-                <div class="table-responsive" style="flex-grow:1; overflow-y:auto;">
+                <div class="table-responsive" style="flex-grow:1; overflow-y:auto; overflow-x:auto;">
                     <table class="ledger-table">
                         <thead>
                             <tr>
                                 <th>车牌号码</th>
                                 <th>总运量</th>
                                 <th>应付总额</th>
-                                <th>已付金额</th>
-                                <th>未付金额</th>
                                 <th>操作</th>
                             </tr>
                         </thead>
                         <tbody id="recon-fleet-body">
-                            <tr><td colspan="6" style="text-align:center; color:var(--text-secondary);">加载中...</td></tr>
+                            <tr><td colspan="4" style="text-align:center; color:var(--text-secondary);">加载中...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -2290,20 +2291,18 @@
                     </div>
                 </div>
 
-                <div class="table-responsive" style="flex-grow:1; overflow-y:auto;">
+                <div class="table-responsive" style="flex-grow:1; overflow-y:auto; overflow-x:auto;">
                     <table class="ledger-table">
                         <thead>
                             <tr>
                                 <th>卸土点</th>
                                 <th>总运量</th>
                                 <th>应付总额</th>
-                                <th>已付金额</th>
-                                <th>未付金额</th>
                                 <th>操作</th>
                             </tr>
                         </thead>
                         <tbody id="recon-site-body">
-                            <tr><td colspan="6" style="text-align:center; color:var(--text-secondary);">加载中...</td></tr>
+                            <tr><td colspan="4" style="text-align:center; color:var(--text-secondary);">加载中...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -2883,7 +2882,9 @@
                     let html = '';
                     // 过滤仅展示出场 (OUT) 记录
                     const outRecords = data.records.filter(r => r.direction === 'OUT');
-                    outRecords.forEach((r, idx) => {
+                    // 移动端/大屏优化：主面板只渲染最新15条拉运流水以极大缩减DOM节点树，回溯全部日志可通过右上角“展开历史全日志”
+                    const recentRecords = outRecords.slice(-15);
+                    recentRecords.forEach((r, idx) => {
                         const isUnassigned = (r.dump_site === '未分配' || !r.dump_site);
                         const siteColor = isUnassigned ? 'var(--color-danger)' : 'var(--text-primary)';
                         
@@ -3525,7 +3526,7 @@
                                     : `￥${dumpPrice.toFixed(2)}`;
                                 dumpPaymentHtml = `
                                     <div style="font-size:12px; display:flex; align-items:center; gap:8px;">
-                                        <span style="font-weight:700; color:var(--text-primary);">-￥${dumpDetailText}</span>
+                                        <span style="font-weight:700; color:var(--text-primary);">-${dumpDetailText}</span>
                                         <span class="payment-badge ${dumpPaidClass}" onclick="event.stopPropagation(); togglePaymentStatusBatch(${idsJson}, 'dump', ${r.dump_paid})">${dumpPaidText}</span>
                                     </div>
                                 `;
@@ -3856,9 +3857,6 @@
                                     <th>车牌号码</th>
                                     <th>累计趟数</th>
                                     <th>累计运费</th>
-                                    <th>累计消纳费</th>
-                                    <th>净收支 (结算额)</th>
-                                    <th>待分配去向</th>
                                     <th>操作</th>
                                 </tr>
                             `;
@@ -3920,16 +3918,12 @@
                             `;
 
                             if (activeSiteFilter === "车辆账单") {
-                                const unassignedText = vUnassigned > 0 ? `<span style="color:var(--color-danger); font-weight:700;">${vUnassigned} 趟</span>` : `<span style="color:var(--text-muted); font-size:11px;">无</span>`;
                                 tbodyHtml += `
                                     <tr>
                                         <td>${globalIdx}</td>
                                         <td style="font-weight:700; padding: 6px 12px;">${plateBadgeHTML}</td>
                                         <td style="color:var(--color-out); font-weight:700;">${vTrips} 趟</td>
                                         <td style="font-weight:700; color:${soilCostColor};">${soilSign}￥${Math.abs(netSoilCost).toFixed(2)}</td>
-                                        <td style="font-weight:700; color:var(--text-primary);">-￥${row.total_dump_cost.toFixed(2)}</td>
-                                        <td style="font-weight:700; color:${costColor};">${vSign}￥${vCost.toFixed(2)}</td>
-                                        <td>${unassignedText}</td>
                                         <td>${actionHtml}</td>
                                     </tr>
                                 `;
@@ -3947,7 +3941,7 @@
                         });
 
                         if (totalItems === 0) {
-                            document.getElementById('ledger-table-body').innerHTML = `<tr><td colspan="8" style="color:var(--text-secondary); padding: 40px 10px; text-align:center;">当前筛选条件下没有出运的泥头车记录</td></tr>`;
+                            document.getElementById('ledger-table-body').innerHTML = `<tr><td colspan="5" style="color:var(--text-secondary); padding: 40px 10px; text-align:center;">当前筛选条件下没有出运的泥头车记录</td></tr>`;
                         } else {
                             document.getElementById('ledger-table-body').innerHTML = tbodyHtml;
                         }
@@ -4623,8 +4617,8 @@
             const fleetBody = document.getElementById('recon-fleet-body');
             const siteBody = document.getElementById('recon-site-body');
             
-            fleetBody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--text-secondary); padding:20px;"><div style="display:inline-block; animation:spin 1s linear infinite; margin-right:8px;"><i data-lucide="refresh-cw" style="width:14px; height:14px;"></i></div>正在加载对账数据...</td></tr>`;
-            siteBody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--text-secondary); padding:20px;"><div style="display:inline-block; animation:spin 1s linear infinite; margin-right:8px;"><i data-lucide="refresh-cw" style="width:14px; height:14px;"></i></div>正在加载对账数据...</td></tr>`;
+            fleetBody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--text-secondary); padding:20px;"><div style="display:inline-block; animation:spin 1s linear infinite; margin-right:8px;"><i data-lucide="refresh-cw" style="width:14px; height:14px;"></i></div>正在加载对账数据...</td></tr>`;
+            siteBody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--text-secondary); padding:20px;"><div style="display:inline-block; animation:spin 1s linear infinite; margin-right:8px;"><i data-lucide="refresh-cw" style="width:14px; height:14px;"></i></div>正在加载对账数据...</td></tr>`;
             lucide.createIcons({attrs: {"stroke-width": 2}});
 
             fetch(`/api/reconciliation?date=${selectedQueryDate}`)
@@ -4640,8 +4634,8 @@
             })
             .catch(err => {
                 showToast('异常', err.toString(), 'error');
-                fleetBody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--color-danger); padding:20px;">数据加载失败: ${err.toString()}</td></tr>`;
-                siteBody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--color-danger); padding:20px;">数据加载失败: ${err.toString()}</td></tr>`;
+                fleetBody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--color-danger); padding:20px;">数据加载失败: ${err.toString()}</td></tr>`;
+                siteBody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--color-danger); padding:20px;">数据加载失败: ${err.toString()}</td></tr>`;
             });
         }
 
@@ -4668,7 +4662,7 @@
             document.getElementById('recon-fleet-unpaid-cost').innerText = `￥${totalFleetUnpaid.toFixed(2)}`;
 
             if (fleets.length === 0) {
-                fleetHtml = `<tr><td colspan="6" style="text-align:center; color:var(--text-secondary); padding:20px;">当日无车辆拉运数据</td></tr>`;
+                fleetHtml = `<tr><td colspan="4" style="text-align:center; color:var(--text-secondary); padding:20px;">当日无车辆拉运数据</td></tr>`;
             } else {
                 fleets.forEach(f => {
                     const fleetName = f.company_name || '个人散车';
@@ -4683,8 +4677,6 @@
                             <td style="padding: 6px 12px;">${plateBadgeHtml}</td>
                             <td style="color:var(--color-out); font-weight:700;">${f.total_trips} 趟</td>
                             <td style="font-weight:700; color:var(--color-primary);">￥${f.total_cost.toFixed(2)}</td>
-                            <td style="color:var(--color-in);">￥${f.paid_cost.toFixed(2)}</td>
-                            <td style="color:var(--color-danger); font-weight:700;">￥${f.unpaid_cost.toFixed(2)}</td>
                             <td>
                                 <div style="display:flex; align-items:center; justify-content:center; gap:8px;">
                                     <span class="plate-badge ${badgeClass}" style="min-width: 60px; font-size: 11px;">${badgeText}</span>
@@ -4727,7 +4719,7 @@
             document.getElementById('recon-site-unpaid-cost').innerText = `￥${totalSiteUnpaid.toFixed(2)}`;
 
             if (sites.length === 0) {
-                siteHtml = `<tr><td colspan="6" style="text-align:center; color:var(--text-secondary); padding:20px;">当日无卸土场地数据</td></tr>`;
+                siteHtml = `<tr><td colspan="4" style="text-align:center; color:var(--text-secondary); padding:20px;">当日无卸土场地数据</td></tr>`;
             } else {
                 sites.forEach(s => {
                     const siteName = s.site_name || '未分配';
@@ -4740,8 +4732,6 @@
                             <td style="font-weight:700;">${siteName}</td>
                             <td style="color:var(--color-out); font-weight:700;">${s.total_trips} 车</td>
                             <td style="font-weight:700; color:var(--color-primary);">￥${s.total_cost.toFixed(2)}</td>
-                            <td style="color:var(--color-in);">￥${s.paid_cost.toFixed(2)}</td>
-                            <td style="color:var(--color-danger); font-weight:700;">￥${s.unpaid_cost.toFixed(2)}</td>
                             <td>
                                 <div style="display:flex; align-items:center; justify-content:center; gap:8px;">
                                     <span class="plate-badge ${badgeClass}" style="min-width: 60px; font-size: 11px;">${badgeText}</span>
