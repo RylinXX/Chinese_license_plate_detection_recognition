@@ -1857,11 +1857,11 @@
         </div>
         
         <div class="nav-links">
-            <a class="nav-item active" id="menu-monitor" onclick="switchTab('monitor')">
+            <a class="nav-item" id="menu-monitor" onclick="switchTab('monitor')">
                 <i data-lucide="tv" style="width:14px; height:14px;"></i>
                 <span>展示大屏</span>
             </a>
-            <a class="nav-item" id="menu-ledger" onclick="switchTab('ledger')">
+            <a class="nav-item active" id="menu-ledger" onclick="switchTab('ledger')">
                 <i data-lucide="file-spreadsheet" style="width:14px; height:14px;"></i>
                 <span>财务记账</span>
             </a>
@@ -1901,7 +1901,7 @@
     
 
         <!-- 📊 面板一: 实时监控看板 -->
-        <section class="main-content active" id="panel-monitor">
+        <section class="main-content" id="panel-monitor">
             <!-- 顶部核心KPI指标 -->
             <div class="glass-card">
                 <h3 class="card-header-title">
@@ -2046,7 +2046,7 @@
         </section>
 
         <!-- 📊 面板二: 通行财务台账 -->
-        <section class="main-content" id="panel-ledger">
+        <section class="main-content active" id="panel-ledger">
             <!-- 左侧：检索及手工录入补录 -->
             <div class="ledger-left-col">
                 <div class="glass-card" id="ledger-kpis-card">
@@ -4601,7 +4601,7 @@
         })
         .then(() => {
             refreshFrequentPlates();
-            switchTab('monitor');
+            switchTab('ledger');
         });
 
         // Real-time polling completely disabled based on user preference
