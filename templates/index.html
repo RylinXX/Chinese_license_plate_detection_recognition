@@ -343,6 +343,8 @@
             z-index: 1000;
             box-shadow: var(--card-shadow);
             transition: var(--transition-base);
+            -webkit-transform: translate3d(0, 0, 0);
+            transform: translate3d(0, 0, 0);
         }
 
         .floating-navbar:hover {
@@ -1388,13 +1390,13 @@
         @media (max-width: 768px) {
             /* 1. 视口与全局 Body 适配 */
             body {
-                padding: 0px 10px 84px 10px !important; /* 顶部留白设为0，因为导航栏是sticky占位，不会遮挡 */
+                padding: 104px 10px 84px 10px !important; /* 留出 fixed 导航栏的高度 (约 89px) 加上安全间距，防止内容被遮挡 */
                 background-attachment: scroll !important; /* 提高移动端滚动性能 */
             }
 
             /* 2. 顶部浮动导航栏微调 */
             .floating-navbar {
-                position: sticky !important;
+                position: fixed !important; /* 改为 fixed 定位，100% 稳固固定在顶部，不随页面滚动移位 */
                 top: 0 !important;
                 left: 0 !important;
                 right: 0 !important;
@@ -1408,8 +1410,10 @@
                 background: var(--header-bg) !important;
                 box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05) !important;
                 flex-wrap: wrap !important;
-                margin-bottom: 16px !important;
-                z-index: 2000 !important; /* 提升层级，防止被下方相对定位元素遮挡 */
+                margin-bottom: 0 !important; /* 脱离文档流后 margin 设为0 */
+                z-index: 9999 !important; /* 极大提升层级，防止被下方带 transform 的动画元素击穿 */
+                -webkit-transform: translate3d(0, 0, 0); /* 强制开启 3D 渲染图层 */
+                transform: translate3d(0, 0, 0);
             }
 
             .brand-logo-container {
@@ -1446,10 +1450,15 @@
             }
 
             .date-selector-wrapper input[type="date"] {
-                width: 108px !important;
-                height: 32px !important;
-                font-size: 11px !important;
-                padding: 4px 6px !important;
+                width: 125px !important;
+                height: 34px !important;
+                font-size: 12px !important;
+                padding: 4px 8px !important;
+                cursor: pointer !important;
+                border-radius: var(--border-radius-sm) !important;
+                -webkit-appearance: none; /* 移动端清除默认外观 */
+                position: relative !important;
+                z-index: 5 !important;
             }
 
             #header-actions-area .btn {
