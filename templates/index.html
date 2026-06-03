@@ -1409,6 +1409,7 @@
                 box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05) !important;
                 flex-wrap: wrap !important;
                 margin-bottom: 16px !important;
+                z-index: 2000 !important; /* 提升层级，防止被下方相对定位元素遮挡 */
             }
 
             .brand-logo-container {
@@ -1431,7 +1432,13 @@
 
             /* 顶部操作区收缩 */
             .navbar-actions {
+                flex-basis: 100% !important;
+                width: 100% !important;
+                justify-content: space-between !important;
                 gap: 6px !important;
+                border-top: 1px solid var(--card-border) !important;
+                padding-top: 8px !important;
+                margin-top: 6px !important;
             }
 
             .date-selector-wrapper .navbar-label {
