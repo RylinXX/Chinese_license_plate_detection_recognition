@@ -1865,26 +1865,26 @@
             </div>
             <div class="brand-text">
                 <span class="brand-title">工地车辆对账工作台</span>
-                <span class="brand-subtitle" id="header-company-sub">北京营力特建筑工程有限公司</span>
+                <span class="brand-subtitle" id="header-company-sub">中央电视台项目 · 车辆台账与智能管理系统</span>
             </div>
         </div>
         
         <div class="nav-links">
-            <a class="nav-item" id="menu-monitor" onclick="switchTab('monitor')">
-                <i data-lucide="tv" style="width:14px; height:14px;"></i>
-                <span>展示大屏</span>
+            <a class="nav-item active" id="menu-summary" onclick="switchTab('summary')">
+                <i data-lucide="pie-chart" style="width:14px; height:14px;"></i>
+                <span>数据汇总中心</span>
             </a>
-            <a class="nav-item active" id="menu-ledger" onclick="switchTab('ledger')">
+            <a class="nav-item" id="menu-ledger" onclick="switchTab('ledger')">
                 <i data-lucide="file-spreadsheet" style="width:14px; height:14px;"></i>
-                <span>财务记账</span>
+                <span>项目明细台账</span>
             </a>
-            <a class="nav-item" id="menu-reconcile" onclick="switchTab('reconcile')">
-                <i data-lucide="check-square" style="width:14px; height:14px;"></i>
-                <span>汇总对账</span>
+            <a class="nav-item" id="menu-import" onclick="switchTab('import')">
+                <i data-lucide="upload-cloud" style="width:14px; height:14px;"></i>
+                <span>Excel 导入与导出</span>
             </a>
             <a class="nav-item" id="menu-config" onclick="switchTab('config')">
                 <i data-lucide="settings" style="width:14px; height:14px;"></i>
-                <span>系统配置</span>
+                <span>配置与存档</span>
             </a>
         </div>
         
@@ -1914,7 +1914,201 @@
     
 
         <!-- 📊 面板一: 实时监控看板 -->
-        <section class="main-content" id="panel-monitor">
+                <!-- 📊 面板一: 中央电视台项目 · 数据汇总中心 (默认首屏) -->
+        <section class="main-content active" id="panel-summary">
+            <!-- 顶部筛选与汇总概览 -->
+            <div class="glass-card">
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
+                    <h3 class="card-header-title" style="margin-bottom:0;">
+                        <i data-lucide="pie-chart"></i>中央电视台项目 · 全周期多维数据汇总
+                    </h3>
+                    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                        <div class="btn-group" style="display:flex; gap:6px;">
+                            <button class="btn btn-sm btn-accent" id="btn-preset-all" onclick="loadSummaryAnalytics('all')">全周期汇总</button>
+                            <button class="btn btn-sm btn-secondary" id="btn-preset-custom" onclick="toggleCustomSummaryDate()">按时间段筛选</button>
+                        </div>
+                        <div id="summary-custom-date-box" style="display:none; align-items:center; gap:6px;">
+                            <input type="date" class="input-control" id="summary-start-date" style="width:130px; height:32px; font-size:12px;">
+                            <span style="color:var(--text-muted);">至</span>
+                            <input type="date" class="input-control" id="summary-end-date" style="width:130px; height:32px; font-size:12px;">
+                            <button class="btn btn-sm btn-accent" onclick="applyCustomSummaryDate()">查询</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 核心 KPI 汇总卡 -->
+                <div class="kpi-grid" style="grid-template-columns: repeat(4, 1fr); gap: 14px;">
+                    <div class="kpi-card">
+                        <div class="kpi-icon kpi-icon-out"><i data-lucide="truck"></i></div>
+                        <div class="kpi-info">
+                            <span class="kpi-label">累计拉运趟数</span>
+                            <div style="display:flex; align-items:baseline; gap:4px;">
+                                <span class="kpi-value" id="sum-total-trips">0</span>
+                                <span style="font-size:12px; color:var(--text-secondary);">趟</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon" style="background:rgba(16,185,129,0.15); color:var(--color-in);"><i data-lucide="zap"></i></div>
+                        <div class="kpi-info">
+                            <span class="kpi-label">自有电车拉运</span>
+                            <div style="display:flex; align-items:baseline; gap:4px;">
+                                <span class="kpi-value" id="sum-ev-trips" style="color:var(--color-in);">0</span>
+                                <span style="font-size:12px; color:var(--text-secondary);" id="sum-ev-pct">(0%)</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon" style="background:rgba(245,158,11,0.15); color:var(--color-stay);"><i data-lucide="fuel"></i></div>
+                        <div class="kpi-info">
+                            <span class="kpi-label">外协燃油车拉运</span>
+                            <div style="display:flex; align-items:baseline; gap:4px;">
+                                <span class="kpi-value" id="sum-fuel-trips" style="color:var(--color-stay);">0</span>
+                                <span style="font-size:12px; color:var(--text-secondary);" id="sum-fuel-pct">(0%)</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon kpi-icon-cost"><i data-lucide="map-pin"></i></div>
+                        <div class="kpi-info">
+                            <span class="kpi-label">覆盖消纳点与规格</span>
+                            <div style="display:flex; align-items:baseline; gap:4px;">
+                                <span class="kpi-value" id="sum-sites-cnt">0</span>
+                                <span style="font-size:12px; color:var(--text-secondary);">场地 / </span>
+                                <span class="kpi-value" id="sum-soils-cnt" style="font-size:16px;">0</span>
+                                <span style="font-size:12px; color:var(--text-secondary);">规格</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 多维汇总卡片网格 -->
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-top:16px;">
+                <!-- 按【土方/车辆规格】汇总 -->
+                <div class="glass-card">
+                    <h3 class="card-header-title">
+                        <i data-lucide="box"></i>按【土方/车辆规格】汇总明细
+                    </h3>
+                    <div class="table-responsive" style="max-height: 360px;">
+                        <table class="ledger-table">
+                            <thead>
+                                <tr>
+                                    <th>序号</th>
+                                    <th>货物/车辆规格</th>
+                                    <th>总拉运趟数</th>
+                                    <th>趟数占比</th>
+                                    <th>运费单价</th>
+                                    <th>运费估算</th>
+                                    <th>电车占比</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-body-soil-summary">
+                                <tr><td colspan="7" style="color:var(--text-muted);">正在计算汇总数据...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 按【消纳场地/卸土点】汇总 -->
+                <div class="glass-card">
+                    <h3 class="card-header-title">
+                        <i data-lucide="map-pin"></i>按【消纳场地/卸土点】汇总明细
+                    </h3>
+                    <div class="table-responsive" style="max-height: 360px;">
+                        <table class="ledger-table">
+                            <thead>
+                                <tr>
+                                    <th>序号</th>
+                                    <th>消纳场/卸土点</th>
+                                    <th>总拉运趟数</th>
+                                    <th>趟数占比</th>
+                                    <th>消纳单价</th>
+                                    <th>消纳费估算</th>
+                                    <th>电车占比</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-body-site-summary">
+                                <tr><td colspan="7" style="color:var(--text-muted);">正在计算汇总数据...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 交互式日期 × 场地拉运趟数透视矩阵 -->
+            <div class="glass-card" style="margin-top:16px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:14px;">
+                    <h3 class="card-header-title" style="margin-bottom:0;">
+                        <i data-lucide="table"></i>消纳场地 × 每日拉运趟数交叉透视矩阵
+                    </h3>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <input type="text" class="input-control" id="pivot-search-input" placeholder="搜索消纳点名称..." oninput="filterPivotMatrix()" style="width:180px; height:32px; font-size:12px;">
+                    </div>
+                </div>
+                <div class="table-responsive" style="max-height: 480px;">
+                    <table class="ledger-table" id="pivot-matrix-table">
+                        <thead id="pivot-thead">
+                            <!-- 动态列头 -->
+                        </thead>
+                        <tbody id="pivot-tbody">
+                            <!-- 动态数据行 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- 📤 面板三: Excel 台账导入与报表导出 -->
+        <section class="main-content" id="panel-import">
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
+                <!-- 一键导入 -->
+                <div class="glass-card">
+                    <h3 class="card-header-title">
+                        <i data-lucide="upload-cloud"></i>一键上传 Excel 车辆台账
+                    </h3>
+                    <p style="font-size:12px; color:var(--text-secondary); margin-bottom:16px;">
+                        支持导入标准格式的 Excel/CSV 车辆台账。系统将自动解析 <strong style="color:var(--text-primary);">[日期]、[种类]、[卸土点]、[是否自有电车]、[车辆数]、[备注]</strong> 并同步至汇总数据库。
+                    </p>
+                    
+                    <div id="drop-zone-excel" style="border:2px dashed var(--card-border-hover); border-radius:var(--border-radius-md); padding:40px 20px; text-align:center; background:rgba(99,102,241,0.03); cursor:pointer; transition:all 0.2s;" onclick="document.getElementById('excel-file-input').click()">
+                        <i data-lucide="file-spreadsheet" style="width:48px; height:48px; color:var(--color-primary); margin-bottom:12px;"></i>
+                        <div style="font-size:14px; font-weight:700; color:var(--text-primary); margin-bottom:4px;">点击选择或将 Excel 文件拖拽至此处</div>
+                        <div style="font-size:11px; color:var(--text-muted);">支持 .xlsx, .xls, .csv 格式</div>
+                        <input type="file" id="excel-file-input" accept=".xlsx,.xls,.csv" style="display:none;" onchange="handleExcelFileSelect(event)">
+                    </div>
+
+                    <div id="upload-preview-box" style="margin-top:16px; display:none; background:rgba(255,255,255,0.03); border:1px solid var(--card-border); border-radius:var(--border-radius-sm); padding:12px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                            <span style="font-size:13px; font-weight:700;" id="upload-filename">ledger.xlsx</span>
+                            <button class="btn btn-sm btn-accent" id="btn-do-import" onclick="executeExcelUpload()">确认开始导入</button>
+                        </div>
+                        <div id="upload-status-msg" style="font-size:12px; color:var(--text-secondary);">准备导入中...</div>
+                    </div>
+                </div>
+
+                <!-- 导出报表 -->
+                <div class="glass-card">
+                    <h3 class="card-header-title">
+                        <i data-lucide="download"></i>数据导出与报表下载
+                    </h3>
+                    <p style="font-size:12px; color:var(--text-secondary); margin-bottom:16px;">
+                        导出中央电视台项目的多维汇总数据与详细流水，格式完全兼容 Excel 打开。
+                    </p>
+                    <div style="display:flex; flex-direction:column; gap:12px;">
+                        <button class="btn btn-secondary" onclick="exportCurrentDateCSV()" style="justify-content:flex-start; padding:14px;">
+                            <i data-lucide="file-text" style="color:var(--color-primary); margin-right:8px;"></i>
+                            <div style="text-align:left;">
+                                <div style="font-weight:700;">导出当前选定日期的通行日志流水 (.csv)</div>
+                                <div style="font-size:11px; color:var(--text-muted);">导出包含车牌、时间、消纳点、种类及置信度的完整记录</div>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="main-content" id="panel-monitor" style="display:none;">
             <!-- 顶部核心KPI指标 -->
             <div class="glass-card">
                 <h3 class="card-header-title">
@@ -2564,21 +2758,23 @@
             }, 4000);
         }
 
-        let currentTab = 'monitor';
+        let currentTab = 'summary';
         let selectedQueryDate = new Date().toISOString().split('T')[0];
         
         document.addEventListener('DOMContentLoaded', () => {
             const picker = document.getElementById('query-date-picker');
             if (picker) picker.value = selectedQueryDate;
+            loadSummaryAnalytics('all');
         });
 
         let currentFrequentPlatesList = [];
         let currentSitesList = [];
-        let currentSoilsList = []; // 全局土方列表
+        let currentSoilsList = [];
         let activeSiteFilter = "车辆账单";
         let ledgerPageSize = 15;
         let ledgerCurrentPage = 1;
         let ledgerTotalPages = 1;
+        let currentSummaryData = null;
 
         function switchTab(tab) {
             currentTab = tab;
@@ -2595,32 +2791,35 @@
             if (activePanel) activePanel.classList.add('active');
             if (headerActions) headerActions.innerHTML = '';
             
-            if (tab === 'monitor') {
-                if (headerTitle) headerTitle.innerText = "多维展示大屏";
-                if (headerIcon) headerIcon.setAttribute('data-lucide', 'tv');
-                refreshDashboard();
+            if (tab === 'summary') {
+                if (headerTitle) headerTitle.innerText = "数据汇总中心";
+                if (headerIcon) headerIcon.setAttribute('data-lucide', 'pie-chart');
+                loadSummaryAnalytics('all');
             } else if (tab === 'ledger') {
-                if (headerTitle) headerTitle.innerText = "现场财务记账";
+                if (headerTitle) headerTitle.innerText = "项目明细台账";
                 if (headerIcon) headerIcon.setAttribute('data-lucide', 'file-spreadsheet');
                 if (headerActions) {
                     headerActions.innerHTML = `
-                        <button class="btn btn-accent" onclick="exportReport()">
-                            <i data-lucide="download"></i><span>导出当日报表</span>
+                        <button class="btn btn-accent" onclick="exportCurrentDateCSV()">
+                            <i data-lucide="download"></i><span>导出当前日流水</span>
                         </button>
                     `;
                 }
                 refreshLedger();
+            } else if (tab === 'import') {
+                if (headerTitle) headerTitle.innerText = "Excel 导入与导出";
+                if (headerIcon) headerIcon.setAttribute('data-lucide', 'upload-cloud');
             } else if (tab === 'config') {
-                if (headerTitle) headerTitle.innerText = "系统配置设置";
+                if (headerTitle) headerTitle.innerText = "系统配置与存档";
                 if (headerIcon) headerIcon.setAttribute('data-lucide', 'settings');
                 refreshDumpSites().then(() => {
                     renderDumpSitesListConfig();
-                    renderSoilTypesListConfig(); // 渲染土方配置列表
+                    renderSoilTypesListConfig();
                 });
-            } else if (tab === 'reconcile') {
-                if (headerTitle) headerTitle.innerText = "结算汇总对账";
-                if (headerIcon) headerIcon.setAttribute('data-lucide', 'check-square');
-                refreshReconciliation();
+            } else if (tab === 'monitor') {
+                if (headerTitle) headerTitle.innerText = "多维展示大屏 (存档)";
+                if (headerIcon) headerIcon.setAttribute('data-lucide', 'tv');
+                refreshDashboard();
             }
 
             lucide.createIcons({attrs: {"stroke-width": 2}});
@@ -4853,3 +5052,248 @@
 </script>
 </body>
 </html>
+
+        // ==========================================================================
+        // 📊 中央电视台项目 - 全周期与多维数据汇总中心 JavaScript 逻辑
+        // ==========================================================================
+
+        function loadSummaryAnalytics(preset = 'all', startDate = '', endDate = '') {
+            let url = `/api/summary_analytics?preset=${preset}`;
+            if (preset === 'custom') {
+                if (!startDate) startDate = document.getElementById('summary-start-date').value;
+                if (!endDate) endDate = document.getElementById('summary-end-date').value;
+                if (startDate && endDate) {
+                    url += `&start_date=${startDate}&end_date=${endDate}`;
+                }
+            }
+
+            // 更新按钮状态
+            const btnAll = document.getElementById('btn-preset-all');
+            const btnCustom = document.getElementById('btn-preset-custom');
+            const customBox = document.getElementById('summary-custom-date-box');
+
+            if (preset === 'all') {
+                if (btnAll) btnAll.className = 'btn btn-sm btn-accent';
+                if (btnCustom) btnCustom.className = 'btn btn-sm btn-secondary';
+                if (customBox) customBox.style.display = 'none';
+            } else {
+                if (btnAll) btnAll.className = 'btn btn-sm btn-secondary';
+                if (btnCustom) btnCustom.className = 'btn btn-sm btn-accent';
+                if (customBox) customBox.style.display = 'inline-flex';
+            }
+
+            fetch(url)
+                .then(res => res.json())
+                .then(res => {
+                    if (!res.success) {
+                        showToast('错误', '加载汇总数据失败', 'error');
+                        return;
+                    }
+                    currentSummaryData = res;
+                    renderSummaryKPIs(res);
+                    renderSoilSummaryTable(res.by_soil_type || []);
+                    renderSiteSummaryTable(res.by_dump_site || []);
+                    renderPivotMatrix(res.pivot_matrix || {});
+                })
+                .catch(err => {
+                    console.error('Fetch summary failed:', err);
+                    showToast('异常', '加载汇总数据出错', 'error');
+                });
+        }
+
+        function toggleCustomSummaryDate() {
+            const customBox = document.getElementById('summary-custom-date-box');
+            if (!customBox) return;
+            if (customBox.style.display === 'none') {
+                customBox.style.display = 'inline-flex';
+                if (currentSummaryData && currentSummaryData.db_range) {
+                    document.getElementById('summary-start-date').value = currentSummaryData.db_range.min;
+                    document.getElementById('summary-end-date').value = currentSummaryData.db_range.max;
+                }
+            } else {
+                customBox.style.display = 'none';
+            }
+        }
+
+        function applyCustomSummaryDate() {
+            const startDate = document.getElementById('summary-start-date').value;
+            const endDate = document.getElementById('summary-end-date').value;
+            if (!startDate || !endDate) {
+                showToast('提示', '请选择完整起止日期', 'error');
+                return;
+            }
+            loadSummaryAnalytics('custom', startDate, endDate);
+        }
+
+        function renderSummaryKPIs(data) {
+            const totalOut = data.total_out_trips || 0;
+            const evCount = data.ev_count || 0;
+            const fuelCount = data.fuel_count || 0;
+            
+            const evPct = totalOut > 0 ? ((evCount / totalOut) * 100).toFixed(1) : '0.0';
+            const fuelPct = totalOut > 0 ? ((fuelCount / totalOut) * 100).toFixed(1) : '0.0';
+
+            document.getElementById('sum-total-trips').innerText = totalOut.toLocaleString('zh-CN');
+            document.getElementById('sum-ev-trips').innerText = evCount.toLocaleString('zh-CN');
+            document.getElementById('sum-ev-pct').innerText = `(${evPct}%)`;
+            document.getElementById('sum-fuel-trips').innerText = fuelCount.toLocaleString('zh-CN');
+            document.getElementById('sum-fuel-pct').innerText = `(${fuelPct}%)`;
+            
+            document.getElementById('sum-sites-cnt').innerText = (data.by_dump_site || []).length;
+            document.getElementById('sum-soils-cnt').innerText = (data.by_soil_type || []).length;
+        }
+
+        function renderSoilSummaryTable(list) {
+            const tbody = document.getElementById('table-body-soil-summary');
+            if (!tbody) return;
+            if (list.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" style="color:var(--text-muted);">暂无土方规格汇总数据</td></tr>`;
+                return;
+            }
+            let html = '';
+            list.forEach((item, idx) => {
+                const costStr = item.total_cost ? `￥${parseFloat(item.total_cost).toLocaleString('zh-CN', {minimumFractionDigits:2, maximumFractionDigits:2})}` : '￥0.00';
+                html += `
+                    <tr>
+                        <td style="font-weight:700;">${idx + 1}</td>
+                        <td style="font-weight:700; color:var(--text-primary); text-align:left;">${item.soil_type}</td>
+                        <td style="font-weight:800; color:var(--color-out);">${item.trips} 趟</td>
+                        <td><span class="direction-pill out" style="width:auto; padding:2px 8px;">${item.percentage}%</span></td>
+                        <td>￥${item.unit_price}</td>
+                        <td style="font-weight:700; color:${item.is_income === 1 ? 'var(--color-in)' : 'var(--text-primary)'};">${costStr}</td>
+                        <td style="font-weight:700; color:var(--color-in);">${item.ev_trips} 趟 (${item.ev_percentage}%)</td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html;
+        }
+
+        function renderSiteSummaryTable(list) {
+            const tbody = document.getElementById('table-body-site-summary');
+            if (!tbody) return;
+            if (list.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" style="color:var(--text-muted);">暂无消纳点汇总数据</td></tr>`;
+                return;
+            }
+            let html = '';
+            list.forEach((item, idx) => {
+                const costStr = item.total_cost ? `￥${parseFloat(item.total_cost).toLocaleString('zh-CN', {minimumFractionDigits:2, maximumFractionDigits:2})}` : '￥0.00';
+                html += `
+                    <tr>
+                        <td style="font-weight:700;">${idx + 1}</td>
+                        <td style="font-weight:700; color:var(--text-primary); text-align:left;">${item.dump_site}</td>
+                        <td style="font-weight:800; color:var(--color-out);">${item.trips} 趟</td>
+                        <td><span class="direction-pill out" style="width:auto; padding:2px 8px;">${item.percentage}%</span></td>
+                        <td>￥${item.unit_price}</td>
+                        <td style="font-weight:700;">${costStr}</td>
+                        <td style="font-weight:700; color:var(--color-in);">${item.ev_trips} 趟 (${item.ev_percentage}%)</td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html;
+        }
+
+        function renderPivotMatrix(pivotData) {
+            const thead = document.getElementById('pivot-thead');
+            const tbody = document.getElementById('pivot-tbody');
+            if (!thead || !tbody) return;
+
+            const dates = pivotData.dates || [];
+            const sites = pivotData.sites || [];
+
+            if (dates.length === 0 || sites.length === 0) {
+                thead.innerHTML = '';
+                tbody.innerHTML = `<tr><td style="color:var(--text-muted);">暂无交叉透视表数据</td></tr>`;
+                return;
+            }
+
+            // 表头
+            let headHtml = `<tr><th style="position:sticky; left:0; z-index:15; background:var(--table-th-bg); min-width:140px;">消纳场/卸土点</th><th style="min-width:90px;">累计趟数</th>`;
+            dates.forEach(d => {
+                headHtml += `<th style="min-width:70px; font-size:11px;">${d.slice(5)}</th>`;
+            });
+            headHtml += `</tr>`;
+            thead.innerHTML = headHtml;
+
+            // 数据行
+            let bodyHtml = '';
+            sites.forEach(siteItem => {
+                bodyHtml += `<tr class="pivot-site-row" data-site="${siteItem.dump_site}">`;
+                bodyHtml += `<td style="position:sticky; left:0; z-index:5; background:var(--table-th-bg); font-weight:800; text-align:left;">${siteItem.dump_site}</td>`;
+                bodyHtml += `<td style="font-weight:800; color:var(--color-out);">${siteItem.total_trips}</td>`;
+                
+                dates.forEach(d => {
+                    const cnt = siteItem.daily_trips[d] || 0;
+                    if (cnt > 0) {
+                        bodyHtml += `<td><span class="direction-pill out" style="width:auto; padding:1px 6px; font-size:11px;">${cnt}</span></td>`;
+                    } else {
+                        bodyHtml += `<td style="color:var(--text-muted); opacity:0.3;">-</td>`;
+                    }
+                });
+                bodyHtml += `</tr>`;
+            });
+            tbody.innerHTML = bodyHtml;
+        }
+
+        function filterPivotMatrix() {
+            const query = document.getElementById('pivot-search-input').value.trim().toLowerCase();
+            const rows = document.querySelectorAll('.pivot-site-row');
+            rows.forEach(row => {
+                const siteName = (row.getAttribute('data-site') || '').toLowerCase();
+                if (siteName.includes(query)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+
+        // ==========================================================================
+        // 📤 Excel 台账拖拽与一键上传导入 逻辑
+        // ==========================================================================
+        let selectedExcelFile = null;
+
+        function handleExcelFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            selectedExcelFile = file;
+            document.getElementById('upload-filename').innerText = file.name;
+            document.getElementById('upload-status-msg').innerText = `文件可就绪，文件大小: ${(file.size / 1024).toFixed(1)} KB`;
+            document.getElementById('upload-preview-box').style.display = 'block';
+        }
+
+        function executeExcelUpload() {
+            if (!selectedExcelFile) {
+                showToast('提示', '请先选择要上传的 Excel 文件', 'error');
+                return;
+            }
+            const btn = document.getElementById('btn-do-import');
+            const statusMsg = document.getElementById('upload-status-msg');
+            btn.disabled = true;
+            statusMsg.innerText = '正在解析 Excel 表格并灌入数据库，请稍候...';
+
+            const formData = new FormData();
+            formData.append('file', selectedExcelFile);
+
+            fetch('/api/import_excel', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(res => {
+                btn.disabled = false;
+                if (res.success) {
+                    showToast('成功', res.message, 'success');
+                    statusMsg.innerText = `✅ ${res.message}`;
+                    loadSummaryAnalytics('all');
+                } else {
+                    showToast('导入失败', res.detail || res.message, 'error');
+                    statusMsg.innerText = `❌ 导入失败: ${res.detail || res.message}`;
+                }
+            })
+            .catch(err => {
+                btn.disabled = false;
+                showToast('异常', '文件导入出错', 'error');
+                statusMsg.innerText = `❌ 导入请求发生网络错误: ${err}`;
+            });
+        }
