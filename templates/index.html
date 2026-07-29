@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>智慧工地系统 - LPR & Pass Billing Platform</title>
-    <!-- Google Fonts -->
-    <link href="https://fonts.loli.net/css2?family=Outfit:wght@300;400;500;600;700;800&family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
-    <!-- Lucide Icons CDN -->
-    <script src="https://unpkg.zhimg.com/lucide@0.453.0/dist/lucide.min.js"></script>
+    <!-- 字体 - 本地静态文件（无需 CDN，离线可用） -->
+    <link href="/static/css/fonts.css" rel="stylesheet">
+    <!-- Lucide Icons - 本地静态文件（无需 CDN，离线可用） -->
+    <script src="/static/js/lucide.min.js"></script>
     <style>
         
         :root {
@@ -521,11 +521,20 @@
             100% { opacity: 1; transform: translateY(0); }
         }
 
+        /* 0. 多维汇总大屏 */
+        #panel-summary.active {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 100%;
+        }
+
         /* 1. 实时监控看板 */
         #panel-monitor.active {
             display: flex;
             flex-direction: column;
             gap: 20px;
+            width: 100%;
         }
 
         /* 2. 通行财务台账 */
@@ -535,6 +544,14 @@
             gap: 20px;
         }
 
+        /* 3. Excel 导入与导出 */
+        #panel-import.active {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 100%;
+        }
+
         /* 4. 结算对账面板 */
         #panel-reconcile.active {
             display: grid;
@@ -542,7 +559,7 @@
             gap: 20px;
         }
 
-        /* 3. 系统参数配置 */
+        /* 5. 系统参数配置 */
         #panel-config.active {
             display: grid;
             grid-template-columns: 1fr;
@@ -1055,18 +1072,20 @@
         .ledger-table th {
             background: var(--table-th-bg);
             color: var(--text-secondary);
-            padding: 14px;
+            padding: 12px 14px;
             font-weight: 800;
             border-bottom: 1px solid var(--card-border);
             position: sticky;
             top: 0;
             z-index: 10;
+            white-space: nowrap;
         }
 
         .ledger-table td {
-            padding: 14px;
+            padding: 12px 14px;
             border-bottom: 1px solid var(--table-border);
             color: var(--text-primary);
+            white-space: nowrap;
         }
 
         .ledger-table tr {
@@ -2680,7 +2699,7 @@
             } else {
                 btnIcon.setAttribute('data-lucide', 'sun');
             }
-            lucide.createIcons({attrs: {"stroke-width": 2}});
+            safeIcons();
         }
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -2699,11 +2718,34 @@
         setInterval(updateClock, 1000);
         updateClock();
 
-        if (typeof lucide === 'undefined') {
-            window.lucide = {
-                createIcons: function() { console.log('Lucide blocked. Fallback.'); }
-            };
+        // 确保 Lucide 已加载，若主 CDN 失败则动态重试
+        function ensureLucideReady(callback) {
+            if (typeof lucide !== 'undefined') {
+                callback();
+            } else {
+                var retries = 0;
+                var timer = setInterval(function() {
+                    retries++;
+                    if (typeof lucide !== 'undefined') {
+                        clearInterval(timer);
+                        callback();
+                    } else if (retries > 20) {
+                        clearInterval(timer);
+                        console.warn('Lucide 图标库未能加载，图标将不显示。');
+                    }
+                }, 200);
+            }
         }
+        ensureLucideReady(function() {
+            lucide.createIcons({ attrs: { 'stroke-width': 2 } });
+        });
+
+        // 全局安全图标刷新函数 - 防止 CDN 未就绪时报错
+        window.safeIcons = function() {
+            if (typeof lucide !== 'undefined') {
+                try { lucide.createIcons({ attrs: { 'stroke-width': 2 } }); } catch(e) {}
+            }
+        };
 
         window.showChartTooltip = function(event, date, trips, cost) {
             const tooltip = document.getElementById('chart-tooltip');
@@ -2822,7 +2864,7 @@
                 refreshDashboard();
             }
 
-            lucide.createIcons({attrs: {"stroke-width": 2}});
+            safeIcons();
         }
 
         // Suggestions for Ledger Manual entry
@@ -3132,7 +3174,7 @@
                     });
                     tableBody.innerHTML = html;
                 }
-                lucide.createIcons({attrs: {"stroke-width": 2}});
+                safeIcons();
             })
             .catch(err => console.error("读取监控数据失败:", err));
 
@@ -3469,7 +3511,7 @@
                 </button>
             `;
             container.innerHTML = html;
-            lucide.createIcons({attrs: {"stroke-width": 2}});
+            safeIcons();
         }
 
         function changeLedgerPage(page) {
@@ -3800,7 +3842,7 @@
                     }
                     document.getElementById('ledger-table-body').innerHTML = html;
                     renderLedgerPagination(totalGroupedItems);
-                    lucide.createIcons({attrs: {"stroke-width": 2}});
+                    safeIcons();
 
                     // 统计流水账单
                     const totalTrips = outRecords.length;
@@ -4171,7 +4213,7 @@
                     }
 
                     renderLedgerPagination(totalItems);
-                    lucide.createIcons({attrs: {"stroke-width": 2}});
+                    safeIcons();
                 }
             })
             .catch(err => console.error("加载台账异常:", err));
@@ -4375,7 +4417,7 @@
                 `;
             });
             container.innerHTML = html;
-            lucide.createIcons({attrs: {"stroke-width": 2}});
+            safeIcons();
         }
 
         function submitSingleAdjust(recordId, newSite, currentSoil) {
@@ -4735,7 +4777,7 @@
                 `;
             });
             wrapper.innerHTML = html;
-            lucide.createIcons({attrs: {"stroke-width": 2}});
+            safeIcons();
         }
     
         function renderDumpSitesListConfig() {
@@ -4764,7 +4806,7 @@
                 `;
             });
             wrapper.innerHTML = html;
-            lucide.createIcons({attrs: {"stroke-width": 2}});
+            safeIcons();
         }
 
         function submitDeleteDumpSite(id, name) {
@@ -4818,7 +4860,7 @@
             
             fleetBody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--text-secondary); padding:20px;"><div style="display:inline-block; animation:spin 1s linear infinite; margin-right:8px;"><i data-lucide="refresh-cw" style="width:14px; height:14px;"></i></div>正在加载对账数据...</td></tr>`;
             siteBody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--text-secondary); padding:20px;"><div style="display:inline-block; animation:spin 1s linear infinite; margin-right:8px;"><i data-lucide="refresh-cw" style="width:14px; height:14px;"></i></div>正在加载对账数据...</td></tr>`;
-            lucide.createIcons({attrs: {"stroke-width": 2}});
+            safeIcons();
 
             fetch(`/api/reconciliation?date=${selectedQueryDate}`)
             .then(res => res.json())
@@ -4950,7 +4992,7 @@
                 });
             }
             siteBody.innerHTML = siteHtml;
-            lucide.createIcons({attrs: {"stroke-width": 2}});
+            safeIcons();
         }
 
         function filterReconciliation() {
@@ -5048,10 +5090,6 @@
         function renderFleetManager() {
             // 已废弃车队管理
         }
-
-</script>
-</body>
-</html>
 
         // ==========================================================================
         // 📊 中央电视台项目 - 全周期与多维数据汇总中心 JavaScript 逻辑
@@ -5297,3 +5335,6 @@
                 statusMsg.innerText = `❌ 导入请求发生网络错误: ${err}`;
             });
         }
+    </script>
+</body>
+</html>

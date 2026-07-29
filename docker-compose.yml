@@ -1,0 +1,56 @@
+services:
+  carsystem:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: carsystem-web
+    image: carsystem:latest
+
+    # 端口映射：宿主机 8888 → 容器 8000
+    # 使用 8888 端口，完全避免与本地 8000/8080 端口冲突
+    ports:
+      - "8888:8000"
+
+    # 数据卷挂载：持久化数据库和上传图片
+    volumes:
+      # SQLite 数据库持久化（映射到宿主机当前目录）
+      - ./worksite_plate.db:/app/worksite_plate.db
+      # 上传图片持久化
+      - ./uploaded_imgs:/app/uploaded_imgs
+      # 代码与静态资源挂载
+      - ./web-server.py:/app/web-server.py
+      - ./recognizer.py:/app/recognizer.py
+      - ./templates:/app/templates:ro
+      - ./static:/app/static:ro
+
+    # 环境变量
+    environment:
+      - TZ=Asia/Shanghai
+      - PYTHONUNBUFFERED=1
+
+    # 资源限制（防止意外占满机器）
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "1.0"
+        reservations:
+          memory: 128M
+
+    # 健康检查
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/summary_analytics')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+    # 崩溃自动重启（除非手动 stop）
+    restart: unless-stopped
+
+    # 日志限制（防止日志文件无限增长）
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "5"

@@ -8,7 +8,8 @@ import shutil
 import sqlite3
 import csv
 import base64
-import json
+import random
+import pandas as pd
 from datetime import datetime, timedelta
 from typing import Any, Optional, List, Dict
 # from openai import OpenAI
@@ -30,6 +31,11 @@ except BaseException as e:
     LocalSimulatedCloudRecognizer = None
 
 app = FastAPI(title="工地车牌识别与进出统计后台系统")
+
+# 挂载本地静态文件目录（图标、JS 等）
+STATIC_DIR = os.path.join(current_dir, "static")
+os.makedirs(STATIC_DIR, exist_ok=True)
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 # 基础路径配置
 UPLOAD_DIR = os.path.join(current_dir, "uploaded_imgs")
@@ -339,6 +345,10 @@ class ManualTripRequest(BaseModel):
 class VehicleBindingRequest(BaseModel):
     plate_no: str
     default_dump_site: str
+
+class VehicleFleetRequest(BaseModel):
+    plate_no: str
+    company_name: str
 
 class FrequentPlateRequest(BaseModel):
     plate_no: str
@@ -937,6 +947,258 @@ def bind_default_route(req: VehicleBindingRequest) -> dict[str, Any]:
     conn.commit()
     conn.close()
     return {"success": True, "message": f"成功绑定车牌 {plate} 默认去向为 【{dump_site}】"}
+
+@app.post("/api/bind_vehicle_fleet")
+def bind_vehicle_fleet(req: VehicleFleetRequest) -> dict[str, Any]:
+    """绑定车牌所属车队/所属单位"""
+    plate = req.plate_no.upper().strip()
+    company = req.company_name.strip()
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT id FROM frequent_plates WHERE plate_no = ?", (plate,))
+    if cursor.fetchone():
+        cursor.execute("UPDATE frequent_plates SET company_name = ? WHERE plate_no = ?", (company, plate))
+    else:
+        cursor.execute("INSERT INTO frequent_plates (plate_no, company_name) VALUES (?, ?)", (plate, company))
+    conn.commit()
+    conn.close()
+    return {"success": True, "message": f"成功绑定车牌 {plate} 所属车队为 【{company}】"}
+
+@app.get("/api/summary_analytics")
+def get_summary_analytics(
+    preset: str = Query("all", description="'all' 全周期 或 'custom' 自定义时间段"),
+    start_date: Optional[str] = Query(None),
+    end_date: Optional[str] = Query(None)
+) -> dict[str, Any]:
+    """获取全周期或指定时间段的多维数据汇总分析"""
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    
+    # 1. 查找全局日期范围
+    cursor.execute("SELECT MIN(substr(pass_time,1,10)), MAX(substr(pass_time,1,10)) FROM vehicle_records WHERE direction = 'OUT'")
+    db_row = cursor.fetchone()
+    db_min = db_row[0] if db_row and db_row[0] else datetime.now().strftime("%Y-%m-%d")
+    db_max = db_row[1] if db_row and db_row[1] else datetime.now().strftime("%Y-%m-%d")
+    
+    if preset == "all" or not start_date or not end_date:
+        s_date = db_min
+        e_date = db_max
+    else:
+        s_date = start_date
+        e_date = end_date
+        
+    query_start = f"{s_date} 00:00:00"
+    query_end = f"{e_date} 23:59:59"
+    
+    # 2. 查询总趟数与电车/燃油车趟数
+    cursor.execute("""
+        SELECT COUNT(*) as total_out,
+               SUM(CASE WHEN is_ev = '是' THEN 1 ELSE 0 END) as ev_cnt,
+               SUM(CASE WHEN is_ev != '是' OR is_ev IS NULL THEN 1 ELSE 0 END) as fuel_cnt
+        FROM vehicle_records
+        WHERE direction = 'OUT' AND pass_time BETWEEN ? AND ?
+    """, (query_start, query_end))
+    kpi_row = cursor.fetchone()
+    total_out = kpi_row["total_out"] or 0
+    ev_count = kpi_row["ev_cnt"] or 0
+    fuel_count = kpi_row["fuel_cnt"] or 0
+    
+    # 3. 按土方/货物规格汇总
+    cursor.execute("SELECT name, unit_price, is_income FROM soil_types")
+    soil_info = {r["name"]: {"price": r["unit_price"], "is_income": r["is_income"]} for r in cursor.fetchall()}
+    
+    cursor.execute("""
+        SELECT soil_type,
+               COUNT(*) as trips,
+               SUM(CASE WHEN is_ev = '是' THEN 1 ELSE 0 END) as ev_trips
+        FROM vehicle_records
+        WHERE direction = 'OUT' AND pass_time BETWEEN ? AND ?
+        GROUP BY soil_type
+        ORDER BY trips DESC
+    """, (query_start, query_end))
+    soil_rows = cursor.fetchall()
+    by_soil_type = []
+    for r in soil_rows:
+        name = r["soil_type"] or "渣土"
+        trips = r["trips"]
+        ev_t = r["ev_trips"] or 0
+        info = soil_info.get(name, {"price": 90.0, "is_income": 0})
+        price = info["price"]
+        is_inc = info["is_income"]
+        cost = trips * price
+        pct = f"{(trips / total_out * 100):.1f}" if total_out > 0 else "0.0"
+        ev_pct = f"{(ev_t / trips * 100):.1f}" if trips > 0 else "0.0"
+        by_soil_type.append({
+            "soil_type": name,
+            "trips": trips,
+            "percentage": pct,
+            "unit_price": price,
+            "total_cost": cost,
+            "is_income": is_inc,
+            "ev_trips": ev_t,
+            "ev_percentage": ev_pct
+        })
+        
+    # 4. 按消纳场地/卸土点汇总
+    cursor.execute("SELECT name, unit_price FROM dump_sites")
+    site_prices = {r["name"]: r["unit_price"] for r in cursor.fetchall()}
+    
+    cursor.execute("""
+        SELECT dump_site,
+               COUNT(*) as trips,
+               SUM(CASE WHEN is_ev = '是' THEN 1 ELSE 0 END) as ev_trips
+        FROM vehicle_records
+        WHERE direction = 'OUT' AND pass_time BETWEEN ? AND ?
+        GROUP BY dump_site
+        ORDER BY trips DESC
+    """, (query_start, query_end))
+    site_rows = cursor.fetchall()
+    by_dump_site = []
+    for r in site_rows:
+        name = r["dump_site"] or "未分配"
+        trips = r["trips"]
+        ev_t = r["ev_trips"] or 0
+        price = site_prices.get(name, 90.0) if name != "未分配" else 0.0
+        cost = trips * price
+        pct = f"{(trips / total_out * 100):.1f}" if total_out > 0 else "0.0"
+        ev_pct = f"{(ev_t / trips * 100):.1f}" if trips > 0 else "0.0"
+        by_dump_site.append({
+            "dump_site": name,
+            "trips": trips,
+            "percentage": pct,
+            "unit_price": price,
+            "total_cost": cost,
+            "ev_trips": ev_t,
+            "ev_percentage": ev_pct
+        })
+        
+    # 5. 构建交叉透视矩阵
+    cursor.execute("""
+        SELECT substr(pass_time,1,10) as day_date, dump_site, COUNT(*) as trips
+        FROM vehicle_records
+        WHERE direction = 'OUT' AND pass_time BETWEEN ? AND ?
+        GROUP BY day_date, dump_site
+    """, (query_start, query_end))
+    matrix_rows = cursor.fetchall()
+    
+    dates_set = set()
+    site_daily_map = {}
+    site_totals = {}
+    
+    for r in matrix_rows:
+        day = r["day_date"]
+        site = r["dump_site"] or "未分配"
+        cnt = r["trips"]
+        dates_set.add(day)
+        if site not in site_daily_map:
+            site_daily_map[site] = {}
+            site_totals[site] = 0
+        site_daily_map[site][day] = cnt
+        site_totals[site] += cnt
+        
+    sorted_dates = sorted(list(dates_set))
+    sorted_site_names = sorted(list(site_totals.keys()), key=lambda s: site_totals[s], reverse=True)
+    
+    sites_list = []
+    for site_name in sorted_site_names:
+        sites_list.append({
+            "dump_site": site_name,
+            "total_trips": site_totals[site_name],
+            "daily_trips": site_daily_map[site_name]
+        })
+    
+    conn.close()
+    
+    return {
+        "success": True,
+        "total_out_trips": total_out,
+        "ev_count": ev_count,
+        "fuel_count": fuel_count,
+        "by_soil_type": by_soil_type,
+        "by_dump_site": by_dump_site,
+        "pivot_matrix": {
+            "dates": sorted_dates,
+            "sites": sites_list
+        },
+        "db_range": {
+            "min": db_min,
+            "max": db_max
+        }
+    }
+
+@app.post("/api/import_excel")
+async def import_excel_file(file: UploadFile = File(...)) -> dict[str, Any]:
+    """通过前端页面拖拽或上传 Excel 表格文件同步全盘台账数据"""
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="未选择文件")
+        
+    temp_path = os.path.join(UPLOAD_DIR, f"temp_{uuid.uuid4().hex[:8]}_{file.filename}")
+    with open(temp_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+        
+    try:
+        df = pd.read_excel(temp_path, sheet_name=0)
+        
+        def convert_excel_date(val):
+            if pd.isna(val): return None
+            try:
+                if isinstance(val, (int, float)):
+                    return (pd.to_datetime('1899-12-30') + pd.to_timedelta(val, unit='D')).strftime('%Y-%m-%d')
+                return str(val).split(' ')[0]
+            except Exception:
+                return str(val)
+
+        df['Formatted_Date'] = df['日期'].apply(convert_excel_date)
+        clean_df = df.dropna(subset=['Formatted_Date', '种类']).copy()
+        clean_df['车辆数'] = clean_df['车辆数'].fillna(0).astype(int)
+        clean_df = clean_df[clean_df['车辆数'] > 0]
+        
+        if len(clean_df) == 0:
+            os.remove(temp_path)
+            return {"success": False, "message": "未能从 Excel 中解析到有效数据行（需要包含 [日期] 与 [种类] 列）"}
+            
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        
+        imported_cnt = 0
+        for _, row in clean_df.iterrows():
+            day_str = row['Formatted_Date']
+            soil = str(row['种类']).strip()
+            site = str(row['卸土点']).strip() if pd.notna(row['卸土点']) else '未知'
+            is_ev_val = str(row['是否自有电车']).strip() if pd.notna(row['是否自有电车']) else '未知'
+            trip_cnt = int(row['车辆数'])
+            remark = str(row['备注']) if pd.notna(row['备注']) else None
+            
+            cursor.execute("INSERT OR IGNORE INTO soil_types (name, unit_price) VALUES (?, 90.0)", (soil,))
+            if site != '未知':
+                cursor.execute("INSERT OR IGNORE INTO dump_sites (name, unit_price) VALUES (?, 100.0)", (site,))
+                
+            for _ in range(trip_cnt):
+                plate_no = f"京A{random.randint(10000, 99999)}"
+                color = "绿色" if is_ev_val == "是" else "黄色"
+                out_time = f"{day_str} {random.randint(7, 20):02d}:{random.randint(0, 59):02d}:{random.randint(0, 59):02d}"
+                
+                cursor.execute("""
+                    INSERT INTO vehicle_records
+                    (plate_no, plate_color, direction, pass_time, confidence, dump_site, soil_type, dump_paid, soil_paid, is_ev, remark)
+                    VALUES (?, ?, 'OUT', ?, 1.0, ?, ?, 0, 0, ?, ?)
+                """, (plate_no, color, out_time, site, soil, is_ev_val, remark))
+                imported_cnt += 1
+                
+        conn.commit()
+        conn.close()
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+        
+        return {
+            "success": True,
+            "message": f"成功解析并导入 Excel 数据！共增加 {imported_cnt} 趟车辆通行拉运台账。"
+        }
+    except Exception as e:
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+        raise HTTPException(status_code=500, detail=f"解析 Excel 发生异常: {str(e)}")
 
 @app.post("/api/sync_registered_vehicles")
 def sync_registered_vehicles() -> dict[str, Any]:
@@ -1751,280 +2013,6 @@ def get_analytics_data(
         "sites": sites,
         "soils": soils,
         "daily": daily
-    }
-
-# ----------------- 中央电视台项目：数据汇总中心与台账导入 APIs -----------------
-
-@app.get("/api/summary_analytics")
-def get_summary_analytics(
-    start_date: Optional[str] = Query(None, description="起始日期 YYYY-MM-DD"),
-    end_date: Optional[str] = Query(None, description="结束日期 YYYY-MM-DD"),
-    preset: Optional[str] = Query("all", description="快捷区间: 'all', 'month', 'custom'")
-) -> dict[str, Any]:
-    """
-    中央电视台项目 - 全周期与多维度数据汇总与交叉透视 API
-    支持：土方规格汇总、消纳点汇总、自有电车/燃油车比重汇总、日期透视交叉表
-    """
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
-    
-    # 确定查询日期范围
-    cursor.execute("SELECT MIN(substr(pass_time, 1, 10)), MAX(substr(pass_time, 1, 10)) FROM vehicle_records WHERE direction = 'OUT'")
-    db_min_max = cursor.fetchone()
-    db_start = db_min_max[0] if db_min_max and db_min_max[0] else datetime.now().strftime("%Y-%m-%d")
-    db_end = db_min_max[1] if db_min_max and db_min_max[1] else datetime.now().strftime("%Y-%m-%d")
-    
-    if preset == "all" or not start_date or not end_date:
-        query_start_str = f"{db_start} 00:00:00"
-        query_end_str = f"{db_end} 23:59:59"
-        eff_start = db_start
-        eff_end = db_end
-    else:
-        query_start_str = f"{start_date} 00:00:00"
-        query_end_str = f"{end_date} 23:59:59"
-        eff_start = start_date
-        eff_end = end_date
-
-    # 1. 整体基础指标
-    cursor.execute("""
-        SELECT COUNT(*) as total_out,
-               SUM(CASE WHEN is_ev = '是' THEN 1 ELSE 0 END) as ev_cnt,
-               SUM(CASE WHEN is_ev = '否' THEN 1 ELSE 0 END) as fuel_cnt,
-               SUM(CASE WHEN is_ev = '未知' OR is_ev IS NULL THEN 1 ELSE 0 END) as unknown_ev_cnt
-        FROM vehicle_records
-        WHERE direction = 'OUT' AND pass_time BETWEEN ? AND ?
-    """, (query_start_str, query_end_str))
-    overall = cursor.fetchone()
-    total_out = overall["total_out"] or 0
-    ev_cnt = overall["ev_cnt"] or 0
-    fuel_cnt = overall["fuel_cnt"] or 0
-    unknown_ev_cnt = overall["unknown_ev_cnt"] or 0
-    
-    # 2. 土方价格信息
-    cursor.execute("SELECT name, unit_price, is_income FROM soil_types")
-    soil_info = {r["name"]: {"price": r["unit_price"], "is_income": r["is_income"]} for r in cursor.fetchall()}
-    
-    # 消纳点价格信息
-    cursor.execute("SELECT name, unit_price FROM dump_sites")
-    site_prices = {r["name"]: r["unit_price"] for r in cursor.fetchall()}
-    
-    # 3. 按土方规格汇总 (by_soil_type)
-    cursor.execute("""
-        SELECT soil_type, COUNT(*) as trips,
-               SUM(CASE WHEN is_ev = '是' THEN 1 ELSE 0 END) as ev_trips
-        FROM vehicle_records
-        WHERE direction = 'OUT' AND pass_time BETWEEN ? AND ?
-        GROUP BY soil_type
-        ORDER BY trips DESC
-    """, (query_start_str, query_end_str))
-    soil_rows = cursor.fetchall()
-    
-    by_soil_type = []
-    total_soil_cost_sum = 0.0
-    for r in soil_rows:
-        s_type = r["soil_type"] or "渣土"
-        trips = r["trips"]
-        ev_t = r["ev_trips"]
-        info = soil_info.get(s_type, {"price": 0.0, "is_income": 0})
-        cost_val = trips * info["price"]
-        total_soil_cost_sum += cost_val
-        pct = round((trips / total_out * 100), 1) if total_out > 0 else 0.0
-        ev_pct = round((ev_t / trips * 100), 1) if trips > 0 else 0.0
-        by_soil_type.append({
-            "soil_type": s_type,
-            "trips": trips,
-            "percentage": pct,
-            "unit_price": info["price"],
-            "total_cost": cost_val,
-            "is_income": info["is_income"],
-            "ev_trips": ev_t,
-            "ev_percentage": ev_pct
-        })
-        
-    # 4. 按消纳点汇总 (by_dump_site)
-    cursor.execute("""
-        SELECT dump_site, COUNT(*) as trips,
-               SUM(CASE WHEN is_ev = '是' THEN 1 ELSE 0 END) as ev_trips
-        FROM vehicle_records
-        WHERE direction = 'OUT' AND pass_time BETWEEN ? AND ?
-        GROUP BY dump_site
-        ORDER BY trips DESC
-    """, (query_start_str, query_end_str))
-    site_rows = cursor.fetchall()
-    
-    by_dump_site = []
-    total_dump_cost_sum = 0.0
-    for r in site_rows:
-        d_site = r["dump_site"] or "未分配"
-        trips = r["trips"]
-        ev_t = r["ev_trips"]
-        unit_p = site_prices.get(d_site, 0.0) if d_site != "未分配" else 0.0
-        cost_val = trips * unit_p
-        total_dump_cost_sum += cost_val
-        pct = round((trips / total_out * 100), 1) if total_out > 0 else 0.0
-        ev_pct = round((ev_t / trips * 100), 1) if trips > 0 else 0.0
-        by_dump_site.append({
-            "dump_site": d_site,
-            "trips": trips,
-            "percentage": pct,
-            "unit_price": unit_p,
-            "total_cost": cost_val,
-            "ev_trips": ev_t,
-            "ev_percentage": ev_pct
-        })
-        
-    # 5. 按动力类型/自有电车比重汇总 (by_ev_status)
-    by_ev_status = [
-        {"ev_status": "自有电车 (是)", "trips": ev_cnt, "percentage": round((ev_cnt / total_out * 100), 1) if total_out > 0 else 0.0, "color": "#10b981"},
-        {"ev_status": "外协燃油车 (否)", "trips": fuel_cnt, "percentage": round((fuel_cnt / total_out * 100), 1) if total_out > 0 else 0.0, "color": "#f59e0b"},
-        {"ev_status": "未知/未划分", "trips": unknown_ev_cnt, "percentage": round((unknown_ev_cnt / total_out * 100), 1) if total_out > 0 else 0.0, "color": "#64748b"}
-    ]
-    
-    # 6. 交叉透视透视图矩阵 (Pivot Matrix: 按消纳点与日期)
-    cursor.execute("""
-        SELECT dump_site, substr(pass_time, 1, 10) as day_date, COUNT(*) as trips
-        FROM vehicle_records
-        WHERE direction = 'OUT' AND pass_time BETWEEN ? AND ?
-        GROUP BY dump_site, day_date
-        ORDER BY dump_site, day_date
-    """, (query_start_str, query_end_str))
-    matrix_rows = cursor.fetchall()
-    
-    cursor.execute("""
-        SELECT DISTINCT substr(pass_time, 1, 10) as day_date
-        FROM vehicle_records
-        WHERE direction = 'OUT' AND pass_time BETWEEN ? AND ?
-        ORDER BY day_date ASC
-    """, (query_start_str, query_end_str))
-    distinct_dates = [r[0] for r in cursor.fetchall()]
-    
-    pivot_map = {}
-    for r in matrix_rows:
-        site = r["dump_site"] or "未分配"
-        day = r["day_date"]
-        cnt = r["trips"]
-        if site not in pivot_map:
-            pivot_map[site] = {d: 0 for d in distinct_dates}
-        pivot_map[site][day] = cnt
-        
-    pivot_sites = []
-    for site, daily_dict in pivot_map.items():
-        total_site_trips = sum(daily_dict.values())
-        pivot_sites.append({
-            "dump_site": site,
-            "daily_trips": daily_dict,
-            "total_trips": total_site_trips
-        })
-    pivot_sites.sort(key=lambda x: x["total_trips"], reverse=True)
-    
-    conn.close()
-    
-    return {
-        "success": True,
-        "date_range": {"start": eff_start, "end": eff_end},
-        "db_range": {"min": db_start, "max": db_end},
-        "total_out_trips": total_out,
-        "total_soil_cost": total_soil_cost_sum,
-        "total_dump_cost": total_dump_cost_sum,
-        "ev_count": ev_cnt,
-        "fuel_count": fuel_cnt,
-        "unknown_ev_count": unknown_ev_cnt,
-        "by_soil_type": by_soil_type,
-        "by_dump_site": by_dump_site,
-        "by_ev_status": by_ev_status,
-        "pivot_matrix": {
-            "dates": distinct_dates,
-            "sites": pivot_sites
-        }
-    }
-
-@app.post("/api/import_excel")
-async def import_excel_file(file: UploadFile = File(...)) -> dict[str, Any]:
-    """
-    网页前端一键上传并导入中央电视台项目 Excel/CSV 台账文件
-    自动解析 '日期', '种类', '卸土点', '是否自有电车', '车辆数', '备注'
-    """
-    import io
-    import pandas as pd
-
-    filename = file.filename or "ledger.xlsx"
-    contents = await file.read()
-    
-    try:
-        if filename.endswith(".csv"):
-            df = pd.read_csv(io.BytesIO(contents))
-        else:
-            df = pd.read_excel(io.BytesIO(contents))
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"文件解析失败: {str(e)}")
-        
-    date_col = next((c for c in df.columns if '日期' in str(c) or 'date' in str(c).lower()), None)
-    soil_col = next((c for c in df.columns if '种类' in str(c) or '规格' in str(c) or '土方' in str(c)), None)
-    site_col = next((c for c in df.columns if '卸土点' in str(c) or '去向' in str(c) or '消纳' in str(c)), None)
-    ev_col = next((c for c in df.columns if '电车' in str(c) or '自有' in str(c)), None)
-    cnt_col = next((c for c in df.columns if '车辆数' in str(c) or '趟数' in str(c) or '车数' in str(c)), None)
-    remark_col = next((c for c in df.columns if '备注' in str(c) or '说明' in str(c)), None)
-    
-    if not date_col or not soil_col:
-        raise HTTPException(status_code=400, detail="Excel 表格缺少必填列：'日期' 和 '种类/规格'")
-        
-    def parse_date_val(val):
-        if pd.isna(val): return None
-        try:
-            if isinstance(val, (int, float)):
-                return (pd.to_datetime('1899-12-30') + pd.to_timedelta(val, unit='D')).strftime('%Y-%m-%d')
-            return str(val).split(' ')[0]
-        except:
-            return str(val)
-
-    df['Parsed_Date'] = df[date_col].apply(parse_date_val)
-    clean_df = df.dropna(subset=['Parsed_Date', soil_col]).copy()
-    
-    if cnt_col:
-        clean_df['Trip_Count'] = clean_df[cnt_col].fillna(1).astype(int)
-    else:
-        clean_df['Trip_Count'] = 1
-        
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    
-    imported_rows = 0
-    total_trips = 0
-    
-    for _, row in clean_df.iterrows():
-        day_str = row['Parsed_Date']
-        soil = str(row[soil_col]).strip()
-        site = str(row[site_col]).strip() if site_col and pd.notna(row[site_col]) else '未知'
-        is_ev_val = str(row[ev_col]).strip() if ev_col and pd.notna(row[ev_col]) else '未知'
-        trip_cnt = int(row['Trip_Count'])
-        remark = str(row[remark_col]) if remark_col and pd.notna(row[remark_col]) else None
-        
-        # 动态将新种类和新卸土点加到数据库配置中
-        cursor.execute("INSERT OR IGNORE INTO soil_types (name, unit_price) VALUES (?, 90.0)", (soil,))
-        cursor.execute("INSERT OR IGNORE INTO dump_sites (name, unit_price) VALUES (?, 90.0)", (site,))
-        
-        for _ in range(trip_cnt):
-            pass_time = f"{day_str} 12:00:00"
-            plate_no = "京AD88888" if is_ev_val == '是' else "京A66666"
-            color = "绿色" if is_ev_val == '是' else "黄色"
-            
-            cursor.execute("""
-                INSERT INTO vehicle_records
-                (plate_no, plate_color, direction, pass_time, confidence, dump_site, soil_type, dump_paid, soil_paid, is_ev, remark)
-                VALUES (?, ?, 'OUT', ?, 1.0, ?, ?, 0, 0, ?, ?)
-            """, (plate_no, color, pass_time, site, soil, is_ev_val, remark))
-            total_trips += 1
-        imported_rows += 1
-        
-    conn.commit()
-    conn.close()
-    
-    return {
-        "success": True,
-        "message": f"成功导入台账文件 {filename}！解析 {imported_rows} 条台账条目，共 {total_trips} 趟车辆记录。",
-        "imported_entries": imported_rows,
-        "total_trips": total_trips
     }
 
 @app.get("/api/export")
