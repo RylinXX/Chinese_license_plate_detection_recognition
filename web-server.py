@@ -247,19 +247,19 @@ def init_db() -> None:
     cursor.execute("SELECT COUNT(*) FROM absorptive_sites_config")
     if cursor.fetchone()[0] == 0:
         default_site_configs = [
-            ("妙峰绿水资源化处置厂", '["妙峰", "绿水"]', 10000.0, "2026/12/13", "资源化厂"),
-            ("石景山区北辛安路", '["北辛安", "北辛安路"]', 127750.0, "2026/7/30", "回填土点"),
-            ("石景山区西黄村棚户", '["西黄村"]', 30000.0, "2026/8/28", "回填土点"),
-            ("石景山区首钢园区东南", '["首钢", "首钢园区"]', 30000.0, "2026/8/28", "回填土点"),
-            ("首建恒纪建筑垃圾资源化处置场", '["首建恒纪", "恒纪"]', 260000.0, "2026/12/13", "资源化场"),
-            ("国盛通顺临时资源化处置场", '["国盛通顺"]', 350000.0, "2026/12/13", "资源化场"),
-            ("北京石宇环保科技有限公司临时资源化处置场", '["石宇环保", "石宇"]', 50000.0, "2026/12/13", "资源化场")
+            ("首建恒纪建筑垃圾资源化处置场", '["首建恒纪", "恒纪", "首建", "首建恒济"]', 260000.0, "2026/12/13", "资源化场", 1),
+            ("妙峰绿水资源化处置厂", '["妙峰", "绿水"]', 10000.0, "2026/12/13", "资源化厂", 0),
+            ("石景山区北辛安路", '["北辛安", "北辛安路"]', 127750.0, "2026/7/30", "回填土点", 0),
+            ("石景山区西黄村棚户", '["西黄村"]', 30000.0, "2026/8/28", "回填土点", 0),
+            ("石景山区首钢园区东南", '["首钢", "首钢园区"]', 30000.0, "2026/8/28", "回填土点", 0),
+            ("国盛通顺临时资源化处置场", '["国盛通顺"]', 350000.0, "2026/12/13", "资源化场", 0),
+            ("北京石宇环保科技有限公司临时资源化处置场", '["石宇环保", "石宇"]', 50000.0, "2026/12/13", "资源化场", 0)
         ]
         cursor.executemany(
-            "INSERT INTO absorptive_sites_config (name, alias, total_quota, expire_date, site_type) VALUES (?, ?, ?, ?, ?)",
+            "INSERT INTO absorptive_sites_config (name, alias, total_quota, expire_date, site_type, is_active) VALUES (?, ?, ?, ?, ?, ?)",
             default_site_configs
         )
-        print("[Database] 默认土点核准容量与到期配置初始化完成。")
+        print("[Database] 默认土点核准容量与到期配置初始化完成 (已聚焦首建恒纪)。")
 
     # 3. remote_sync_config 远程数据同步配置表
     cursor.execute("""
@@ -275,11 +275,12 @@ def init_db() -> None:
         ("worksitetype", "1"),
         ("auto_sync_enabled", "1"),
         ("auto_sync_time", "02:00"),
-        ("total_project_volume", "938164.0"),
+        ("total_project_volume", "260000.0"),
         ("last_sync_time", ""),
         ("last_sync_status", "待同步"),
         ("last_sync_count", "0")
     ]
+
     for k, v in default_sync_cfgs:
         cursor.execute("INSERT OR IGNORE INTO remote_sync_config (key, value) VALUES (?, ?)", (k, v))
 
