@@ -538,11 +538,12 @@
             width: 100%;
         }
 
-        /* 2. 通行财务台账 */
+        /* 2. 项目明细台账 (全宽明细对账单) */
         #panel-ledger.active {
-            display: grid;
-            grid-template-columns: 360px 1fr;
-            gap: 20px;
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            gap: 16px;
         }
 
         /* 3. Excel 导入与导出 */
@@ -2396,146 +2397,56 @@
         </section>
 
         <!-- 📊 面板二: 通行财务台账 -->
+        <!-- 📑 面板二: 项目明细台账 (全宽纯明细对账单) -->
         <section class="main-content" id="panel-ledger">
-            <!-- 左侧：检索及手工录入补录 -->
-            <div class="ledger-left-col">
-                <div class="glass-card" id="ledger-kpis-card">
-                    <h3 class="card-header-title">
-                        <i data-lucide="calendar"></i>通行与对账指标一览
-                    </h3>
-                    <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px;">
-                        请使用上方导航处的<b>对账日期</b>切换不同日期的数据。
-                    </div>
-                    <div class="kpi-grid" style="grid-template-columns: repeat(2, 1fr);">
-                        <div class="kpi-card" style="padding:10px;">
-                            <div class="kpi-info">
-                                <span class="kpi-label">该日累计出场趟数</span>
-                                <span class="kpi-value" style="color:var(--color-out); font-size:16px;" id="query-kpi-out">0</span>
-                            </div>
+            <div class="glass-card" style="width: 100%; padding: 20px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
+                    <div>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <h3 class="card-header-title" style="margin-bottom:0; font-size:16px;">
+                                <i data-lucide="file-spreadsheet" style="color:var(--color-primary);"></i>项目明细对账单 (首建恒纪 · 开槽砂石)
+                            </h3>
+                            <span class="badge" id="ledger-date-badge" style="background:rgba(99,102,241,0.15); color:var(--color-primary-hover); font-size:11px; padding:2px 8px; border-radius:12px; font-weight:700;">2026-08-16</span>
                         </div>
-                        <div class="kpi-card" style="padding:10px; flex-direction:column; align-items:flex-start; gap:4px;">
-                            <div class="kpi-info">
-                                <span class="kpi-label">该日结算收支 (净额)</span>
-                                <span class="kpi-value" style="color:var(--color-in); font-size:16px;" id="query-kpi-cost">￥0.00</span>
-                                <span style="font-size:9px; color:var(--text-secondary); margin-top:2px;" id="query-kpi-detail">收入: ￥0.00 | 支出: ￥0.00</span>
-                            </div>
+                        <div style="font-size:12px; color:var(--text-secondary); margin-top:4px;">
+                            消纳去向：<strong style="color:var(--text-primary);">首建恒纪建筑垃圾资源化处置场</strong> | 结算标准：<strong style="color:var(--color-in);">30.00 元/吨 (纯收入)</strong>
                         </div>
                     </div>
                     
-                    <!-- 新增：紧凑的已付/未付对账明细 -->
-                    <div style="margin-top:10px; font-size:11px; background:rgba(255,255,255,0.015); border:1px solid var(--card-border); border-radius:6px; padding:8px; display:flex; flex-direction:column; gap:4px;">
-                        <div style="display:flex; justify-content:space-between;">
-                            <span style="color:var(--text-secondary);">运费付款:</span>
-                            <span style="font-weight:700;">已付 <span id="ledger-soil-paid" style="color:var(--color-in);">￥0.00</span> / 未付 <span id="ledger-soil-unpaid" style="color:var(--color-danger);">￥0.00</span></span>
-                        </div>
-                        <div style="display:flex; justify-content:space-between; border-top:1px solid rgba(255,255,255,0.03); padding-top:4px;">
-                            <span style="color:var(--text-secondary);">卸土费付款:</span>
-                            <span style="font-weight:700;">已付 <span id="ledger-dump-paid" style="color:var(--color-in);">￥0.00</span> / 未付 <span id="ledger-dump-unpaid" style="color:var(--color-danger);">￥0.00</span></span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="glass-card" id="ledger-form-card" style="flex-grow:1; min-height:0; display:flex; flex-direction:column;">
-                    <h3 class="card-header-title">
-                        <i data-lucide="edit-3"></i>现场快速记账 / 补录
-                    </h3>
-                    <div class="control-scroll-wrapper">
-                        <div class="form-group" style="position: relative;">
-                            <label class="form-label" for="manual-plate">车牌号码</label>
-                            <div style="position: relative; display: flex; align-items: center; width: 100%;">
-                                <input type="text" id="manual-plate" autocomplete="off" placeholder="输入车牌号(如 粤B9988D)" class="input-control" style="text-transform: uppercase; padding-right: 40px; flex-grow: 1;">
-                                <button type="button" id="plate-dropdown-btn" style="position: absolute; right: 0; top: 0; bottom: 0; width: 40px; background: transparent; border: none; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 10;">
-                                    <i data-lucide="chevron-down" style="width: 16px; height: 16px; transition: transform 0.2s;"></i>
-                                </button>
-                            </div>
-                            <div class="custom-suggestions-box" id="plate-suggestions-box">
-                                <!-- 自动联想 / 下拉选择 -->
-                            </div>
-                        </div>
-
-                        <div class="form-group" id="manual-site-group">
-                            <label class="form-label" for="manual-site">卸土点</label>
-                            <select id="manual-site" class="input-control">
-                                <option value="未分配">未分配</option>
-                            </select>
-                        </div>
-                        <div class="form-group" id="manual-soil-group">
-                            <label class="form-label" for="manual-soil">土方类型</label>
-                            <select id="manual-soil" class="input-control">
-                                <option value="渣土">渣土</option>
-                                <option value="好土">好土</option>
-                                <option value="二混子">二混子</option>
-                                <option value="自卸">自卸</option>
-                                <option value="级配石">级配石</option>
-                            </select>
-                        </div>
-                        <button class="btn btn-accent" style="width:100%; margin-top:4px;" onclick="submitManualRecord()" id="btn-manual-submit">
-                            <i data-lucide="check-circle"></i>确认记入今日流水
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <input type="text" id="ledger-plate-search" class="input-control" placeholder="🔍 快速搜索车牌 (如 京A38428D)" oninput="filterLedgerTable()" style="width: 210px; height: 32px; font-size: 12px; padding: 4px 10px;">
+                        <button class="btn btn-sm btn-accent" onclick="exportCurrentDateCSV()" style="height:32px; padding:0 12px; font-size:12px; display:inline-flex; align-items:center; gap:4px;">
+                            <i data-lucide="download" style="width:13px; height:13px;"></i>
+                            <span>导出当日明细 (CSV)</span>
                         </button>
                     </div>
                 </div>
-            </div>
 
-            <!-- 右侧：对账分账明细 -->
-            <div class="glass-card ledger-main-card">
-                <div class="ledger-filter-bar">
-                    <h3 class="card-header-title" style="margin-bottom:0; border-left:none; padding-left:0;">
-                        <i data-lucide="file-spreadsheet" style="color:var(--color-out);"></i>对账单明细
-                    </h3>
-                    <div style="display:flex; align-items:center; gap:12px;">
-                        <!-- 新增：展示样式切换按钮组 -->
-                        <div id="ledger-layout-toggle-container" style="display:none; align-items:center; border: 1px solid var(--card-border); border-radius: var(--border-radius-sm); padding: 2px; background: rgba(255,255,255,0.02); gap: 2px;">
-                            <button id="btn-layout-table" class="btn" onclick="setLedgerLayoutMode('table')" style="padding: 4px 8px; font-size: 12px; height: 32px; border:none; background:transparent; display: flex; align-items: center; justify-content: center; gap: 4px; color: var(--text-secondary);" title="表格视图">
-                                <i data-lucide="list" style="width:14px; height:14px;"></i>
-                                <span style="font-size:11px; font-weight:700;">列表</span>
-                            </button>
-                            <button id="btn-layout-card" class="btn" onclick="setLedgerLayoutMode('card')" style="padding: 4px 8px; font-size: 12px; height: 32px; border:none; background:transparent; display: flex; align-items: center; justify-content: center; gap: 4px; color: var(--text-secondary);" title="卡片视图">
-                                <i data-lucide="layout-grid" style="width:14px; height:14px;"></i>
-                                <span style="font-size:11px; font-weight:700;">卡片</span>
-                            </button>
-                        </div>
-                        <span class="form-label" style="margin-bottom:0;">账单视图:</span>
-                        <select class="input-control" id="ledger-site-filter" style="width: 220px; padding: 6px 12px; font-size: 13px; height: 38px;" onchange="handleLedgerFilterChange(this.value)">
-                            <option value="车辆账单">车辆账单</option>
-                            <option value="全盘汇总">全盘汇总</option>
-                            <!-- 动态土点名册 -->
-                        </select>
-                    </div>
-                </div>
-
-                <!-- 总览表视图 -->
-                <div class="table-responsive" id="ledger-table-wrapper">
-                    <table class="ledger-table">
+                <!-- 车辆单趟对账单明细表 -->
+                <div class="table-responsive" id="ledger-table-wrapper" style="overflow-x:auto;">
+                    <table class="ledger-table" style="width:100%;">
                         <thead>
                             <tr>
-                                <th>序号</th>
-                                <th>卸土点</th>
-                                <th>单价(元)</th>
-                                <th>总趟数</th>
-                                <th>总额(元)</th>
-                                <th>待分账(趟)</th>
-                                <th>操作</th>
+                                <th style="width:55px; text-align:center;">序号</th>
+                                <th style="min-width:110px;">车牌号码</th>
+                                <th style="min-width:130px; text-align:center;">通行/发车时间</th>
+                                <th style="min-width:180px;">消纳去向</th>
+                                <th style="min-width:90px; text-align:center;">货物类型</th>
+                                <th style="min-width:95px; text-align:right;">单车吨数</th>
+                                <th style="min-width:95px; text-align:right;">结算单价</th>
+                                <th style="min-width:110px; text-align:right;">实际产值(元)</th>
+                                <th style="min-width:100px; text-align:center;">运单状态</th>
+                                <th style="min-width:80px; text-align:center;">操作</th>
                             </tr>
                         </thead>
                         <tbody id="ledger-table-body">
-                            <!-- 动态渲染 -->
+                            <!-- 动态渲染单趟流水记录 -->
                         </tbody>
                     </table>
                 </div>
 
-                <!-- 卡片网格视图 -->
-                <div class="table-responsive" id="ledger-cards-wrapper" style="display:none; padding:16px;">
-                    <div class="ledger-cards-grid" id="ledger-cards-grid">
-                        <!-- 卡片渲染 -->
-                    </div>
-                </div>
-
-                <!-- 新增：台账对账大列表分页控件 -->
-                <div id="ledger-pagination" style="display:none; justify-content:center; align-items:center; gap:12px; margin-top:16px; padding:8px 0;">
-                </div>
-
-                <!-- 下方结算总额横幅 -->
-                <div class="ledger-summary-bar" id="ledger-summary-bar">
+                <!-- 底部对账汇总横幅 -->
+                <div class="ledger-summary-bar" id="ledger-summary-bar" style="margin-top:14px; padding:12px 18px; border-radius:var(--border-radius-sm); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
                     <!-- 动态指标 -->
                 </div>
             </div>
@@ -4316,591 +4227,124 @@
         }
         let ledgerLayoutMode = 'table'; // 默认列表视图，省空间
 
-        function setLedgerLayoutMode(mode) {
-            ledgerLayoutMode = mode;
-            refreshLedger();
-        }
+        let currentLedgerRecords = [];
 
         function refreshLedger() {
+            const dateBadge = document.getElementById('ledger-date-badge');
+            if (dateBadge) dateBadge.innerText = selectedQueryDate;
+
             fetch(`/api/records?date=${selectedQueryDate}&limit=1000`)
             .then(res => res.json())
             .then(data => {
                 if (!data.success) return;
 
-                // 新增：切换按钮容器的显示和隐藏及样式控制
-                const toggleContainer = document.getElementById('ledger-layout-toggle-container');
-                const siteList = currentSitesList || [];
-                const isCardOrSite = ["车辆账单", ...siteList.map(s => s ? s.name : "")].includes(activeSiteFilter) || (!["今日流水", "全盘汇总"].includes(activeSiteFilter));
-                
-                if (toggleContainer) {
-                    toggleContainer.style.display = isCardOrSite ? 'flex' : 'none';
-                    
-                    const btnTable = document.getElementById('btn-layout-table');
-                    const btnCard = document.getElementById('btn-layout-card');
-                    if (btnTable && btnCard) {
-                        if (ledgerLayoutMode === 'table') {
-                            btnTable.style.background = 'var(--color-primary)';
-                            btnTable.style.borderColor = 'var(--color-primary)';
-                            btnTable.style.color = '#ffffff';
-                            
-                            btnCard.style.background = 'transparent';
-                            btnCard.style.borderColor = 'transparent';
-                            btnCard.style.color = 'var(--text-secondary)';
-                        } else {
-                            btnCard.style.background = 'var(--color-primary)';
-                            btnCard.style.borderColor = 'var(--color-primary)';
-                            btnCard.style.color = '#ffffff';
-                            
-                            btnTable.style.background = 'transparent';
-                            btnTable.style.borderColor = 'transparent';
-                            btnTable.style.color = 'var(--text-secondary)';
-                        }
-                    }
-                }
+                // 仅展示出场 (OUT) 记录
+                const outRecords = (data.records || []).filter(r => r.direction === 'OUT' || !r.direction);
+                currentLedgerRecords = outRecords;
 
-                if (document.getElementById('query-kpi-out')) document.getElementById('query-kpi-out').innerText = data.kpis.total_out;
-                if (document.getElementById('query-kpi-cost')) document.getElementById('query-kpi-cost').innerText = '￥' + data.kpis.total_cost.toLocaleString('zh-CN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-                if (document.getElementById('query-kpi-detail')) {
-                    document.getElementById('query-kpi-detail').innerText = `收入: ￥${data.kpis.total_income.toFixed(2)} | 支出: ￥${data.kpis.total_expense.toFixed(2)}`;
-                }
-                
-                // 侧边栏付款状态明细统计
-                if (document.getElementById('ledger-soil-paid')) document.getElementById('ledger-soil-paid').innerText = '￥' + data.kpis.soil_paid_sum.toLocaleString('zh-CN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-                if (document.getElementById('ledger-soil-unpaid')) document.getElementById('ledger-soil-unpaid').innerText = '￥' + data.kpis.soil_unpaid_sum.toLocaleString('zh-CN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-                if (document.getElementById('ledger-dump-paid')) document.getElementById('ledger-dump-paid').innerText = '￥' + data.kpis.dump_paid_sum.toLocaleString('zh-CN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-                if (document.getElementById('ledger-dump-unpaid')) document.getElementById('ledger-dump-unpaid').innerText = '￥' + data.kpis.dump_unpaid_sum.toLocaleString('zh-CN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-
-                const tableWrapper = document.getElementById('ledger-table-wrapper');
-                const cardsWrapper = document.getElementById('ledger-cards-wrapper');
-                const summaryBar = document.getElementById('ledger-summary-bar');
-
-                const isSpecificSite = !["今日流水", "全盘汇总", "车辆账单"].includes(activeSiteFilter);
-                if (activeSiteFilter === "今日流水" || isSpecificSite) {
-                    tableWrapper.style.display = 'block';
-                    cardsWrapper.style.display = 'none';
-
-                    // Update headers dynamically for detailed ledger
-                    tableWrapper.querySelector('thead').innerHTML = `
-                        <tr>
-                            <th>序号</th>
-                            <th>车牌号码</th>
-                            <th>通行时间</th>
-                            <th>消纳场</th>
-                            <th>土方类型</th>
-                            <th>运费付款 (单价×趟数)</th>
-                            <th>卸土费付款 (单价×趟数)</th>
-                            <th>操作</th>
-                        </tr>
-                    `;
-
-                    let html = '';
-                    // 过滤仅展示出场 (OUT) 记录
-                    let outRecords = data.records.filter(r => r.direction === 'OUT');
-                    if (isSpecificSite) {
-                        outRecords = outRecords.filter(r => r.dump_site === activeSiteFilter);
-                    }
-
-                    if (!outRecords || outRecords.length === 0) {
-                        html = `<tr><td colspan="8" style="color:var(--text-secondary); padding: 40px 10px; text-align:center;">暂无任何通行流水记录</td></tr>`;
-                    } else {
-                        // 按车牌 + 卸土点 + 土方进行合并
-                        const groupedMap = {};
-                        outRecords.forEach(r => {
-                            const key = `${r.plate_no}_${r.dump_site || '未分配'}_${r.soil_type || '渣土'}`;
-                            if (!groupedMap[key]) {
-                                groupedMap[key] = {
-                                    plate_no: r.plate_no,
-                                    plate_color: r.plate_color,
-                                    dump_site: r.dump_site,
-                                    soil_type: r.soil_type,
-                                    dump_paid: r.dump_paid,
-                                    soil_paid: r.soil_paid,
-                                    trips: []
-                                };
-                            }
-                            groupedMap[key].trips.push({
-                                id: r.id,
-                                pass_time: r.pass_time,
-                                image_url: r.image_url
-                            });
-                        });
-
-                        const groupedRecords = Object.values(groupedMap);
-                        const totalGroupedItems = groupedRecords.length;
-
-                        // 客户端分页截取
-                        const displayRecords = groupedRecords.slice((ledgerCurrentPage - 1) * ledgerPageSize, ledgerCurrentPage * ledgerPageSize);
-
-                        displayRecords.forEach((r, idx) => {
-                            const globalIdx = (ledgerCurrentPage - 1) * ledgerPageSize + idx + 1;
-                            const isUnassigned = (r.dump_site === '未分配' || !r.dump_site);
-                            const siteName = r.dump_site || '未分配';
-                            const siteColor = isUnassigned ? 'var(--color-danger)' : 'var(--text-primary)';
-                            
-                            const matchSite = currentSitesList.find(s => s.name === r.dump_site);
-                            const dumpPrice = matchSite ? matchSite.unit_price : 0.00;
-                            const dumpPaidClass = r.dump_paid === 1 ? 'paid' : 'unpaid';
-                            const dumpPaidText = r.dump_paid === 1 ? '已付' : '未付';
-                            
-                            // 构造这一组所有的 id 列表作为 JSON 字符串，传递给批量付款更改
-                            const idsJson = JSON.stringify(r.trips.map(t => t.id));
-                            
-                            const matchSoil = currentSoilsList.find(s => s.name === r.soil_type);
-                            const soilPrice = matchSoil ? matchSoil.unit_price : 0.00;
-                            const isInc = matchSoil ? matchSoil.is_income : 0;
-                            const soilPaidClass = r.soil_paid === 1 ? 'paid' : 'unpaid';
-                            const soilPaidText = r.soil_paid === 1 ? '已付' : '未付';
-                            const priceSign = isInc === 1 ? '+' : '-';
-                            const priceColor = isInc === 1 ? 'var(--color-in)' : 'var(--color-danger)';
-
-                            // 修改运费和消纳费成独立列，并展示“单价 × 趟数 = 总额”
-                            const totalSoilCost = soilPrice * r.trips.length;
-                            const soilDetailText = r.trips.length > 1 
-                                ? `￥${soilPrice.toFixed(2)} × ${r.trips.length} 趟 = ￥${totalSoilCost.toFixed(2)}` 
-                                : `￥${soilPrice.toFixed(2)}`;
-                            
-                            const soilPaymentHtml = `
-                                <div style="font-size:12px; display:flex; align-items:center; gap:8px;">
-                                    <span style="color:${priceColor}; font-weight:700;">${priceSign}${soilDetailText}</span>
-                                    <span class="payment-badge ${soilPaidClass}" onclick="event.stopPropagation(); togglePaymentStatusBatch(${idsJson}, 'soil', ${r.soil_paid})">${soilPaidText}</span>
-                                </div>
-                            `;
-                            
-                            const isSelfDump = (r.dump_site === '自行消纳');
-                            let dumpPaymentHtml = '';
-                            if (isSelfDump) {
-                                dumpPaymentHtml = `<span style="color:var(--text-muted); font-size:12px;">自行消纳</span>`;
-                            } else if (isUnassigned) {
-                                dumpPaymentHtml = `<span style="color:var(--text-muted); font-size:12px;">—</span>`;
-                            } else {
-                                const totalDumpCost = dumpPrice * r.trips.length;
-                                const dumpDetailText = r.trips.length > 1 
-                                    ? `￥${dumpPrice.toFixed(2)} × ${r.trips.length} 趟 = ￥${totalDumpCost.toFixed(2)}` 
-                                    : `￥${dumpPrice.toFixed(2)}`;
-                                dumpPaymentHtml = `
-                                    <div style="font-size:12px; display:flex; align-items:center; gap:8px;">
-                                        <span style="font-weight:700; color:var(--text-primary);">-${dumpDetailText}</span>
-                                        <span class="payment-badge ${dumpPaidClass}" onclick="event.stopPropagation(); togglePaymentStatusBatch(${idsJson}, 'dump', ${r.dump_paid})">${dumpPaidText}</span>
-                                    </div>
-                                `;
-                            }
-                            const soilText = r.soil_type || '渣土';
-                                
-                            // 提取各单趟记账的时间记录，按时间正序排序
-                            const times = r.trips.map(t => t.pass_time.split(' ')[1]).sort();
-                            const groupKey = `${r.plate_no.replace(/\s+/g, '')}_${globalIdx}`;
-                            
-                            let passTimeHtml = '';
-                            if (r.trips.length === 1) {
-                                passTimeHtml = `<span style="font-family:monospace;">${times[0]}</span>`;
-                            } else {
-                                passTimeHtml = `
-                                    <div style="display:flex; flex-direction:column; gap:4px; align-items:flex-start;">
-                                        <span style="font-family:monospace; font-weight:700;">${times[times.length - 1]}</span>
-                                        <span class="trips-count-badge" onclick="event.stopPropagation(); toggleTripTimesDetail('${groupKey}')" style="cursor:pointer; display:inline-flex; align-items:center; gap:2px; font-size:10px; padding:2px 6px; background:rgba(99,102,241,0.12); color:var(--color-primary); border:1px solid rgba(99,102,241,0.2); border-radius:4px; font-weight:700;" title="点击展开/收起各趟记账时间">
-                                            共 ${r.trips.length} 趟
-                                            <i data-lucide="chevron-down" id="chevron-times-${groupKey}" style="width:10px; height:10px; transition: transform 0.2s;"></i>
-                                        </span>
-                                        <div id="times-detail-${groupKey}" style="display:none; flex-direction:column; gap:4px; margin-top:4px; padding:6px; background:rgba(15,23,42,0.6); border:1px solid var(--card-border); border-radius:6px; min-width:140px; box-shadow:var(--card-shadow);">
-                                            <div style="font-weight:700; color:var(--text-secondary); font-size:9px; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:2px; margin-bottom:2px; display:flex; justify-content:space-between;">
-                                                <span>单次记账明细</span>
-                                                <span style="color:var(--text-muted);">操作</span>
-                                            </div>
-                                            ${r.trips.map(trip => {
-                                                const singleTime = trip.pass_time.split(' ')[1];
-                                                return `
-                                                <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; font-family:monospace; font-size:11px; padding: 2px 0;">
-                                                    <span>${singleTime}</span>
-                                                    ${!trip.image_url ? `
-                                                    <button class="btn btn-secondary" style="padding:1px 3px; height:18px; min-height:18px; border:none; background:transparent; color:var(--color-danger); box-shadow:none; cursor:pointer;" onclick="event.stopPropagation(); submitDeleteRecord(${trip.id})" title="删除此趟">
-                                                        <i data-lucide="trash-2" style="width:10px; height:10px;"></i>
-                                                    </button>
-                                                    ` : `<span style="font-size:9px; color:var(--color-in);">AI识别</span>`}
-                                                </div>
-                                                `;
-                                            }).join('')}
-                                        </div>
-                                    </div>
-                                `;
-                            }
-
-                            const firstTrip = r.trips[0];
-                            let actionHtml = `
-                                <div style="display:flex; justify-content:center; gap:6px;">
-                                    <button class="btn btn-secondary" style="padding: 2px 6px; font-size:11px; display:inline-flex; align-items:center; gap:2px;" onclick="openAdjustModal('${r.plate_no}')">
-                                        <i data-lucide="edit-3" style="width:10px; height:10px;"></i>对账
-                                    </button>
-                                    ${(r.trips.length === 1 && !firstTrip.image_url) ? `
-                                    <button class="btn btn-danger" style="padding: 2px 6px; font-size:11px; display:inline-flex; align-items:center; gap:2px;" onclick="submitDeleteRecord(${firstTrip.id})">
-                                        <i data-lucide="trash-2" style="width:10px; height:10px;"></i>
-                                    </button>
-                                    ` : ''}
-                                </div>
-                            `;
-                            
-                            html += `
-                                <tr>
-                                    <td>${globalIdx}</td>
-                                    <td style="font-weight:700; padding: 6px 12px;">${renderPlateBadge(r.plate_no, r.plate_color)}</td>
-                                    <td>${passTimeHtml}</td>
-                                    <td style="color:${siteColor}; font-weight:600;">${siteName}</td>
-                                    <td style="font-weight:600; color:var(--color-primary);">${soilText}</td>
-                                    <td>${soilPaymentHtml}</td>
-                                    <td>${dumpPaymentHtml}</td>
-                                    <td>${actionHtml}</td>
-                                </tr>
-                            `;
-                        });
-                    }
-                    document.getElementById('ledger-table-body').innerHTML = html;
-                    renderLedgerPagination(totalGroupedItems);
-                    safeIcons();
-
-                    // 统计流水账单
-                    const totalTrips = outRecords.length;
-                    const unassignedTrips = outRecords.filter(r => r.direction === 'OUT' && (r.dump_site === '未分配' || !r.dump_site)).length;
-                    
-                    let ledgerIncome = 0.0;
-                    let ledgerExpense = 0.0;
-                    outRecords.forEach(r => {
-                        if (r.dump_site && r.dump_site !== '未分配') {
-                            const matchSoil = currentSoilsList.find(s => s.name === r.soil_type);
-                            if (matchSoil) {
-                                if (matchSoil.is_income === 1) ledgerIncome += matchSoil.unit_price;
-                                else ledgerExpense += matchSoil.unit_price;
-                            }
-                        }
-                    });
-                    const grandCost = ledgerIncome - ledgerExpense;
-                    const grandSign = grandCost >= 0 ? '+' : '';
-
-                    const summaryTitle = isSpecificSite ? `【卸土点：${activeSiteFilter} 对账汇总】` : `【流水账单对账汇总】`;
-                    summaryBar.innerHTML = `
-                        <div>${summaryTitle}</div>
-                        <div style="display:flex; gap:20px;">
-                            <span>今日总拉运: <strong style="color:var(--color-out); font-size:15px;">${totalTrips} 趟</strong></span>
-                            <span>净结算收支: <strong style="${grandCost >= 0 ? 'color:var(--color-in);' : 'color:var(--color-danger);'} font-size:15px;">${grandSign}￥${grandCost.toLocaleString('zh-CN', {minimumFractionDigits:2, maximumFractionDigits:2})}</strong></span>
-                            <span style="font-size:11px; color:var(--text-secondary); display:flex; align-items:center;">(收入: ￥${ledgerIncome.toFixed(2)} | 支出: ￥${ledgerExpense.toFixed(2)})</span>
-                            ${isSpecificSite ? '' : `<span>待审计分账: <strong style="color:var(--color-danger); font-size:15px;">${unassignedTrips} 趟</strong></span>`}
-                        </div>
-                    `;
-
-                } else if (activeSiteFilter === "全盘汇总") {
-                    tableWrapper.style.display = 'block';
-                    cardsWrapper.style.display = 'none';
-
-                    // Update headers dynamically for sites overview
-                    tableWrapper.querySelector('thead').innerHTML = `
-                        <tr>
-                            <th>序号</th>
-                            <th>卸土点</th>
-                            <th>总趟数</th>
-                            <th>净收支</th>
-                            <th>待分账(趟)</th>
-                            <th>操作</th>
-                        </tr>
-                    `;
-
-                    const tbody = document.getElementById('ledger-table-body');
-                    let html = '';
-                    let idx = 1;
-                    let grandTrips = 0;
-                    let grandCost = 0.0;
-                    let grandIncome = 0.0;
-                    let grandExpense = 0.0;
-
-                    const summaries = data.site_summaries || [];
-                    summaries.forEach(s => {
-                        grandTrips += s.total_trips;
-                        grandCost += s.total_cost;
-                        grandIncome += s.total_income || 0;
-                        grandExpense += s.total_expense || 0;
-                        const sSign = s.total_cost >= 0 ? '+' : '';
-                        
-                        html += `
-                            <tr>
-                                <td>${idx++}</td>
-                                <td style="font-weight:700; color:var(--text-primary);">${s.site_name}</td>
-                                <td style="color:var(--color-out); font-weight:700;">${s.total_trips} 趟</td>
-                                <td style="font-weight:700; ${s.total_cost >= 0 ? 'color:var(--color-in);' : 'color:var(--color-danger);'}">${sSign}￥${s.total_cost.toLocaleString('zh-CN', {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
-                                <td>0</td>
-                                <td>-</td>
-                            </tr>
-                        `;
-                    });
-
-                    const unassignedTrips = data.unassigned_summary ? data.unassigned_summary.total_trips : 0;
-                    let unassignedRow = '';
-                    if (unassignedTrips > 0) {
-                        unassignedRow = `
-                            <tr style="background:rgba(239,68,68,0.06); border:1px solid rgba(239,68,68,0.25);">
-                                <td>-</td>
-                                <td style="font-weight:700; color:var(--color-danger);">未分配 (待指派去向)</td>
-                                <td style="color:var(--color-danger); font-weight:800;">${unassignedTrips} 趟</td>
-                                <td style="color:var(--color-danger); font-weight:700;">￥0.00</td>
-                                <td style="color:var(--color-danger); font-weight:800;">${unassignedTrips} 趟</td>
-                                <td>
-                                    <button class="btn btn-danger" style="padding:2px 8px; font-size:11px;" onclick="openDetailModal()">
-                                        去分账
-                                    </button>
-                                </td>
-                            </tr>
-                        `;
-                    }
-
-                    tbody.innerHTML = html + unassignedRow;
-
-                    const pContainer = document.getElementById('ledger-pagination');
-                    if (pContainer) pContainer.style.display = 'none';
-
-                    const totalTrips = grandTrips + unassignedTrips;
-                    const sign = grandCost >= 0 ? '+' : '';
-                    summaryBar.innerHTML = `
-                        <div>【全部场地统计汇总】</div>
-                        <div style="display:flex; gap:20px;">
-                            <span>总出场拉运: <strong style="color:var(--color-out); font-size:15px;">${totalTrips} 趟</strong></span>
-                            <span>净结算额: <strong style="${grandCost >= 0 ? 'color:var(--color-in);' : 'color:var(--color-danger);'} font-size:15px;">${sign}￥${grandCost.toLocaleString('zh-CN', {minimumFractionDigits:2, maximumFractionDigits:2})}</strong></span>
-                            <span style="font-size:11px; color:var(--text-secondary); display:flex; align-items:center;">(收入: ￥${grandIncome.toFixed(2)} | 支出: ￥${grandExpense.toFixed(2)})</span>
-                            <span>待审计分账: <strong style="color:var(--color-danger); font-size:15px;">${unassignedTrips} 趟</strong></span>
-                        </div>
-                    `;
-
-                } else {
-                    // 首先，计算完整匹配的车辆数据集（全部车辆，用于最下面全部汇总）
-                    const ledgerRows = data.ledger_rows || [];
-                    const matchedRows = [];
-                    ledgerRows.forEach(row => {
-                        let matchesFilter = false;
-                        if (activeSiteFilter === "车辆账单") {
-                            matchesFilter = true;
-                        } else {
-                            if (row.site_trips && row.site_trips[activeSiteFilter] > 0) {
-                                matchesFilter = true;
-                            }
-                        }
-                        if (matchesFilter) {
-                            matchedRows.push(row);
-                        }
-                    });
-
-                    const totalItems = matchedRows.length;
-
-                    // 计算全体的汇总（全部汇总）
-                    let grandTrips = 0;
-                    let grandCost = 0.0;
-                    let grandIncome = 0.0;
-                    let grandExpense = 0.0;
-                    let numVehicles = totalItems;
-
-                    matchedRows.forEach(row => {
-                        let vTrips = row.total_trips;
-                        let vCost = row.total_cost;
-                        let vIncome = row.total_income || 0;
-                        let vExpense = row.total_expense || 0;
-
-                        if (activeSiteFilter !== "车辆账单") {
-                            vTrips = row.site_trips[activeSiteFilter];
-                            let siteInc = 0;
-                            let siteExp = 0;
-                            data.records.forEach(rec => {
-                                if (rec.direction === 'OUT' && rec.plate_no === row.plate_no && rec.dump_site === activeSiteFilter) {
-                                    const mSoil = currentSoilsList.find(s => s.name === rec.soil_type);
-                                    if (mSoil) {
-                                        if (mSoil.is_income === 1) siteInc += mSoil.unit_price;
-                                        else siteExp += mSoil.unit_price;
-                                    }
-                                }
-                            });
-                            vCost = siteInc - siteExp;
-                            vIncome = siteInc;
-                            vExpense = siteExp;
-                        }
-
-                        grandTrips += vTrips;
-                        grandCost += vCost;
-                        grandIncome += vIncome;
-                        grandExpense += vExpense;
-                    });
-
-                    // 客户端分页截取
-                    const displayRows = matchedRows.slice((ledgerCurrentPage - 1) * ledgerPageSize, ledgerCurrentPage * ledgerPageSize);
-
-                    if (ledgerLayoutMode === 'card') {
-                        tableWrapper.style.display = 'none';
-                        cardsWrapper.style.display = 'block';
-
-                        const grid = document.getElementById('ledger-cards-grid');
-                        let cardsHtml = '';
-
-                        displayRows.forEach(row => {
-                            let vTrips = row.total_trips;
-                            let vCost = row.total_cost;
-                            let vIncome = row.total_income || 0;
-                            let vExpense = row.total_expense || 0;
-                            let vUnassigned = row.unassigned_trips;
-
-                            if (activeSiteFilter !== "车辆账单") {
-                                vTrips = row.site_trips[activeSiteFilter];
-                                let siteInc = 0;
-                                let siteExp = 0;
-                                data.records.forEach(rec => {
-                                    if (rec.direction === 'OUT' && rec.plate_no === row.plate_no && rec.dump_site === activeSiteFilter) {
-                                        const mSoil = currentSoilsList.find(s => s.name === rec.soil_type);
-                                        if (mSoil) {
-                                            if (mSoil.is_income === 1) siteInc += mSoil.unit_price;
-                                            else siteExp += mSoil.unit_price;
-                                        }
-                                    }
-                                });
-                                vCost = siteInc - siteExp;
-                                vIncome = siteInc;
-                                vExpense = siteExp;
-                                vUnassigned = 0;
-                            }
-
-                            const warnBorder = vUnassigned > 0 ? 'border:1px solid rgba(239,68,68,0.2); box-shadow: 0 4px 12px rgba(239,68,68,0.08);' : '';
-                            const unassignedBadge = vUnassigned > 0 ? `<div style="font-size:10px; color:var(--color-danger); font-weight:700; margin-top:2px;">待分账趟数: ${vUnassigned}趟</div>` : '';
-
-                            const plateBadgeHTML = renderPlateBadge(row.plate_no, row.plate_color);
-                            const vSign = vCost >= 0 ? '+' : '';
-
-                            cardsHtml += `
-                                <div class="vehicle-summary-card" style="${warnBorder} cursor:pointer;" onclick="openAdjustModal('${row.plate_no}')">
-                                    <div class="card-plate-badge-row">
-                                        <span class="card-plate-text">${plateBadgeHTML}</span>
-                                    </div>
-                                    <div style="display:flex; flex-direction:column; gap:2px; margin-top:4px;">
-                                        <div class="card-stat-row">
-                                            <span>出运趟数</span>
-                                            <strong style="color:var(--color-out);">${vTrips} 趟</strong>
-                                        </div>
-                                        <div class="card-stat-row">
-                                            <span>净收支额</span>
-                                            <strong style="${vCost >= 0 ? 'color:var(--color-in);' : 'color:var(--color-danger);'}">${vSign}￥${vCost.toFixed(2)}</strong>
-                                        </div>
-                                        <div style="font-size:9px; color:var(--text-secondary); display:flex; justify-content:space-between; margin-top:2px;">
-                                            <span>收: ￥${vIncome.toFixed(0)}</span>
-                                            <span>支: ￥${vExpense.toFixed(0)}</span>
-                                        </div>
-                                        ${unassignedBadge}
-                                    </div>
-                                    <button class="btn btn-secondary" style="width:100%; margin-top:8px; padding:4px; font-size:11px;">
-                                        账目明细
-                                    </button>
-                                </div>
-                            `;
-                        });
-
-                        if (totalItems === 0) {
-                            grid.innerHTML = `<div class="ranking-empty" style="grid-column:1/-1;">当前筛选条件下没有出运的泥头车记录</div>`;
-                        } else {
-                            grid.innerHTML = cardsHtml;
-                        }
-
-                    } else {
-                        // 表格/列表视图
-                        tableWrapper.style.display = 'block';
-                        cardsWrapper.style.display = 'none';
-
-                        let headerHtml = '';
-                        if (activeSiteFilter === "车辆账单") {
-                            headerHtml = `
-                                <tr>
-                                    <th>序号</th>
-                                    <th>车牌号码</th>
-                                    <th>今日拉运趟数</th>
-                                    <th>今日拉运总吨数</th>
-                                    <th>单价</th>
-                                    <th>今日实际收入 (元)</th>
-                                    <th>操作</th>
-                                </tr>
-                            `;
-                        } else {
-                            headerHtml = `
-                                <tr>
-                                    <th>序号</th>
-                                    <th>车牌号码</th>
-                                    <th>该场出运</th>
-                                    <th>拉运总吨数</th>
-                                    <th>单价</th>
-                                    <th>实际总收入</th>
-                                    <th>操作</th>
-                                </tr>
-                            `;
-                        }
-                        tableWrapper.querySelector('thead').innerHTML = headerHtml;
-
-                        let tbodyHtml = '';
-
-                        displayRows.forEach((row, idx) => {
-                            const globalIdx = (ledgerCurrentPage - 1) * ledgerPageSize + idx + 1;
-                            let vTrips = row.total_trips;
-                            let vVol = row.total_volume || 0;
-                            let vIncome = row.total_income || (vVol * 30.0);
-                            
-                            const plateBadgeHTML = renderPlateBadge(row.plate_no, row.plate_color);
-
-                            let actionHtml = `
-                                <button class="btn btn-secondary" style="padding: 2px 6px; font-size:11px; display:inline-flex; align-items:center; gap:2px;" onclick="openAdjustModal('${row.plate_no}')">
-                                    <i data-lucide="edit-3" style="width:10px; height:10px;"></i>账目流水
-                                </button>
-                            `;
-
-                            tbodyHtml += `
-                                <tr>
-                                    <td>${globalIdx}</td>
-                                    <td style="font-weight:700; padding: 6px 12px;">${plateBadgeHTML}</td>
-                                    <td style="color:var(--color-out); font-weight:700;">${vTrips} 趟</td>
-                                    <td style="color:var(--color-primary); font-weight:700;">${vVol.toFixed(2)} 吨</td>
-                                    <td>￥30.0 / 吨</td>
-                                    <td style="font-weight:700; color:var(--color-in);">+￥${vIncome.toLocaleString('zh-CN', {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
-                                    <td>${actionHtml}</td>
-                                </tr>
-                            `;
-                        });
-
-                        if (totalItems === 0) {
-                            document.getElementById('ledger-table-body').innerHTML = `<tr><td colspan="7" style="color:var(--text-secondary); padding: 40px 10px; text-align:center;">当前筛选条件下没有出运的泥头车记录</td></tr>`;
-                        } else {
-                            document.getElementById('ledger-table-body').innerHTML = tbodyHtml;
-                        }
-                    }
-
-                    // 全部汇总横幅依然基于完整的累计数值渲染
-                    const totalDayTons = data.total_day_tons || (data.kpis ? data.kpis.total_volume : 0) || 0;
-                    const totalDayInc = data.total_day_income || (data.kpis ? data.kpis.total_income : 0) || (totalDayTons * 30.0);
-                    
-                    if (activeSiteFilter === "车辆账单") {
-                        summaryBar.innerHTML = `
-                            <div>【首建恒纪 · 开槽砂石 每日出车与收入汇总】</div>
-                            <div style="display:flex; gap:20px; align-items:center;">
-                                <span>出运泥头车: <strong style="color:var(--text-primary); font-size:15px;">${numVehicles} 辆</strong></span>
-                                <span>当日总趟数: <strong style="color:var(--color-out); font-size:15px;">${grandTrips} 趟</strong></span>
-                                <span>当日总吨数: <strong style="color:var(--color-primary); font-size:15px;">${totalDayTons.toFixed(2)} 吨</strong></span>
-                                <span>当日实际总收入: <strong style="color:var(--color-in); font-size:16px;">￥${totalDayInc.toLocaleString('zh-CN', {minimumFractionDigits:2, maximumFractionDigits:2})}</strong></span>
-                            </div>
-                        `;
-                    } else {
-                        summaryBar.innerHTML = `
-                            <div>【场地对账】 ${activeSiteFilter}</div>
-                            <div style="display:flex; gap:20px;">
-                                <span>来车总数: <strong style="color:var(--text-primary); font-size:15px;">${numVehicles} 辆</strong></span>
-                                <span>出运趟数: <strong style="color:var(--color-out); font-size:15px;">${grandTrips} 趟</strong></span>
-                                <span>净收支费用: <strong style="${grandCost >= 0 ? 'color:var(--color-in);' : 'color:var(--color-danger);'} font-size:15px;">${sign}￥${grandCost.toLocaleString('zh-CN', {minimumFractionDigits:2, maximumFractionDigits:2})}</strong></span>
-                                <span style="font-size:11px; color:var(--text-secondary); display:flex; align-items:center;">(收入: ￥${grandIncome.toFixed(2)} | 支出: ￥${grandExpense.toFixed(2)})</span>
-                            </div>
-                        `;
-                    }
-
-                    renderLedgerPagination(totalItems);
-                    safeIcons();
-                }
+                renderLedgerTableRows(outRecords);
             })
-            .catch(err => console.error("加载台账异常:", err));
+            .catch(err => {
+                console.error('Fetch ledger failed:', err);
+                showToast('异常', '加载台账明细出错', 'error');
+            });
+        }
+
+        function renderLedgerTableRows(records) {
+            const tbody = document.getElementById('ledger-table-body');
+            const summaryBar = document.getElementById('ledger-summary-bar');
+            if (!tbody) return;
+
+            if (!records || records.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="10" style="color:var(--text-muted); padding: 45px 10px; text-align:center; font-size:13px;">暂无该日 (${selectedQueryDate}) 车辆通行明细记录</td></tr>`;
+                if (summaryBar) {
+                    summaryBar.innerHTML = `
+                        <div style="font-weight:700; color:var(--text-secondary);">【${selectedQueryDate} 对账明细汇总】</div>
+                        <div style="color:var(--text-muted); font-size:12px;">该日暂无拉运出场记录</div>
+                    `;
+                }
+                return;
+            }
+
+            let totalTrips = records.length;
+            let totalVolume = 0.0;
+            let totalRevenue = 0.0;
+
+            let html = '';
+            records.forEach((r, idx) => {
+                const vol = parseFloat(r.volume || 0.0);
+                const price = 30.00;
+                const rev = vol * price;
+                totalVolume += vol;
+                totalRevenue += rev;
+
+                const plateBadge = renderPlateBadge(r.plate_no, r.plate_color);
+                const timeStr = r.pass_time ? r.pass_time.slice(11, 19) : '--:--:--';
+                const fullTimeStr = r.pass_time || '--';
+                const siteName = r.dump_site || '首建恒纪建筑垃圾资源化处置场';
+                const soilName = r.soil_type || '开槽砂石';
+
+                html += `
+                    <tr class="ledger-row-item" data-plate="${r.plate_no}">
+                        <td style="text-align:center; font-weight:600; color:var(--text-muted);">${idx + 1}</td>
+                        <td style="font-weight:700; padding:6px 10px;">${plateBadge}</td>
+                        <td style="text-align:center; font-family:monospace; font-size:12px; font-weight:600;" title="${fullTimeStr}">${timeStr}</td>
+                        <td style="font-weight:600; color:var(--text-primary); font-size:12px;">${siteName}</td>
+                        <td style="text-align:center; font-weight:600; color:var(--color-primary); font-size:12px;">${soilName}</td>
+                        <td style="text-align:right; font-weight:800; color:var(--color-primary); font-size:13px;">${vol.toFixed(2)} <span style="font-size:10px; font-weight:normal; color:var(--text-muted);">t</span></td>
+                        <td style="text-align:right; font-weight:600; color:var(--text-secondary); font-size:12px;">￥30.00</td>
+                        <td style="text-align:right; font-weight:800; color:var(--color-in); font-size:13px;">+￥${rev.toLocaleString('zh-CN', {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                        <td style="text-align:center;">
+                            <span class="badge" style="background:rgba(16,185,129,0.12); color:var(--color-in); border:1px solid rgba(16,185,129,0.25); font-size:11px; padding:2px 8px; border-radius:10px; font-weight:700;">✅ 正常</span>
+                        </td>
+                        <td style="text-align:center;">
+                            <button class="btn btn-secondary" style="padding:2px 8px; font-size:11px; height:24px; display:inline-flex; align-items:center; gap:2px;" onclick="openAdjustModal('${r.plate_no}')" title="核对该车明细">
+                                <i data-lucide="edit-3" style="width:10px; height:10px;"></i><span>对账</span>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html;
+
+            const avgVol = totalTrips > 0 ? (totalVolume / totalTrips).toFixed(2) : '0.00';
+            if (summaryBar) {
+                summaryBar.innerHTML = `
+                    <div style="font-weight:700; color:var(--text-primary); font-size:13px; display:flex; align-items:center; gap:6px;">
+                        <i data-lucide="calculator" style="width:14px; height:14px; color:var(--color-primary);"></i>
+                        <span>【${selectedQueryDate} 对账明细汇总】</span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:20px; flex-wrap:wrap; font-size:13px;">
+                        <span>当日出车: <strong style="color:var(--color-out); font-weight:800; font-size:14px;">${totalTrips} 趟</strong></span>
+                        <span>拉运总吨数: <strong style="color:var(--color-primary); font-weight:800; font-size:14px;">${totalVolume.toLocaleString('zh-CN', {minimumFractionDigits:2, maximumFractionDigits:2})} 吨</strong></span>
+                        <span>单车均重: <strong style="color:var(--text-secondary); font-weight:700;">${avgVol} 吨/趟</strong></span>
+                        <span>实际纯收入: <strong style="color:var(--color-in); font-weight:800; font-size:15px;">+￥${totalRevenue.toLocaleString('zh-CN', {minimumFractionDigits:2, maximumFractionDigits:2})}</strong></span>
+                    </div>
+                `;
+            }
+            safeIcons();
+        }
+
+        function filterLedgerTable() {
+            const searchInput = document.getElementById('ledger-plate-search');
+            const query = (searchInput ? searchInput.value : '').trim().toUpperCase();
+            const rows = document.querySelectorAll('.ledger-row-item');
+            rows.forEach(row => {
+                const plate = (row.getAttribute('data-plate') || '').toUpperCase();
+                if (!query || plate.includes(query)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+
+        function exportCurrentDateCSV() {
+            window.location.href = `/api/export?date=${selectedQueryDate}`;
         }
 
         function exportReport() {
-            window.location.href = `/api/export?date=${selectedQueryDate}`;
+            exportCurrentDateCSV();
         }
 
         function openDetailModal() {
