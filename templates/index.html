@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>智慧工地系统 - LPR & Pass Billing Platform</title>
+    <title>中央电视台项目 · 车辆对账数据中心</title>
+    <!-- 系统 Logo & Favicon -->
+    <link rel="icon" type="image/png" href="/static/favicon.png">
+    <link rel="apple-touch-icon" href="/static/logo.png">
     <!-- 字体 - 本地静态文件（无需 CDN，离线可用） -->
     <link href="/static/css/fonts.css" rel="stylesheet">
     <!-- Lucide Icons & ECharts - 本地静态文件（无需 CDN，离线可用） -->
@@ -360,15 +363,25 @@
         }
 
         .brand-logo-container {
-            width: 34px;
-            height: 34px;
-            background: linear-gradient(135deg, var(--color-out), var(--color-primary));
-            border-radius: var(--border-radius-sm);
+            width: 36px;
+            height: 36px;
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--card-border);
+            padding: 3px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
             flex-shrink: 0;
+            overflow: hidden;
+        }
+
+        .brand-logo-img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.25));
         }
 
         .brand-text {
@@ -1452,12 +1465,14 @@
             .brand-logo-container {
                 width: 28px !important;
                 height: 28px !important;
+                padding: 2px !important;
                 border-radius: 6px !important;
+                display: flex !important;
             }
 
-            .brand-logo-container i {
-                width: 14px !important;
-                height: 14px !important;
+            .brand-logo-img {
+                width: 100% !important;
+                height: 100% !important;
             }
 
             .brand-title {
@@ -1869,7 +1884,7 @@
     <nav class="floating-navbar">
         <div class="navbar-brand">
             <div class="brand-logo-container">
-                <i data-lucide="truck" style="color:#fff; width:16px; height:16px;"></i>
+                <img src="/static/logo.png" alt="系统Logo" class="brand-logo-img">
             </div>
             <div class="brand-text">
                 <span class="brand-title">中央电视台项目 · 车辆对账</span>
@@ -4795,7 +4810,7 @@
         })
         .then(() => {
             refreshFrequentPlates();
-            switchTab('ledger');
+            switchTab('summary');
         });
 
         // Real-time polling completely disabled based on user preference
