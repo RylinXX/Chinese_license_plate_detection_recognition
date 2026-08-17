@@ -285,7 +285,7 @@
             color: var(--text-primary);
             font-family: var(--font-family);
             min-height: 100vh;
-            padding: 120px 24px 24px 24px; /* 为浮动导航栏留出空间 */
+            padding: 70px 16px 20px 16px; /* 为顶部单行导航栏留出空间 */
             background-image: var(--bg-image);
             background-attachment: fixed;
             transition: background-color 0.3s, color 0.3s;
@@ -322,25 +322,25 @@
             opacity: 0.22;
         }
 
-        /* 顶部浮动导航栏 */
+        /* 顶部单行浮动导航栏 */
         .floating-navbar {
             position: fixed;
-            top: 16px;
-            left: 16px;
-            right: 16px;
-            min-height: 68px;
-            height: auto;
+            top: 10px;
+            left: 12px;
+            right: 12px;
+            height: 48px;
+            min-height: 48px;
             background: var(--header-bg);
             backdrop-filter: blur(25px);
             -webkit-backdrop-filter: blur(25px);
             border: 1px solid var(--card-border);
-            border-radius: var(--border-radius-lg);
+            border-radius: var(--border-radius-md);
             display: flex;
             justify-content: space-between;
             align-items: center;
-            flex-wrap: wrap;
-            gap: 12px;
-            padding: 12px 24px;
+            flex-wrap: nowrap;
+            gap: 10px;
+            padding: 0 14px;
             z-index: 1000;
             box-shadow: var(--card-shadow);
             transition: var(--transition-base);
@@ -2004,93 +2004,84 @@
     <div class="glow-bg-blob blob-1"></div>
     <div class="glow-bg-blob blob-2"></div>
 
-    <!-- 顶部浮动玻璃质感导航栏 -->
+    <!-- 顶部单行集成式浮动导航栏 -->
     <nav class="floating-navbar">
+        <!-- 品牌标识 -->
         <div class="navbar-brand">
             <div class="brand-logo-container">
-                <i data-lucide="zap" style="color:#fff; width:16px; height:16px;"></i>
+                <i data-lucide="truck" style="color:#fff; width:15px; height:15px;"></i>
             </div>
             <div class="brand-text">
-                <span class="brand-title">工地车辆对账工作台</span>
-                <span class="brand-subtitle" id="header-company-sub">中央电视台项目 · 车辆台账与智能管理系统</span>
+                <span class="brand-title">中央电视台项目 · 车辆对账</span>
+                <span class="brand-subtitle">首建恒纪 · 开槽砂石 (30元/吨)</span>
             </div>
         </div>
         
+        <!-- 主切换 Tabs -->
         <div class="nav-links">
             <a class="nav-item active" id="menu-summary" onclick="switchTab('summary')">
-                <i data-lucide="pie-chart" style="width:14px; height:14px;"></i>
+                <i data-lucide="pie-chart" style="width:13px; height:13px;"></i>
                 <span>数据汇总中心</span>
             </a>
             <a class="nav-item" id="menu-ledger" onclick="switchTab('ledger')">
-                <i data-lucide="file-spreadsheet" style="width:14px; height:14px;"></i>
+                <i data-lucide="file-spreadsheet" style="width:13px; height:13px;"></i>
                 <span>项目明细台账</span>
             </a>
             <a class="nav-item" id="menu-config" onclick="switchTab('config')">
-                <i data-lucide="settings" style="width:14px; height:14px;"></i>
+                <i data-lucide="settings" style="width:13px; height:13px;"></i>
                 <span>配置与存档</span>
             </a>
         </div>
         
-        <div class="navbar-actions">
-            <!-- 日期查询选择 -->
-            <div class="date-selector-wrapper">
-                <span class="navbar-label">对账日期:</span>
-                <input type="date" class="input-control" id="query-date-picker" style="width: 140px; height: 32px; padding: 4px 8px; font-size:12px;">
+        <!-- 右侧集成工具栏 (同一行平铺) -->
+        <div class="navbar-actions" style="display:flex; align-items:center; gap:8px;">
+            <!-- 汇总中心时间段切换 (仅在汇总中心显示) -->
+            <div id="nav-summary-range-group" style="display:flex; align-items:center; gap:4px;">
+                <div class="btn-group" style="display:flex; gap:2px; background:rgba(0,0,0,0.2); padding:2px; border-radius:6px; border:1px solid var(--card-border);">
+                    <button class="btn btn-sm btn-accent" id="btn-preset-all" onclick="loadSummaryAnalytics('all')" style="padding:2px 8px; font-size:11px; height:24px; border-radius:4px;">全周期</button>
+                    <button class="btn btn-sm btn-secondary" id="btn-preset-7d" onclick="loadSummaryPresetDays(7)" style="padding:2px 8px; font-size:11px; height:24px; border-radius:4px;">近7天</button>
+                    <button class="btn btn-sm btn-secondary" id="btn-preset-custom" onclick="toggleCustomSummaryDate()" style="padding:2px 8px; font-size:11px; height:24px; border-radius:4px;">范围</button>
+                </div>
+                <div id="summary-custom-date-box" style="display:none; align-items:center; gap:3px;">
+                    <input type="date" class="input-control" id="summary-start-date" style="width:115px; height:24px; font-size:11px; padding:1px 4px;">
+                    <span style="color:var(--text-muted); font-size:11px;">-</span>
+                    <input type="date" class="input-control" id="summary-end-date" style="width:115px; height:24px; font-size:11px; padding:1px 4px;">
+                    <button class="btn btn-sm btn-accent" onclick="applyCustomSummaryDate()" style="padding:1px 6px; height:24px; font-size:11px;">查</button>
+                </div>
+            </div>
+
+            <!-- 对账日期快捷选择 (单选一个日期) -->
+            <div class="date-selector-wrapper" id="nav-date-picker-box" style="display:none; align-items:center; gap:4px;">
+                <span class="navbar-label" style="font-size:11px; color:var(--text-secondary);">对账日期:</span>
+                <input type="date" class="input-control" id="query-date-picker" style="width:125px; height:26px; padding:2px 6px; font-size:11px;">
+            </div>
+
+            <!-- 导出当前日流水按钮 (仅在明细台账显示) -->
+            <div id="nav-ledger-export-box" style="display:none;">
+                <button class="btn btn-sm btn-secondary" onclick="exportCurrentDateCSV()" style="height:26px; padding:0 8px; font-size:11px; display:inline-flex; align-items:center; gap:3px;">
+                    <i data-lucide="download" style="width:11px; height:11px;"></i>
+                    <span>导出流水</span>
+                </button>
             </div>
             
-            <!-- 动态导出按钮等操作区 -->
-            <div id="header-actions-area" class="actions-area"></div>
-            
-            <!-- 主题切换 -->
-            <button class="theme-toggle-btn" onclick="toggleTheme()" id="theme-toggle-btn" title="切换主题">
-                <i data-lucide="moon" id="theme-toggle-icon" style="width: 15px; height: 15px;"></i>
+            <!-- 精简同步运单按钮 -->
+            <button class="btn btn-sm btn-primary" onclick="triggerRemoteSyncManually()" id="btn-sync-top" style="height:26px; padding:0 8px; font-size:11px; display:inline-flex; align-items:center; gap:3px;" title="从 CapCloud 接口同步最新运单">
+                <i data-lucide="refresh-cw" style="width:11px; height:11px;"></i>
+                <span>同步运单</span>
             </button>
             
-            <!-- 实时时钟 -->
-            <div class="clock-display-wrapper">
-                <span class="clock-display" id="live-clock">加载时钟...</span>
-            </div>
+            <!-- 改颜色 (主题切换) -->
+            <button class="theme-toggle-btn" onclick="toggleTheme()" id="theme-toggle-btn" title="切换暗黑/明亮主题" style="width:26px; height:26px; padding:0; display:flex; align-items:center; justify-content:center;">
+                <i data-lucide="moon" id="theme-toggle-icon" style="width:13px; height:13px;"></i>
+            </button>
         </div>
     </nav>
 
     <div class="main-container">
     
-
-        <!-- 📊 面板一: 实时监控看板 -->
-                <!-- 📊 面板一: 中央电视台项目 · 数据汇总中心 (默认首屏) -->
         <!-- 📊 面板一: 数据汇总中心 (数据可视化看板) -->
         <section class="main-content active" id="panel-summary">
-            <!-- 顶部筛选与核心指标横幅 -->
-            <div class="glass-card" style="padding:18px 20px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:18px;">
-                    <div>
-                        <div style="display:flex; align-items:center; gap:8px;">
-                            <h3 class="card-header-title" style="margin-bottom:0; font-size:16px;">
-                                <i data-lucide="layout-dashboard" style="color:var(--color-primary);"></i>首建恒纪 · 开槽砂石数据汇总大屏
-                            </h3>
-                            <span class="badge" style="background:rgba(99,102,241,0.2); color:var(--color-primary-hover); font-size:11px; padding:2px 8px; border-radius:12px;">实时计算</span>
-                        </div>
-                        <div style="font-size:12px; color:var(--text-secondary); margin-top:4px;">
-                            消纳去向：<strong style="color:var(--text-primary);">首建恒纪建筑垃圾资源化处置场</strong> | 结算标准：<strong style="color:var(--color-in);">30.00 元/吨 (纯收入)</strong>
-                        </div>
-                    </div>
-                    
-                    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-                        <div class="btn-group" style="display:flex; gap:6px;">
-                            <button class="btn btn-sm btn-accent" id="btn-preset-all" onclick="loadSummaryAnalytics('all')">全周期汇总</button>
-                            <button class="btn btn-sm btn-secondary" id="btn-preset-7d" onclick="loadSummaryPresetDays(7)">最近 7 天</button>
-                            <button class="btn btn-sm btn-secondary" id="btn-preset-custom" onclick="toggleCustomSummaryDate()">自定义范围</button>
-                        </div>
-                        <div id="summary-custom-date-box" style="display:none; align-items:center; gap:6px;">
-                            <input type="date" class="input-control" id="summary-start-date" style="width:130px; height:32px; font-size:12px;">
-                            <span style="color:var(--text-muted);">至</span>
-                            <input type="date" class="input-control" id="summary-end-date" style="width:130px; height:32px; font-size:12px;">
-                            <button class="btn btn-sm btn-accent" onclick="applyCustomSummaryDate()">查询</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 核心 KPI 汇总卡 -->
+            <!-- 核心 KPI 汇总卡 -->
                 <div class="kpi-grid" style="grid-template-columns: repeat(4, 1fr); gap: 14px;">
                     <div class="kpi-card" style="background: linear-gradient(135deg, rgba(56,189,248,0.12) 0%, rgba(30,41,59,0.7) 100%); border-color: rgba(56,189,248,0.3);">
                         <div class="kpi-icon" style="background:rgba(56,189,248,0.2); color:var(--color-out);"><i data-lucide="truck"></i></div>
@@ -2879,18 +2870,6 @@
             updateThemeToggleUI();
         });
 
-        function updateClock() {
-            const now = new Date();
-            const timeStr = now.toLocaleDateString('zh-CN', { 
-                year: 'numeric', 
-                month: '2-digit', 
-                day: '2-digit' 
-            }) + ' ' + now.toLocaleTimeString('zh-CN', { hour12: false });
-            document.getElementById('live-clock').innerText = timeStr;
-        }
-        setInterval(updateClock, 1000);
-        updateClock();
-
         // 确保 Lucide 已加载，若主 CDN 失败则动态重试
         function ensureLucideReady(callback) {
             if (typeof lucide !== 'undefined') {
@@ -2978,7 +2957,13 @@
         
         document.addEventListener('DOMContentLoaded', () => {
             const picker = document.getElementById('query-date-picker');
-            if (picker) picker.value = selectedQueryDate;
+            if (picker) {
+                picker.value = selectedQueryDate;
+                picker.addEventListener('change', (e) => {
+                    selectedQueryDate = e.target.value;
+                    if (currentTab === 'ledger') refreshLedger();
+                });
+            }
             loadSummaryAnalytics('all');
         });
 
@@ -2998,51 +2983,29 @@
             
             const activeLink = document.getElementById(`menu-${tab}`);
             const activePanel = document.getElementById(`panel-${tab}`);
-            const headerTitle = document.getElementById('header-title-text');
-            const headerIcon = document.getElementById('header-icon');
-            const headerActions = document.getElementById('header-actions-area');
             
             if (activeLink) activeLink.classList.add('active');
             if (activePanel) activePanel.classList.add('active');
-            if (headerActions) headerActions.innerHTML = '';
+
+            // 动态显示当前 Tab 对应的单行工具
+            const sumRangeBox = document.getElementById('nav-summary-range-group');
+            const datePickerBox = document.getElementById('nav-date-picker-box');
+            const ledgerExportBox = document.getElementById('nav-ledger-export-box');
+
+            if (sumRangeBox) sumRangeBox.style.display = (tab === 'summary') ? 'flex' : 'none';
+            if (datePickerBox) datePickerBox.style.display = (tab === 'ledger') ? 'flex' : 'none';
+            if (ledgerExportBox) ledgerExportBox.style.display = (tab === 'ledger') ? 'flex' : 'none';
             
             if (tab === 'summary') {
-                if (headerTitle) headerTitle.innerText = "数据汇总中心 (首建恒纪 · 开槽砂石)";
-                if (headerIcon) headerIcon.setAttribute('data-lucide', 'pie-chart');
-                if (headerActions) {
-                    headerActions.innerHTML = `
-                        <button class="btn btn-sm btn-primary" onclick="triggerRemoteSyncManually()" id="btn-sync-top">
-                            <i data-lucide="refresh-cw"></i><span>🔄 立即同步远程运单</span>
-                        </button>
-                    `;
-                }
                 loadSummaryAnalytics('all');
                 setTimeout(() => { if (typeof resizeSummaryCharts === 'function') resizeSummaryCharts(); }, 150);
             } else if (tab === 'ledger') {
-                if (headerTitle) headerTitle.innerText = "项目明细台账 (首建恒纪 · 开槽砂石)";
-                if (headerIcon) headerIcon.setAttribute('data-lucide', 'file-spreadsheet');
-                if (headerActions) {
-                    headerActions.innerHTML = `
-                        <button class="btn btn-sm btn-primary" onclick="triggerRemoteSyncManually()" style="margin-right:6px;">
-                            <i data-lucide="refresh-cw"></i><span>同步运单</span>
-                        </button>
-                        <button class="btn btn-accent" onclick="exportCurrentDateCSV()">
-                            <i data-lucide="download"></i><span>导出当前日流水</span>
-                        </button>
-                    `;
-                }
                 refreshLedger();
             } else if (tab === 'config') {
-                if (headerTitle) headerTitle.innerText = "系统配置与存档";
-                if (headerIcon) headerIcon.setAttribute('data-lucide', 'settings');
                 refreshDumpSites().then(() => {
                     renderDumpSitesListConfig();
                     renderSoilTypesListConfig();
                 });
-            } else if (tab === 'monitor') {
-                if (headerTitle) headerTitle.innerText = "多维展示大屏 (存档)";
-                if (headerIcon) headerIcon.setAttribute('data-lucide', 'tv');
-                refreshDashboard();
             }
 
             safeIcons();
