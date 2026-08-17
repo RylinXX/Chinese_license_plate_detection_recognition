@@ -2801,9 +2801,6 @@
         let currentSitesList = [];
         let currentSoilsList = [];
         let activeSiteFilter = "车辆账单";
-        let ledgerPageSize = 15;
-        let ledgerCurrentPage = 1;
-        let ledgerTotalPages = 1;
         let currentSummaryData = null;
 
         function switchTab(tab) {
@@ -3974,51 +3971,6 @@
                 submitBtn.disabled = false;
                 showToast('提交账目异常', err.toString(), 'error');
             });
-        }
-
-        function renderLedgerPagination(totalItems) {
-            const container = document.getElementById('ledger-pagination');
-            if (!container) return;
-
-            const totalPages = Math.ceil(totalItems / ledgerPageSize) || 1;
-            ledgerTotalPages = totalPages;
-
-            if (totalPages <= 1) {
-                container.style.display = 'none';
-                return;
-            }
-
-            container.style.display = 'flex';
-            
-            let html = `
-                <button class="btn btn-secondary" style="padding: 4px 10px; height: 32px; font-size: 12px; display: inline-flex; align-items: center; gap: 4px;" 
-                        ${ledgerCurrentPage === 1 ? 'disabled style="opacity: 0.5; cursor: not-allowed;"' : ''} 
-                        onclick="changeLedgerPage(${ledgerCurrentPage - 1})">
-                    <i data-lucide="chevron-left" style="width:14px; height:14px;"></i>上一页
-                </button>
-                <span style="font-size: 13px; font-weight: 700; color: var(--text-secondary); min-width: 80px; text-align: center;">
-                    ${ledgerCurrentPage} / ${totalPages} 页
-                </span>
-                <button class="btn btn-secondary" style="padding: 4px 10px; height: 32px; font-size: 12px; display: inline-flex; align-items: center; gap: 4px;" 
-                        ${ledgerCurrentPage === totalPages ? 'disabled style="opacity: 0.5; cursor: not-allowed;"' : ''} 
-                        onclick="changeLedgerPage(${ledgerCurrentPage + 1})">
-                    下一页<i data-lucide="chevron-right" style="width:14px; height:14px;"></i>
-                </button>
-            `;
-            container.innerHTML = html;
-            safeIcons();
-        }
-
-        function changeLedgerPage(page) {
-            if (page < 1 || page > ledgerTotalPages) return;
-            ledgerCurrentPage = page;
-            refreshLedger();
-        }
-
-        function handleLedgerFilterChange(val) {
-            activeSiteFilter = val;
-            ledgerCurrentPage = 1; // 重置页码
-            refreshLedger();
         }
 
         function toggleTripTimesDetail(key) {
