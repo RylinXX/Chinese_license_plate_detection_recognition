@@ -9,12 +9,17 @@ import sqlite3
 import csv
 import base64
 import random
+import time
+import json
+import calendar
+import asyncio
+import httpx
 import pandas as pd
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from typing import Any, Optional, List, Dict
 # from openai import OpenAI
 
-from fastapi import FastAPI, File, UploadFile, Query, HTTPException
+from fastapi import FastAPI, File, UploadFile, Query, HTTPException, Body
 from fastapi.responses import HTMLResponse, FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -201,6 +206,97 @@ def init_db() -> None:
     """)
     print("[Database] 已自动将历史记录中的车牌同步至常用车牌库。")
     
+    # ----------------- 远程数据接口与土点容量分析相关数据表 -----------------
+    # 1. remote_waybills 远程电子联单表
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS remote_waybills (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            remote_id TEXT UNIQUE,
+            code TEXT,
+            plate_no TEXT NOT NULL,
+            transport_name TEXT,
+            absorptive_name TEXT,
+            leave_place TEXT,
+            leave_time TEXT,
+            arrive_time TEXT,
+            rubbish_type TEXT,
+            volume REAL DEFAULT 0.0,
+            state TEXT,
+            absorptive_area TEXT,
+            created_time TEXT,
+            sync_time TEXT
+        )
+    """)
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_rw_leave_time ON remote_waybills(leave_time)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_rw_plate_no ON remote_waybills(plate_no)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_rw_absorptive ON remote_waybills(absorptive_name)")
+
+    # 2. absorptive_sites_config 土点容量与到期配置表
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS absorptive_sites_config (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT UNIQUE NOT NULL,
+            alias TEXT,
+            total_quota REAL NOT NULL DEFAULT 0.0,
+            expire_date TEXT DEFAULT '-',
+            site_type TEXT DEFAULT '消纳场',
+            is_active INTEGER DEFAULT 1
+        )
+    """)
+    
+    cursor.execute("SELECT COUNT(*) FROM absorptive_sites_config")
+    if cursor.fetchone()[0] == 0:
+        default_site_configs = [
+            ("妙峰绿水资源化处置厂", '["妙峰", "绿水"]', 10000.0, "2026/12/13", "资源化厂"),
+            ("石景山区北辛安路", '["北辛安", "北辛安路"]', 127750.0, "2026/7/30", "回填土点"),
+            ("石景山区西黄村棚户", '["西黄村"]', 30000.0, "2026/8/28", "回填土点"),
+            ("石景山区首钢园区东南", '["首钢", "首钢园区"]', 30000.0, "2026/8/28", "回填土点"),
+            ("首建恒纪建筑垃圾资源化处置场", '["首建恒纪", "恒纪"]', 260000.0, "2026/12/13", "资源化场"),
+            ("国盛通顺临时资源化处置场", '["国盛通顺"]', 350000.0, "2026/12/13", "资源化场"),
+            ("北京石宇环保科技有限公司临时资源化处置场", '["石宇环保", "石宇"]', 50000.0, "2026/12/13", "资源化场")
+        ]
+        cursor.executemany(
+            "INSERT INTO absorptive_sites_config (name, alias, total_quota, expire_date, site_type) VALUES (?, ?, ?, ?, ?)",
+            default_site_configs
+        )
+        print("[Database] 默认土点核准容量与到期配置初始化完成。")
+
+    # 3. remote_sync_config 远程数据同步配置表
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS remote_sync_config (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            key TEXT UNIQUE NOT NULL,
+            value TEXT
+        )
+    """)
+    default_sync_cfgs = [
+        ("authtoken", "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ5bHRkc3QiLCJyb2xlSWQiOjExLCJpcCI6IjEyNy4wLjAuMSIsInVzZXJOYW1lIjoieWx0ZHN0IiwiZW50ZXJwcmlzZW5hbWUiOiLkuK3lpK7lub_mkq3nlLXop4bmgLvlj7DotoXpq5jmuIXnpLrojIPlm63lt6XnqIso5ryU5pKt6KeG5ZCs5Lit5b-DKSIsInNpdGV0eXBlIjoi5bel56iL57G7IiwidXNlcklkIjoyNzA4MTcsImlkZW50aWZpZXJDb2RlIjoicGMiLCJkaXN0cmljdCI6IumXqOWktOayn-WMuiIsImVudGVycHJpc2V0eXBlIjoi5bel5ZywIiwicm9sZU5hbWUiOiLlt6XlnLDotJ_otKPkuroiLCJlbnRlcnByaXNlaWQiOjIyNTY0MiwiZXhwIjoxODY2NjA0MTc1LCJiZWlhbmlkIjoyMjU2NDJ9.bd6zAZgcBIup_w_eZ4FIKofzbe9AW9mqKqQuskoHIa0"),
+        ("worksite_id", "225642"),
+        ("worksitetype", "1"),
+        ("auto_sync_enabled", "1"),
+        ("auto_sync_time", "02:00"),
+        ("total_project_volume", "938164.0"),
+        ("last_sync_time", ""),
+        ("last_sync_status", "待同步"),
+        ("last_sync_count", "0")
+    ]
+    for k, v in default_sync_cfgs:
+        cursor.execute("INSERT OR IGNORE INTO remote_sync_config (key, value) VALUES (?, ?)", (k, v))
+
+    # 4. sync_logs 同步历史日志表
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS sync_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            sync_time TEXT NOT NULL,
+            sync_type TEXT DEFAULT 'auto',
+            status TEXT NOT NULL,
+            total_fetched INTEGER DEFAULT 0,
+            new_inserted INTEGER DEFAULT 0,
+            duration_ms INTEGER DEFAULT 0,
+            message TEXT
+        )
+    """)
+    
     conn.commit()
     conn.close()
     print("[Database] 数据库及数据表初始化与升级完成。")
@@ -366,7 +462,33 @@ class BatchToggleReconciliationRequest(BaseModel):
     fee_type: str     # 'soil' or 'dump'
     status: int       # 0 or 1
 
+class SyncExecuteRequest(BaseModel):
+    start_month: Optional[int] = 5
+    end_month: Optional[int] = None
+    year: Optional[int] = 2026
+    sync_type: Optional[str] = "manual"
+
+class SyncConfigRequest(BaseModel):
+    authtoken: Optional[str] = None
+    worksite_id: Optional[str] = None
+    worksitetype: Optional[str] = None
+    auto_sync_enabled: Optional[str] = None
+    auto_sync_time: Optional[str] = None
+    total_project_volume: Optional[float] = None
+
+class SiteConfigItem(BaseModel):
+    name: str
+    alias: Optional[List[str]] = []
+    total_quota: float
+    expire_date: str = "-"
+    site_type: Optional[str] = "消纳场"
+
+class SitesConfigBatchRequest(BaseModel):
+    sites: List[SiteConfigItem]
+    total_project_volume: Optional[float] = 938164.0
+
 # ----------------- 路由API实现 -----------------
+
 
 @app.post("/api/manual_import")
 async def manual_import_record(req: ManualImportRequest) -> dict[str, Any]:
@@ -1127,7 +1249,724 @@ def get_summary_analytics(
         }
     }
 
+# ----------------- 远程数据接口与土点容量分析服务 -----------------
+
+REMOTE_BASE_URL = "http://ztxn.capcloud.com.cn:8080/dregs_service-dev"
+REMOTE_ORIGIN = "http://ztxn.capcloud.com.cn:8080"
+REMOTE_REFERER = "http://ztxn.capcloud.com.cn:8080/dist/index.html"
+
+def get_remote_sync_config() -> Dict[str, str]:
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT key, value FROM remote_sync_config")
+    rows = cursor.fetchall()
+    conn.close()
+    return {r[0]: r[1] for r in rows}
+
+def set_remote_sync_config(key: str, value: str):
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("INSERT OR REPLACE INTO remote_sync_config (key, value) VALUES (?, ?)", (key, str(value)))
+    conn.commit()
+    conn.close()
+
+async def execute_remote_sync(start_month: int = 5, end_month: Optional[int] = None, year: int = 2026, sync_type: str = "manual") -> Dict[str, Any]:
+    cfg = get_remote_sync_config()
+    authtoken = cfg.get("authtoken", "").strip()
+    worksite_id = cfg.get("worksite_id", "225642").strip()
+    worksitetype = cfg.get("worksitetype", "1").strip()
+    
+    if not authtoken:
+        return {"success": False, "message": "未配置 authtoken 密钥，请在配置中填入有效 Token"}
+        
+    target_url = f"{REMOTE_BASE_URL}/constructionSite/record-waybill/pageList"
+    headers = {
+        "Accept": "*/*",
+        "Accept-Language": "zh-CN,zh;q=0.9,en-US;q=0.8",
+        "Content-Type": "application/json",
+        "Origin": REMOTE_ORIGIN,
+        "Referer": REMOTE_REFERER,
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36",
+        "authtoken": authtoken
+    }
+    
+    today_dt = date.today()
+    today_str = today_dt.strftime("%Y-%m-%d")
+    current_m = today_dt.month
+    
+    if end_month is None:
+        end_month = max(8, current_m)
+    end_month = max(start_month, min(12, end_month))
+    
+    start_time = time.time()
+    total_fetched = 0
+    new_inserted = 0
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+    conn = sqlite3.connect(DB_PATH, timeout=30.0)
+    conn.execute("PRAGMA journal_mode=WAL;")
+    conn.execute("PRAGMA busy_timeout=10000;")
+    cursor = conn.cursor()
+    
+    status_msg = "同步成功"
+    sync_ok = True
+    
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            for m in range(start_month, end_month + 1):
+                _, last_day = calendar.monthrange(year, m)
+                s_date = f"{year}-{m:02d}-01"
+                e_date = f"{year}-{m:02d}-{last_day:02d}"
+                if s_date > today_str:
+                    continue
+                if e_date > today_str:
+                    e_date = today_str
+                    
+                page = 1
+                limit = 1000
+                while True:
+                    body = {
+                        "page": page,
+                        "limit": limit,
+                        "id": "",
+                        "state": "",
+                        "starTime": s_date,
+                        "endTime": e_date,
+                        "code": "",
+                        "overloadRatio": "",
+                        "absorptivename": "",
+                        "type": 1
+                    }
+                    response = await client.post(target_url, headers=headers, json=body)
+                    if response.status_code != 200:
+                        status_msg = f"{m}月数据接口返回 HTTP {response.status_code}"
+                        sync_ok = False
+                        break
+                    
+                    data = response.json()
+                    res_obj = data.get("result") or {}
+                    records = res_obj.get("rows") or res_obj.get("records") or []
+                    total_recs = res_obj.get("total") or 0
+                    
+                    if not records:
+                        break
+                        
+                    for r in records:
+                        r_id = str(r.get("id") or "")
+                        code = str(r.get("code") or "")
+                        plate = str(r.get("carnumberplate") or r.get("name") or "").strip().upper()
+                        trans_name = str(r.get("transportname") or r.get("carcompany") or "")
+                        abs_name = str(r.get("absorptivename") or r.get("arriveplace") or "")
+                        leave_p = str(r.get("leaveplace") or r.get("worksitename") or "")
+                        leave_t = str(r.get("leavetime") or r.get("createtime") or "")
+                        arrive_t = str(r.get("arrivetime") or "")
+                        rubbish_t = str(r.get("rubbishtype") or "渣土")
+                        try:
+                            vol = float(r.get("transportinoutnum") or 0.0)
+                        except (ValueError, TypeError):
+                            vol = 0.0
+                        state = str(r.get("state") or "已完成")
+                        abs_area = str(r.get("absorptivearea") or "")
+                        created_t = str(r.get("createtime") or "")
+                        
+                        cursor.execute("""
+                            INSERT OR REPLACE INTO remote_waybills 
+                            (remote_id, code, plate_no, transport_name, absorptive_name, leave_place, leave_time, arrive_time, rubbish_type, volume, state, absorptive_area, created_time, sync_time)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        """, (r_id, code, plate, trans_name, abs_name, leave_p, leave_t, arrive_t, rubbish_t, vol, state, abs_area, created_t, now_str))
+                        new_inserted += 1
+                        
+                    total_fetched += len(records)
+                    conn.commit()
+                    if page * limit >= total_recs:
+                        break
+                    page += 1
+    except Exception as e:
+        status_msg = f"同步异常: {str(e)}"
+        sync_ok = False
+        print(f"[RemoteSync] 同步异常: {e}")
+    finally:
+        dur_ms = round((time.time() - start_time) * 1000)
+        
+        # 记录同步历史
+        cursor.execute("""
+            INSERT INTO sync_logs (sync_time, sync_type, status, total_fetched, new_inserted, duration_ms, message)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, (now_str, sync_type, "SUCCESS" if sync_ok else "FAILED", total_fetched, new_inserted, dur_ms, status_msg))
+        
+        # 更新配置中的状态
+        cursor.execute("INSERT OR REPLACE INTO remote_sync_config (key, value) VALUES ('last_sync_time', ?)", (now_str,))
+        cursor.execute("INSERT OR REPLACE INTO remote_sync_config (key, value) VALUES ('last_sync_status', ?)", (status_msg,))
+        cursor.execute("INSERT OR REPLACE INTO remote_sync_config (key, value) VALUES ('last_sync_count', ?)", (str(total_fetched),))
+        
+        conn.commit()
+        conn.close()
+        
+    return {
+        "success": sync_ok,
+        "sync_time": now_str,
+        "total_fetched": total_fetched,
+        "new_inserted": new_inserted,
+        "duration_ms": dur_ms,
+        "message": status_msg
+    }
+
+def calculate_capacity_analysis(year: int = 2026, start_month: int = 5, end_month: Optional[int] = None) -> Dict[str, Any]:
+    today_dt = date.today()
+    if end_month is None:
+        end_month = max(8, today_dt.month)
+    end_month = max(start_month, min(12, end_month))
+    
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    
+    # 1. 获取站点配置
+    cursor.execute("SELECT id, name, alias, total_quota, expire_date, site_type FROM absorptive_sites_config WHERE is_active = 1 ORDER BY id ASC")
+    site_rows = cursor.fetchall()
+    
+    sites_config = []
+    for r in site_rows:
+        try:
+            aliases = json.loads(r["alias"]) if r["alias"] else []
+        except Exception:
+            aliases = []
+        sites_config.append({
+            "id": r["id"],
+            "name": r["name"],
+            "alias": aliases,
+            "total_quota": float(r["total_quota"] or 0.0),
+            "expire_date": r["expire_date"] or "-",
+            "site_type": r["site_type"] or "消纳场"
+        })
+        
+    # 获取总项目方量
+    cursor.execute("SELECT value FROM remote_sync_config WHERE key = 'total_project_volume'")
+    cfg_vol = cursor.fetchone()
+    total_project_volume = float(cfg_vol[0]) if cfg_vol and cfg_vol[0] else 938164.0
+    
+    # 2. 读取全部远程电子联单并按月度与消纳场地聚合
+    cursor.execute("""
+        SELECT absorptive_name,
+               CAST(strftime('%m', leave_time) AS INTEGER) as month_num,
+               SUM(volume) as total_vol,
+               COUNT(*) as trips
+        FROM remote_waybills
+        WHERE strftime('%Y', leave_time) = ?
+        GROUP BY absorptive_name, month_num
+    """, (str(year),))
+    waybill_agg = cursor.fetchall()
+    conn.close()
+    
+    month_keys = [f"{m}月" for m in range(start_month, end_month + 1)]
+    site_monthly_map = { s["name"]: { f"{m}月": 0.0 for m in range(start_month, end_month + 1) } for s in sites_config }
+    site_monthly_trips = { s["name"]: { f"{m}月": 0 for m in range(start_month, end_month + 1) } for s in sites_config }
+    
+    for r in waybill_agg:
+        abs_name = str(r["absorptive_name"] or "")
+        m_num = r["month_num"]
+        m_key = f"{m_num}月"
+        vol = float(r["total_vol"] or 0.0)
+        trips = int(r["trips"] or 0)
+        
+        if m_key not in month_keys:
+            continue
+            
+        matched_site_name = None
+        for s in sites_config:
+            s_name = s["name"]
+            aliases = s["alias"]
+            if (s_name in abs_name or abs_name in s_name) or any(a in abs_name for a in aliases if a):
+                matched_site_name = s_name
+                break
+                
+        if matched_site_name:
+            site_monthly_map[matched_site_name][m_key] += vol
+            site_monthly_trips[matched_site_name][m_key] += trips
+            
+    # 3. 组装各消纳点矩阵与到期状态
+    matrix_rows = []
+    total_handled_capacity = 0.0
+    total_consumed_all = 0.0
+    total_trips_all = 0
+    
+    for s in sites_config:
+        s_name = s["name"]
+        quota = s["total_quota"]
+        expire_date = s["expire_date"]
+        site_type = s["site_type"]
+        
+        m_dict = {}
+        t_dict = {}
+        site_consumed = 0.0
+        site_trips = 0
+        
+        for m_k in month_keys:
+            v = round(site_monthly_map[s_name][m_k], 2)
+            t = site_monthly_trips[s_name][m_k]
+            m_dict[m_k] = v
+            t_dict[m_k] = t
+            site_consumed += v
+            site_trips += t
+            
+        site_consumed = round(site_consumed, 2)
+        remaining = round(max(0.0, quota - site_consumed), 2)
+        usage_pct = round((site_consumed / quota * 100), 1) if quota > 0 else 0.0
+        
+        # 判定到期状态
+        status_tag = "正常"
+        status_class = "status-normal"
+        try:
+            parts = expire_date.replace("-", "/").split("/")
+            if len(parts) == 3:
+                exp_d = date(int(parts[0]), int(parts[1]), int(parts[2]))
+                days_diff = (exp_d - today_dt).days
+                if days_diff < 0:
+                    status_tag = "已过期"
+                    status_class = "status-expired"
+                elif days_diff <= 15:
+                    status_tag = f"临期 (剩{days_diff}天)"
+                    status_class = "status-warning"
+        except Exception:
+            pass
+            
+        total_handled_capacity += quota
+        total_consumed_all += site_consumed
+        total_trips_all += site_trips
+        
+        matrix_rows.append({
+            "name": s_name,
+            "site_type": site_type,
+            "monthly": m_dict,
+            "monthly_trips": t_dict,
+            "total_consumed": site_consumed,
+            "total_quota": quota,
+            "remaining": remaining,
+            "usage_percentage": usage_pct,
+            "expire_date": expire_date,
+            "status_tag": status_tag,
+            "status_class": status_class,
+            "total_trips": site_trips
+        })
+        
+    def _sort_key(row):
+        exp_str = str(row.get("expire_date", "") or "").strip()
+        try:
+            parts = exp_str.replace("-", "/").split("/")
+            if len(parts) == 3:
+                exp_d = date(int(parts[0]), int(parts[1]), int(parts[2]))
+                if exp_d >= today_dt:
+                    return (0, exp_d)
+                else:
+                    return (1, exp_d)
+        except Exception:
+            pass
+        return (2, date.max)
+        
+    matrix_rows = sorted(matrix_rows, key=_sort_key)
+    
+    unhandled_volume = round(max(0.0, total_project_volume - total_handled_capacity), 2)
+    overall_progress = round((total_consumed_all / total_project_volume * 100), 1) if total_project_volume > 0 else 0.0
+    
+    cfg = get_remote_sync_config()
+    last_sync = cfg.get("last_sync_time", "未同步")
+    
+    return {
+        "success": True,
+        "year": year,
+        "months": month_keys,
+        "last_sync_time": last_sync,
+        "summary": {
+            "total_project_volume": round(total_project_volume, 2),
+            "handled_capacity": round(total_handled_capacity, 2),
+            "unhandled_volume": unhandled_volume,
+            "total_consumed": round(total_consumed_all, 2),
+            "total_remaining": round(max(0.0, total_handled_capacity - total_consumed_all), 2),
+            "total_trips": total_trips_all,
+            "overall_progress": overall_progress
+        },
+        "matrix": matrix_rows
+    }
+
+def calculate_daily_flow_stats(target_date: Optional[str] = None) -> Dict[str, Any]:
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    
+    cursor.execute("""
+        SELECT DISTINCT substr(leave_time, 1, 10) as dt
+        FROM remote_waybills
+        WHERE leave_time IS NOT NULL AND leave_time != ''
+        ORDER BY dt DESC
+    """)
+    available_dates = [r["dt"] for r in cursor.fetchall()]
+    
+    if not available_dates:
+        conn.close()
+        return {
+            "success": True,
+            "has_data": False,
+            "target_date": target_date or date.today().strftime("%Y-%m-%d"),
+            "available_dates": [],
+            "summary": {"total_trips": 0, "total_volume": 0.0, "active_vehicles": 0, "active_sites": 0},
+            "site_distribution": [],
+            "vehicle_rankings": [],
+            "hourly_curve": [],
+            "waybills": []
+        }
+        
+    if not target_date or target_date not in available_dates:
+        target_date = available_dates[0]
+        
+    cursor.execute("""
+        SELECT COUNT(*) as total_trips,
+               SUM(volume) as total_vol,
+               COUNT(DISTINCT plate_no) as active_vehicles,
+               COUNT(DISTINCT absorptive_name) as active_sites
+        FROM remote_waybills
+        WHERE substr(leave_time, 1, 10) = ?
+    """, (target_date,))
+    sum_row = cursor.fetchone()
+    total_trips = sum_row["total_trips"] or 0
+    total_vol = round(sum_row["total_vol"] or 0.0, 2)
+    active_vehicles = sum_row["active_vehicles"] or 0
+    active_sites = sum_row["active_sites"] or 0
+    
+    cursor.execute("""
+        SELECT absorptive_name,
+               COUNT(*) as trips,
+               SUM(volume) as vol
+        FROM remote_waybills
+        WHERE substr(leave_time, 1, 10) = ?
+        GROUP BY absorptive_name
+        ORDER BY trips DESC
+    """, (target_date,))
+    site_rows = cursor.fetchall()
+    site_dist = []
+    for r in site_rows:
+        s_name = r["absorptive_name"] or "未知消纳场"
+        s_trips = r["trips"]
+        s_vol = round(r["vol"] or 0.0, 2)
+        pct = f"{(s_trips / total_trips * 100):.1f}" if total_trips > 0 else "0.0"
+        site_dist.append({
+            "site_name": s_name,
+            "trips": s_trips,
+            "volume": s_vol,
+            "percentage": pct
+        })
+        
+    cursor.execute("""
+        SELECT plate_no,
+               transport_name,
+               COUNT(*) as trips,
+               SUM(volume) as vol,
+               GROUP_CONCAT(DISTINCT absorptive_name) as sites,
+               GROUP_CONCAT(DISTINCT rubbish_type) as cargo_types
+        FROM remote_waybills
+        WHERE substr(leave_time, 1, 10) = ?
+        GROUP BY plate_no
+        ORDER BY trips DESC, vol DESC
+    """, (target_date,))
+    veh_rows = cursor.fetchall()
+    veh_rankings = []
+    for r in veh_rows:
+        veh_rankings.append({
+            "plate_no": r["plate_no"],
+            "transport_name": r["transport_name"] or "未归属车队",
+            "trips": r["trips"],
+            "volume": round(r["vol"] or 0.0, 2),
+            "sites": (r["sites"] or "").split(","),
+            "cargo_types": (r["cargo_types"] or "").split(",")
+        })
+        
+    cursor.execute("""
+        SELECT strftime('%H', leave_time) as hr,
+               COUNT(*) as trips,
+               SUM(volume) as vol
+        FROM remote_waybills
+        WHERE substr(leave_time, 1, 10) = ?
+        GROUP BY hr
+        ORDER BY hr ASC
+    """, (target_date,))
+    hr_rows = {r["hr"]: {"trips": r["trips"], "vol": round(r["vol"] or 0.0, 2)} for r in cursor.fetchall()}
+    hourly_curve = []
+    for h in range(24):
+        h_str = f"{h:02d}"
+        item = hr_rows.get(h_str, {"trips": 0, "vol": 0.0})
+        hourly_curve.append({
+            "hour": f"{h_str}:00",
+            "trips": item["trips"],
+            "volume": item["vol"]
+        })
+        
+    cursor.execute("""
+        SELECT id, code, plate_no, transport_name, absorptive_name, leave_time, arrive_time, rubbish_type, volume, state
+        FROM remote_waybills
+        WHERE substr(leave_time, 1, 10) = ?
+        ORDER BY leave_time DESC
+        LIMIT 100
+    """, (target_date,))
+    wb_rows = cursor.fetchall()
+    waybills = []
+    for r in wb_rows:
+        waybills.append({
+            "id": r["id"],
+            "code": r["code"],
+            "plate_no": r["plate_no"],
+            "transport_name": r["transport_name"],
+            "absorptive_name": r["absorptive_name"],
+            "leave_time": r["leave_time"],
+            "arrive_time": r["arrive_time"],
+            "rubbish_type": r["rubbish_type"],
+            "volume": r["volume"],
+            "state": r["state"]
+        })
+        
+    conn.close()
+    
+    return {
+        "success": True,
+        "has_data": True,
+        "target_date": target_date,
+        "available_dates": available_dates,
+        "summary": {
+            "total_trips": total_trips,
+            "total_volume": total_vol,
+            "active_vehicles": active_vehicles,
+            "active_sites": active_sites
+        },
+        "site_distribution": site_dist,
+        "vehicle_rankings": veh_rankings,
+        "hourly_curve": hourly_curve,
+        "waybills": waybills
+    }
+
+# ----------------- 远程数据与土点容量分析 REST APIs -----------------
+
+@app.get("/api/sync/status")
+def get_sync_status() -> Dict[str, Any]:
+    """获取远程数据同步状态与最近日志"""
+    cfg = get_remote_sync_config()
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) FROM remote_waybills")
+    total_waybills = cursor.fetchone()[0]
+    cursor.execute("SELECT MIN(substr(leave_time,1,10)), MAX(substr(leave_time,1,10)) FROM remote_waybills")
+    date_range = cursor.fetchone()
+    min_date = date_range[0] if date_range and date_range[0] else "-"
+    max_date = date_range[1] if date_range and date_range[1] else "-"
+    
+    cursor.execute("SELECT * FROM sync_logs ORDER BY id DESC LIMIT 5")
+    recent_logs = [dict(r) for r in cursor.fetchall()]
+    conn.close()
+    
+    return {
+        "success": True,
+        "total_waybills": total_waybills,
+        "date_range": {"min": min_date, "max": max_date},
+        "last_sync_time": cfg.get("last_sync_time", "未同步"),
+        "last_sync_status": cfg.get("last_sync_status", "待同步"),
+        "last_sync_count": cfg.get("last_sync_count", "0"),
+        "auto_sync_enabled": cfg.get("auto_sync_enabled", "1") == "1",
+        "auto_sync_time": cfg.get("auto_sync_time", "02:00"),
+        "recent_logs": recent_logs
+    }
+
+@app.post("/api/sync/execute")
+async def trigger_remote_sync(payload: SyncExecuteRequest = Body(default=SyncExecuteRequest())) -> Dict[str, Any]:
+    """手动触发远程数据全量/增量同步"""
+    return await execute_remote_sync(
+        start_month=payload.start_month or 5,
+        end_month=payload.end_month,
+        year=payload.year or 2026,
+        sync_type=payload.sync_type or "manual"
+    )
+
+@app.get("/api/sync/config")
+def get_sync_configuration() -> Dict[str, Any]:
+    """获取同步设置配置"""
+    cfg = get_remote_sync_config()
+    return {
+        "success": True,
+        "config": {
+            "authtoken": cfg.get("authtoken", ""),
+            "worksite_id": cfg.get("worksite_id", "225642"),
+            "worksitetype": cfg.get("worksitetype", "1"),
+            "auto_sync_enabled": cfg.get("auto_sync_enabled", "1") == "1",
+            "auto_sync_time": cfg.get("auto_sync_time", "02:00"),
+            "total_project_volume": float(cfg.get("total_project_volume", "938164.0"))
+        }
+    }
+
+@app.post("/api/sync/config")
+def update_sync_configuration(payload: SyncConfigRequest) -> Dict[str, Any]:
+    """修改更新同步配置"""
+    if payload.authtoken is not None:
+        set_remote_sync_config("authtoken", payload.authtoken.strip())
+    if payload.worksite_id is not None:
+        set_remote_sync_config("worksite_id", payload.worksite_id.strip())
+    if payload.worksitetype is not None:
+        set_remote_sync_config("worksitetype", payload.worksitetype.strip())
+    if payload.auto_sync_enabled is not None:
+        set_remote_sync_config("auto_sync_enabled", "1" if str(payload.auto_sync_enabled) in ("1", "true", "True") else "0")
+    if payload.auto_sync_time is not None:
+        set_remote_sync_config("auto_sync_time", payload.auto_sync_time.strip())
+    if payload.total_project_volume is not None:
+        set_remote_sync_config("total_project_volume", str(payload.total_project_volume))
+    return {"success": True, "message": "同步配置已成功更新"}
+
+@app.get("/api/absorptive/capacity_analysis")
+def get_capacity_analysis_endpoint(
+    year: int = Query(2026),
+    start_month: int = Query(5),
+    end_month: Optional[int] = Query(None)
+) -> Dict[str, Any]:
+    """获取土点容量分析大屏矩阵数据"""
+    return calculate_capacity_analysis(year=year, start_month=start_month, end_month=end_month)
+
+@app.get("/api/absorptive/daily_flow_stats")
+def get_daily_flow_stats_endpoint(
+    date: Optional[str] = Query(None, description="指定查询日期 YYYY-MM-DD")
+) -> Dict[str, Any]:
+    """获取指定日期的车辆拉运流向与车次统计"""
+    return calculate_daily_flow_stats(target_date=date)
+
+@app.get("/api/absorptive/sites_config")
+def get_absorptive_sites_config_endpoint() -> Dict[str, Any]:
+    """获取土点容量与到期配置列表"""
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, name, alias, total_quota, expire_date, site_type, is_active FROM absorptive_sites_config ORDER BY id ASC")
+    rows = cursor.fetchall()
+    conn.close()
+    sites = []
+    for r in rows:
+        try:
+            aliases = json.loads(r["alias"]) if r["alias"] else []
+        except Exception:
+            aliases = []
+        sites.append({
+            "id": r["id"],
+            "name": r["name"],
+            "alias": aliases,
+            "total_quota": r["total_quota"],
+            "expire_date": r["expire_date"],
+            "site_type": r["site_type"],
+            "is_active": r["is_active"]
+        })
+    return {"success": True, "sites": sites}
+
+@app.post("/api/absorptive/sites_config")
+def save_absorptive_sites_config_endpoint(payload: SitesConfigBatchRequest) -> Dict[str, Any]:
+    """批量更新保存土点容量与到期配置"""
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    
+    # 更新总方量
+    if payload.total_project_volume is not None:
+        cursor.execute("INSERT OR REPLACE INTO remote_sync_config (key, value) VALUES ('total_project_volume', ?)", (str(payload.total_project_volume),))
+        
+    for s in payload.sites:
+        alias_json = json.dumps(s.alias, ensure_ascii=False) if s.alias else "[]"
+        cursor.execute("""
+            INSERT INTO absorptive_sites_config (name, alias, total_quota, expire_date, site_type, is_active)
+            VALUES (?, ?, ?, ?, ?, 1)
+            ON CONFLICT(name) DO UPDATE SET
+                alias = excluded.alias,
+                total_quota = excluded.total_quota,
+                expire_date = excluded.expire_date,
+                site_type = excluded.site_type
+        """, (s.name.strip(), alias_json, s.total_quota, s.expire_date.strip(), s.site_type))
+    conn.commit()
+    conn.close()
+    return {"success": True, "message": "土点配置已成功保存"}
+
+@app.get("/api/absorptive/waybills")
+def query_absorptive_waybills_endpoint(
+    date: Optional[str] = Query(None),
+    plate: Optional[str] = Query(None),
+    site: Optional[str] = Query(None),
+    page: int = Query(1),
+    limit: int = Query(50)
+) -> Dict[str, Any]:
+    """分页多条件查询远程电子联单明细"""
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    
+    conditions = []
+    params = []
+    
+    if date:
+        conditions.append("substr(leave_time, 1, 10) = ?")
+        params.append(date.strip())
+    if plate:
+        conditions.append("plate_no LIKE ?")
+        params.append(f"%{plate.strip().upper()}%")
+    if site:
+        conditions.append("absorptive_name LIKE ?")
+        params.append(f"%{site.strip()}%")
+        
+    where_sql = ("WHERE " + " AND ".join(conditions)) if conditions else ""
+    
+    cursor.execute(f"SELECT COUNT(*) FROM remote_waybills {where_sql}", params)
+    total = cursor.fetchone()[0]
+    
+    offset = (page - 1) * limit
+    cursor.execute(f"""
+        SELECT * FROM remote_waybills
+        {where_sql}
+        ORDER BY leave_time DESC
+        LIMIT ? OFFSET ?
+    """, params + [limit, offset])
+    
+    rows = [dict(r) for r in cursor.fetchall()]
+    conn.close()
+    
+    return {
+        "success": True,
+        "total": total,
+        "page": page,
+        "limit": limit,
+        "records": rows
+    }
+
+# ----------------- 每日自动定时同步后台任务 -----------------
+async def background_daily_sync_worker():
+    """每日定时自动同步守护协程"""
+    print("[Scheduler] 每日自动数据同步后台守护协程启动。")
+    last_synced_day = ""
+    while True:
+        try:
+            await asyncio.sleep(30)
+            now = datetime.now()
+            today_str = now.strftime("%Y-%m-%d")
+            time_str = now.strftime("%H:%M")
+            
+            cfg = get_remote_sync_config()
+            auto_enabled = cfg.get("auto_sync_enabled", "1") == "1"
+            target_sync_time = cfg.get("auto_sync_time", "02:00")
+            
+            if auto_enabled and time_str == target_sync_time and last_synced_day != today_str:
+                print(f"[Scheduler] 触发每日定时自动同步 (目标时间: {target_sync_time})...")
+                last_synced_day = today_str
+                cur_m = now.month
+                start_m = max(1, cur_m - 1)
+                res = await execute_remote_sync(start_month=start_m, end_month=cur_m, year=now.year, sync_type="auto")
+                print(f"[Scheduler] 每日自动同步执行完成: {res}")
+        except Exception as e:
+            print(f"[Scheduler] 自动同步调度异常: {e}")
+            await asyncio.sleep(60)
+
+@app.on_event("startup")
+async def app_startup_event():
+    # 启动后台自动同步守护协程
+    asyncio.create_task(background_daily_sync_worker())
+
 @app.post("/api/import_excel")
+
 async def import_excel_file(file: UploadFile = File(...)) -> dict[str, Any]:
     """通过前端页面拖拽或上传 Excel 表格文件同步全盘台账数据"""
     if not file.filename:

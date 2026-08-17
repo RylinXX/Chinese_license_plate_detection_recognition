@@ -1868,6 +1868,133 @@
             background: rgba(99, 102, 241, 0.15) !important;
             color: var(--text-primary) !important;
         }
+
+        /* ----------------- 土点容量分析 & 每日流向看板样式 ----------------- */
+        .capacity-kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 14px;
+            margin-bottom: 20px;
+        }
+        @media (max-width: 1300px) {
+            .capacity-kpi-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+        @media (max-width: 768px) {
+            .capacity-kpi-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        .progress-bar-container {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.06);
+            border-radius: 999px;
+            height: 8px;
+            overflow: hidden;
+            position: relative;
+            margin-top: 4px;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            border-radius: 999px;
+            transition: width 0.6s ease;
+        }
+        .progress-fill-emerald {
+            background: linear-gradient(90deg, #10b981, #34d399);
+        }
+        .progress-fill-amber {
+            background: linear-gradient(90deg, #f59e0b, #fbbf24);
+        }
+        .progress-fill-rose {
+            background: linear-gradient(90deg, #ef4444, #f87171);
+        }
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+        .status-normal {
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+        .status-warning {
+            background: rgba(245, 158, 11, 0.15);
+            color: #fbbf24;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+        .status-expired {
+            background: rgba(239, 68, 68, 0.15);
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+        .flow-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 12px 14px;
+            margin-bottom: 10px;
+            transition: all 0.2s ease;
+        }
+        .flow-card:hover {
+            background: rgba(255, 255, 255, 0.04);
+            border-color: rgba(99, 102, 241, 0.3);
+            transform: translateY(-1px);
+        }
+        .hourly-bar-chart {
+            display: flex;
+            align-items: flex-end;
+            gap: 4px;
+            height: 120px;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .hourly-bar-col {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100%;
+            justify-content: flex-end;
+            position: relative;
+        }
+        .hourly-bar {
+            width: 100%;
+            background: linear-gradient(180deg, #6366f1, #38bdf8);
+            border-radius: 3px 3px 0 0;
+            min-height: 2px;
+            transition: height 0.4s ease;
+        }
+        .hourly-bar:hover {
+            background: linear-gradient(180deg, #818cf8, #7dd3fc);
+        }
+        .hourly-label {
+            font-size: 9px;
+            color: var(--text-muted);
+            margin-top: 4px;
+            white-space: nowrap;
+        }
+        .sync-indicator-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid rgba(99, 102, 241, 0.25);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            color: #a5b4fc;
+        }
+        #panel-capacity.active {
+            display: flex !important;
+            flex-direction: column !important;
+            width: 100% !important;
+        }
     </style>
 </head>
 <body>
@@ -1896,6 +2023,10 @@
             <a class="nav-item" id="menu-ledger" onclick="switchTab('ledger')">
                 <i data-lucide="file-spreadsheet" style="width:14px; height:14px;"></i>
                 <span>项目明细台账</span>
+            </a>
+            <a class="nav-item" id="menu-capacity" onclick="switchTab('capacity')">
+                <i data-lucide="layers" style="width:14px; height:14px;"></i>
+                <span>土点容量分析</span>
             </a>
             <a class="nav-item" id="menu-import" onclick="switchTab('import')">
                 <i data-lucide="upload-cloud" style="width:14px; height:14px;"></i>
@@ -2271,8 +2402,284 @@
             </div>
         </section>
 
+        <!-- 📊 面板：土点容量分析与流向监控看板 -->
+        <section class="main-content" id="panel-capacity">
+            <!-- 顶部控制与同步概览 -->
+            <div class="glass-card">
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
+                    <div>
+                        <h3 class="card-header-title" style="margin-bottom:4px;">
+                            <i data-lucide="layers"></i>消纳土点容量分析与流向全景监控
+                        </h3>
+                        <div style="font-size:12px; color:var(--text-muted); display:flex; align-items:center; gap:8px;">
+                            <span>数据来源: CapCloud 渣土云联单系统</span>
+                            <span class="sync-indicator-pill" id="cap-sync-indicator">
+                                <i data-lucide="refresh-cw" style="width:12px; height:12px;"></i>
+                                <span id="cap-last-sync-text">上次同步: 读取中...</span>
+                            </span>
+                        </div>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                        <button class="btn btn-sm btn-primary" onclick="triggerRemoteSyncManually()" id="btn-trigger-sync">
+                            <i data-lucide="refresh-cw"></i><span>立即同步数据</span>
+                        </button>
+                        <button class="btn btn-sm btn-secondary" onclick="openSitesConfigModal()">
+                            <i data-lucide="sliders"></i><span>土点配额配置</span>
+                        </button>
+                        <button class="btn btn-sm btn-secondary" onclick="openSyncConfigModal()">
+                            <i data-lucide="settings"></i><span>自动同步设置</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 核心 5 大 KPI 汇总卡 -->
+                <div class="capacity-kpi-grid">
+                    <div class="kpi-card">
+                        <div class="kpi-icon" style="background:rgba(99, 102, 241, 0.15); color:#818cf8;"><i data-lucide="database"></i></div>
+                        <div class="kpi-info">
+                            <span class="kpi-label">项目总土方体量</span>
+                            <div style="display:flex; align-items:baseline; gap:4px;">
+                                <span class="kpi-value" id="kpi-cap-proj-vol">938,164.0</span>
+                                <span style="font-size:12px; color:var(--text-secondary);">m³</span>
+                            </div>
+                            <span style="font-size:10px; color:var(--text-muted);">央视项目核准设计体量</span>
+                        </div>
+                    </div>
+
+                    <div class="kpi-card">
+                        <div class="kpi-icon" style="background:rgba(56, 189, 248, 0.15); color:#38bdf8;"><i data-lucide="shield-check"></i></div>
+                        <div class="kpi-info">
+                            <span class="kpi-label">已落实消纳容量</span>
+                            <div style="display:flex; align-items:baseline; gap:4px;">
+                                <span class="kpi-value" id="kpi-cap-handled-vol" style="color:#38bdf8;">857,750.0</span>
+                                <span style="font-size:12px; color:var(--text-secondary);">m³</span>
+                            </div>
+                            <span style="font-size:10px; color:var(--text-muted);" id="kpi-cap-handled-pct">占比 91.4%</span>
+                        </div>
+                    </div>
+
+                    <div class="kpi-card">
+                        <div class="kpi-icon" style="background:rgba(239, 68, 68, 0.15); color:#f87171;"><i data-lucide="alert-triangle"></i></div>
+                        <div class="kpi-info">
+                            <span class="kpi-label">待落实消纳缺口</span>
+                            <div style="display:flex; align-items:baseline; gap:4px;">
+                                <span class="kpi-value" id="kpi-cap-unhandled-vol" style="color:#f87171;">80,414.0</span>
+                                <span style="font-size:12px; color:var(--text-secondary);">m³</span>
+                            </div>
+                            <span style="font-size:10px; color:#f87171;" id="kpi-cap-gap-pct">需补办 8.6%</span>
+                        </div>
+                    </div>
+
+                    <div class="kpi-card">
+                        <div class="kpi-icon" style="background:rgba(16, 185, 129, 0.15); color:#34d399;"><i data-lucide="check-circle-2"></i></div>
+                        <div class="kpi-info">
+                            <span class="kpi-label">全周期累计已消化</span>
+                            <div style="display:flex; align-items:baseline; gap:4px;">
+                                <span class="kpi-value" id="kpi-cap-consumed-vol" style="color:#34d399;">0.0</span>
+                                <span style="font-size:12px; color:var(--text-secondary);">m³</span>
+                            </div>
+                            <span style="font-size:10px; color:var(--text-secondary);" id="kpi-cap-trips-info">共 0 车次</span>
+                        </div>
+                    </div>
+
+                    <div class="kpi-card">
+                        <div class="kpi-icon" style="background:rgba(245, 158, 11, 0.15); color:#fbbf24;"><i data-lucide="pie-chart"></i></div>
+                        <div class="kpi-info">
+                            <span class="kpi-label">全周期剩余可用容量</span>
+                            <div style="display:flex; align-items:baseline; gap:4px;">
+                                <span class="kpi-value" id="kpi-cap-remaining-vol" style="color:#fbbf24;">0.0</span>
+                                <span style="font-size:12px; color:var(--text-secondary);">m³</span>
+                            </div>
+                            <div class="progress-bar-container">
+                                <div class="progress-bar-fill progress-fill-amber" id="kpi-cap-progress-fill" style="width:0%;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 第一分区：各土点消纳月度消耗矩阵 -->
+            <div class="glass-card" style="margin-top:16px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:14px;">
+                    <h3 class="card-header-title" style="margin-bottom:0;">
+                        <i data-lucide="table-2"></i>各消纳土点核定容量与月度消纳矩阵分析
+                    </h3>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <input type="text" class="input-control" id="cap-site-search" placeholder="搜索土点..." style="width:140px; height:32px; font-size:12px;" oninput="filterCapacityTable()">
+                        <select class="input-control" id="cap-status-filter" style="width:120px; height:32px; font-size:12px;" onchange="filterCapacityTable()">
+                            <option value="all">全部状态</option>
+                            <option value="warning">临期预警</option>
+                            <option value="expired">已过期</option>
+                            <option value="normal">正常有效</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="table-responsive" style="max-height:420px;">
+                    <table class="ledger-table" id="table-capacity-matrix">
+                        <thead>
+                            <tr>
+                                <th>序号</th>
+                                <th>消纳土点 / 处置场名称</th>
+                                <th>类型</th>
+                                <th>核定总容量(m³)</th>
+                                <th>5月消纳(m³)</th>
+                                <th>6月消纳(m³)</th>
+                                <th>7月消纳(m³)</th>
+                                <th>8月消纳(m³)</th>
+                                <th>累计消纳(m³)</th>
+                                <th>剩余容量(m³)</th>
+                                <th style="width:130px;">消纳进度</th>
+                                <th>到期时间</th>
+                                <th>状态预警</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-capacity-matrix">
+                            <tr><td colspan="13" style="text-align:center; color:var(--text-muted); padding:30px;">正在加载土点容量分析数据...</td></tr>
+                        </tbody>
+                        <tfoot id="tfoot-capacity-matrix" style="background:rgba(255,255,255,0.03); font-weight:700;">
+                            <!-- 汇总行 -->
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 第二分区：每日车辆拉运流向与车次统计看板 -->
+            <div class="glass-card" style="margin-top:16px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
+                    <div>
+                        <h3 class="card-header-title" style="margin-bottom:2px;">
+                            <i data-lucide="navigation"></i>每日车辆拉运流向与车次统计看板
+                        </h3>
+                        <span style="font-size:12px; color:var(--text-muted);">查看指定日期各消纳去向流向分布、24小时拉运曲线及单车拉运明细</span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <span style="font-size:12px; color:var(--text-secondary);">查询日期:</span>
+                        <select class="input-control" id="flow-date-select" style="width:140px; height:32px; font-size:12px;" onchange="onFlowDateChange(this.value)">
+                            <option value="">加载中...</option>
+                        </select>
+                        <button class="btn btn-sm btn-secondary" onclick="stepFlowDate(-1)" title="前一天"><i data-lucide="chevron-left"></i></button>
+                        <button class="btn btn-sm btn-secondary" onclick="stepFlowDate(1)" title="后一天"><i data-lucide="chevron-right"></i></button>
+                        <button class="btn btn-sm btn-secondary" onclick="loadLatestFlowDate()" title="最新日期">最新</button>
+                    </div>
+                </div>
+
+                <!-- 当日 4 个微型 KPI -->
+                <div class="kpi-grid" style="grid-template-columns: repeat(4, 1fr); gap:12px; margin-bottom:16px;">
+                    <div class="kpi-card" style="padding:10px 14px;">
+                        <div class="kpi-info">
+                            <span class="kpi-label">当日总拉运车次</span>
+                            <span class="kpi-value" id="flow-sum-trips" style="color:var(--color-out); font-size:18px;">0 趟</span>
+                        </div>
+                    </div>
+                    <div class="kpi-card" style="padding:10px 14px;">
+                        <div class="kpi-info">
+                            <span class="kpi-label">当日拉运总方量</span>
+                            <span class="kpi-value" id="flow-sum-volume" style="color:var(--color-in); font-size:18px;">0.00 m³</span>
+                        </div>
+                    </div>
+                    <div class="kpi-card" style="padding:10px 14px;">
+                        <div class="kpi-info">
+                            <span class="kpi-label">当日出车车辆数</span>
+                            <span class="kpi-value" id="flow-sum-vehicles" style="color:#818cf8; font-size:18px;">0 辆</span>
+                        </div>
+                    </div>
+                    <div class="kpi-card" style="padding:10px 14px;">
+                        <div class="kpi-info">
+                            <span class="kpi-label">涉及消纳场地数</span>
+                            <span class="kpi-value" id="flow-sum-sites" style="color:var(--color-stay); font-size:18px;">0 个</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 左右分栏：消纳去向流向占比 + 24小时拉运曲线 -->
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-bottom:16px;">
+                    <!-- 消纳去向流向占比 -->
+                    <div style="background:rgba(15,23,42,0.3); border:1px solid var(--card-border); border-radius:8px; padding:14px;">
+                        <span style="font-size:13px; font-weight:700; color:var(--text-primary); display:block; margin-bottom:10px;">
+                            📍 消纳去向分布占比
+                        </span>
+                        <div id="flow-sites-list" style="display:flex; flex-direction:column; gap:8px; max-height:220px; overflow-y:auto;">
+                            <div style="color:var(--text-muted); font-size:12px;">加载中...</div>
+                        </div>
+                    </div>
+
+                    <!-- 24小时时段拉运分布 -->
+                    <div style="background:rgba(15,23,42,0.3); border:1px solid var(--card-border); border-radius:8px; padding:14px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                            <span style="font-size:13px; font-weight:700; color:var(--text-primary);">
+                                ⏰ 24小时时段拉运峰值曲线
+                            </span>
+                            <span style="font-size:11px; color:var(--text-muted);">单位: 趟次</span>
+                        </div>
+                        <div class="hourly-bar-chart" id="flow-hourly-chart">
+                            <!-- 24 柱 -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 当日车辆拉运趟数与流向排行表 -->
+                <div style="background:rgba(15,23,42,0.3); border:1px solid var(--card-border); border-radius:8px; padding:14px; margin-bottom:16px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                        <span style="font-size:13px; font-weight:700; color:var(--text-primary);">
+                            🚛 当日车辆拉运工作量与流向排行
+                        </span>
+                        <input type="text" class="input-control" id="flow-veh-search" placeholder="筛选车牌..." style="width:130px; height:28px; font-size:11px;" oninput="filterFlowVehicleTable()">
+                    </div>
+                    <div class="table-responsive" style="max-height:240px;">
+                        <table class="ledger-table" id="table-flow-vehicles">
+                            <thead>
+                                <tr>
+                                    <th>排名</th>
+                                    <th>车牌号码</th>
+                                    <th>所属运输单位</th>
+                                    <th>今日拉运趟数</th>
+                                    <th>今日拉运方量(m³)</th>
+                                    <th>去向消纳场</th>
+                                    <th>拉运类型</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody-flow-vehicles">
+                                <tr><td colspan="7" style="text-align:center; color:var(--text-muted);">暂无拉运数据</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 当日电子联单流水明细 (前50条) -->
+                <div style="background:rgba(15,23,42,0.3); border:1px solid var(--card-border); border-radius:8px; padding:14px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                        <span style="font-size:13px; font-weight:700; color:var(--text-primary);">
+                            📄 当日电子联单原始流水
+                        </span>
+                        <span style="font-size:11px; color:var(--text-muted);" id="flow-waybill-count-label">共 0 条</span>
+                    </div>
+                    <div class="table-responsive" style="max-height:260px;">
+                        <table class="ledger-table">
+                            <thead>
+                                <tr>
+                                    <th>联单编号</th>
+                                    <th>车牌号码</th>
+                                    <th>运输企业</th>
+                                    <th>消纳目的地</th>
+                                    <th>出场时间</th>
+                                    <th>到达时间</th>
+                                    <th>货物类型</th>
+                                    <th>方量(m³)</th>
+                                    <th>状态</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody-flow-waybills">
+                                <tr><td colspan="9" style="text-align:center; color:var(--text-muted);">暂无联单数据</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <!-- 📊 面板二: 通行财务台账 -->
-        <section class="main-content active" id="panel-ledger">
+        <section class="main-content" id="panel-ledger">
             <!-- 左侧：检索及手工录入补录 -->
             <div class="ledger-left-col">
                 <div class="glass-card" id="ledger-kpis-card">
@@ -2650,10 +3057,88 @@
 
                 <div style="border-top:1px solid rgba(255,255,255,0.05); padding-top:12px;">
                     <span class="form-label">微调所选日期下的每一次离场轨迹去向</span>
-                    <div id="adjust-trips-list" style="margin-top:10px; max-height:220px; overflow-y:auto; display:flex; flex-direction:column; gap:8px;">
-                        <!-- 趟次列表 -->
+    <!-- 全局弹窗三：土点核准容量与到期配置 -->
+    <div class="modal-overlay" id="sites-config-modal" onclick="if(event.target === this) closeSitesConfigModal()">
+        <div class="modal-card" style="max-width:760px; width:92%;">
+            <div class="modal-header">
+                <div class="modal-title"><i data-lucide="sliders" style="width:16px; height:16px; margin-right:6px;"></i>消纳土点核准容量与备案到期管理</div>
+                <button class="modal-close-btn" onclick="closeSitesConfigModal()">&times;</button>
+            </div>
+            
+            <div style="margin-bottom:16px; background:rgba(99,102,241,0.06); border:1px solid rgba(99,102,241,0.2); border-radius:8px; padding:12px; display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                    <span style="font-size:12px; font-weight:700; color:var(--text-primary);">项目设计总土方体量 (m³)</span>
+                    <div style="font-size:11px; color:var(--text-muted);">用于计算消纳落实率及剩余缺口</div>
+                </div>
+                <input type="number" id="cfg-proj-total-vol" class="input-control" style="width:180px; font-size:14px; font-weight:700; text-align:right;" value="938164.0">
+            </div>
+
+            <div style="font-size:12px; font-weight:700; margin-bottom:8px; color:var(--text-primary);">消纳土点核准容量与备案到期清单:</div>
+            <div class="modal-table-container" style="max-height:280px; overflow-y:auto;">
+                <table class="modal-table" id="table-modal-sites-config">
+                    <thead>
+                        <tr>
+                            <th>土点名称</th>
+                            <th>类型</th>
+                            <th>核定总容量(m³)</th>
+                            <th>到期日期 (YYYY/M/D)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-modal-sites-config">
+                        <!-- 动态渲染 -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:16px;">
+                <button class="btn btn-secondary" onclick="closeSitesConfigModal()">取消</button>
+                <button class="btn btn-primary" onclick="saveSitesConfigModal()">保存配置</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 全局弹窗四：远程数据同步与接口设置 -->
+    <div class="modal-overlay" id="sync-config-modal" onclick="if(event.target === this) closeSyncConfigModal()">
+        <div class="modal-card" style="max-width:540px; width:90%;">
+            <div class="modal-header">
+                <div class="modal-title"><i data-lucide="settings" style="width:16px; height:16px; margin-right:6px;"></i>远程数据接口与自动同步设置</div>
+                <button class="modal-close-btn" onclick="closeSyncConfigModal()">&times;</button>
+            </div>
+            
+            <div style="display:flex; flex-direction:column; gap:14px;">
+                <div class="form-group" style="margin-bottom:0;">
+                    <label class="form-label">每日自动同步调度</label>
+                    <div style="display:flex; align-items:center; gap:16px; margin-top:6px;">
+                        <label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer;">
+                            <input type="radio" name="cfg-auto-sync-radio" id="cfg-auto-sync-on" value="1" checked> 开启每日定时自动同步
+                        </label>
+                        <label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer;">
+                            <input type="radio" name="cfg-auto-sync-radio" id="cfg-auto-sync-off" value="0"> 停用
+                        </label>
                     </div>
                 </div>
+
+                <div class="form-group" style="margin-bottom:0;">
+                    <label class="form-label" for="cfg-auto-sync-time">每日自动触发时间 (24小时制 HH:MM)</label>
+                    <input type="text" id="cfg-auto-sync-time" class="input-control" placeholder="02:00" value="02:00" style="width:140px;">
+                    <span style="font-size:11px; color:var(--text-muted); margin-top:4px; display:block;">系统将在每日指定时间自动增量拉取 CapCloud 云平台电子联单。</span>
+                </div>
+
+                <div class="form-group" style="margin-bottom:0;">
+                    <label class="form-label" for="cfg-worksite-id">工程项目 ID (中央电视台超高清示范园)</label>
+                    <input type="text" id="cfg-worksite-id" class="input-control" value="225642" readonly style="opacity:0.8;">
+                </div>
+
+                <div class="form-group" style="margin-bottom:0;">
+                    <label class="form-label" for="cfg-authtoken-input">CapCloud AuthToken (JWT 令牌)</label>
+                    <textarea id="cfg-authtoken-input" class="input-control" rows="3" style="font-family:monospace; font-size:11px; word-break:break-all;" placeholder="eyJhbG..."></textarea>
+                    <span style="font-size:10px; color:var(--text-muted); margin-top:4px; display:block;">若平台提示鉴权过期，可在此粘贴更新最新的 authtoken。</span>
+                </div>
+            </div>
+
+            <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:16px;">
+                <button class="btn btn-secondary" onclick="closeSyncConfigModal()">取消</button>
+                <button class="btn btn-primary" onclick="saveSyncConfigModal()">保存设置</button>
             </div>
         </div>
     </div>
@@ -2837,6 +3322,18 @@
                 if (headerTitle) headerTitle.innerText = "数据汇总中心";
                 if (headerIcon) headerIcon.setAttribute('data-lucide', 'pie-chart');
                 loadSummaryAnalytics('all');
+            } else if (tab === 'capacity') {
+                if (headerTitle) headerTitle.innerText = "土点容量分析与流向监控";
+                if (headerIcon) headerIcon.setAttribute('data-lucide', 'layers');
+                if (headerActions) {
+                    headerActions.innerHTML = `
+                        <button class="btn btn-sm btn-primary" onclick="triggerRemoteSyncManually()" id="btn-sync-top">
+                            <i data-lucide="refresh-cw"></i><span>🔄 立即同步远程数据</span>
+                        </button>
+                    `;
+                }
+                loadCapacityAnalysis();
+                loadDailyFlowStats();
             } else if (tab === 'ledger') {
                 if (headerTitle) headerTitle.innerText = "项目明细台账";
                 if (headerIcon) headerIcon.setAttribute('data-lucide', 'file-spreadsheet');
@@ -2866,6 +3363,527 @@
 
             safeIcons();
         }
+
+        // ==================== 土点容量分析 & 每日流向监控 JS ====================
+        let currentCapacityData = null;
+        let currentFlowData = null;
+        let currentCapacitySitesConfig = [];
+
+        async function loadCapacityAnalysis(year = 2026, startMonth = 5, endMonth = null) {
+            try {
+                const res = await fetch(`/api/absorptive/capacity_analysis?year=${year}&start_month=${startMonth}${endMonth ? '&end_month=' + endMonth : ''}`);
+                const data = await res.json();
+                if (data.success) {
+                    currentCapacityData = data;
+                    renderCapacityDashboard(data);
+                } else {
+                    showToast('获取土点容量分析数据失败: ' + (data.message || ''), 'error');
+                }
+            } catch (err) {
+                console.error('加载容量分析失败:', err);
+                showToast('加载土点容量分析异常', 'error');
+            }
+        }
+
+        function renderCapacityDashboard(data) {
+            const sum = data.summary || {};
+            const matrix = data.matrix || [];
+            
+            // 1. 同步时间提示
+            const syncText = document.getElementById('cap-last-sync-text');
+            if (syncText) {
+                syncText.innerText = `上次同步: ${data.last_sync_time || '未同步'}`;
+            }
+
+            // 2. 核心 5 大 KPI 卡片
+            const projVolEl = document.getElementById('kpi-cap-proj-vol');
+            const handledVolEl = document.getElementById('kpi-cap-handled-vol');
+            const unhandledVolEl = document.getElementById('kpi-cap-unhandled-vol');
+            const consumedVolEl = document.getElementById('kpi-cap-consumed-vol');
+            const remainingVolEl = document.getElementById('kpi-cap-remaining-vol');
+            const handledPctEl = document.getElementById('kpi-cap-handled-pct');
+            const gapPctEl = document.getElementById('kpi-cap-gap-pct');
+            const tripsInfoEl = document.getElementById('kpi-cap-trips-info');
+            const progFillEl = document.getElementById('kpi-cap-progress-fill');
+
+            if (projVolEl) projVolEl.innerText = Number(sum.total_project_volume || 0).toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1});
+            if (handledVolEl) handledVolEl.innerText = Number(sum.handled_capacity || 0).toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1});
+            if (unhandledVolEl) unhandledVolEl.innerText = Number(sum.unhandled_volume || 0).toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1});
+            if (consumedVolEl) consumedVolEl.innerText = Number(sum.total_consumed || 0).toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1});
+            if (remainingVolEl) remainingVolEl.innerText = Number(sum.total_remaining || 0).toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1});
+
+            if (handledPctEl) {
+                const hPct = sum.total_project_volume > 0 ? ((sum.handled_capacity / sum.total_project_volume) * 100).toFixed(1) : 0;
+                handledPctEl.innerText = `已落实占比 ${hPct}%`;
+            }
+            if (gapPctEl) {
+                const gPct = sum.total_project_volume > 0 ? ((sum.unhandled_volume / sum.total_project_volume) * 100).toFixed(1) : 0;
+                gapPctEl.innerText = sum.unhandled_volume > 0 ? `消纳缺口 ${gPct}%` : '全部落实完毕';
+            }
+            if (tripsInfoEl) {
+                tripsInfoEl.innerText = `全周期共拉运 ${Number(sum.total_trips || 0).toLocaleString()} 车次`;
+            }
+            if (progFillEl) {
+                const remPct = sum.handled_capacity > 0 ? Math.min(100, Math.max(0, (sum.total_remaining / sum.handled_capacity) * 100)).toFixed(1) : 0;
+                progFillEl.style.width = `${remPct}%`;
+            }
+
+            // 3. 渲染矩阵表格
+            renderCapacityTable(matrix, sum);
+            safeIcons();
+        }
+
+        function renderCapacityTable(matrix, sum) {
+            const tbody = document.getElementById('tbody-capacity-matrix');
+            const tfoot = document.getElementById('tfoot-capacity-matrix');
+            if (!tbody) return;
+
+            if (!matrix || matrix.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="13" style="text-align:center; color:var(--text-muted); padding:30px;">暂无土点容量数据</td></tr>`;
+                if (tfoot) tfoot.innerHTML = '';
+                return;
+            }
+
+            let html = '';
+            let sum5 = 0, sum6 = 0, sum7 = 0, sum8 = 0;
+            let totalQuotaSum = 0, totalConsumedSum = 0, totalRemainingSum = 0;
+
+            matrix.forEach((row, idx) => {
+                const m5 = (row.monthly && row.monthly['5月']) || 0;
+                const m6 = (row.monthly && row.monthly['6月']) || 0;
+                const m7 = (row.monthly && row.monthly['7月']) || 0;
+                const m8 = (row.monthly && row.monthly['8月']) || 0;
+                
+                sum5 += m5; sum6 += m6; sum7 += m7; sum8 += m8;
+                totalQuotaSum += row.total_quota;
+                totalConsumedSum += row.total_consumed;
+                totalRemainingSum += row.remaining;
+
+                let badgeClass = 'status-normal';
+                if (row.status_class) badgeClass = row.status_class;
+                else if (row.status_tag && row.status_tag.includes('临期')) badgeClass = 'status-warning';
+                else if (row.status_tag && row.status_tag.includes('过期')) badgeClass = 'status-expired';
+
+                const pct = row.usage_percentage || 0;
+                let fillClass = 'progress-fill-emerald';
+                if (pct > 80) fillClass = 'progress-fill-rose';
+                else if (pct > 50) fillClass = 'progress-fill-amber';
+
+                html += `
+                    <tr class="cap-table-row" data-name="${row.name}" data-status="${row.status_class}">
+                        <td style="color:var(--text-muted); font-size:11px;">${idx + 1}</td>
+                        <td style="font-weight:700; color:var(--text-primary);">
+                            <div style="display:flex; align-items:center; gap:6px;">
+                                <i data-lucide="map-pin" style="width:13px; height:13px; color:var(--color-primary); flex-shrink:0;"></i>
+                                <span>${row.name}</span>
+                            </div>
+                        </td>
+                        <td><span style="font-size:11px; padding:2px 6px; border-radius:4px; background:rgba(255,255,255,0.04); color:var(--text-secondary);">${row.site_type || '消纳场'}</span></td>
+                        <td style="font-weight:700; color:var(--text-primary); text-align:right;">${Number(row.total_quota).toLocaleString(undefined, {minimumFractionDigits: 1})}</td>
+                        <td style="text-align:right; color:var(--text-secondary);">${m5 > 0 ? Number(m5).toLocaleString(undefined, {minimumFractionDigits: 1}) : '-'}</td>
+                        <td style="text-align:right; color:var(--text-secondary);">${m6 > 0 ? Number(m6).toLocaleString(undefined, {minimumFractionDigits: 1}) : '-'}</td>
+                        <td style="text-align:right; color:var(--text-secondary);">${m7 > 0 ? Number(m7).toLocaleString(undefined, {minimumFractionDigits: 1}) : '-'}</td>
+                        <td style="text-align:right; color:var(--text-secondary);">${m8 > 0 ? Number(m8).toLocaleString(undefined, {minimumFractionDigits: 1}) : '-'}</td>
+                        <td style="font-weight:700; color:var(--color-in); text-align:right;">${Number(row.total_consumed).toLocaleString(undefined, {minimumFractionDigits: 1})}</td>
+                        <td style="font-weight:700; color:var(--color-stay); text-align:right;">${Number(row.remaining).toLocaleString(undefined, {minimumFractionDigits: 1})}</td>
+                        <td>
+                            <div style="display:flex; flex-direction:column; gap:2px;">
+                                <div style="display:flex; justify-content:space-between; font-size:10px; color:var(--text-muted);">
+                                    <span>${pct}%</span>
+                                    <span>${Number(row.total_trips || 0)} 车</span>
+                                </div>
+                                <div class="progress-bar-container" style="height:6px;">
+                                    <div class="progress-bar-fill ${fillClass}" style="width: ${Math.min(100, pct)}%;"></div>
+                                </div>
+                            </div>
+                        </td>
+                        <td style="font-family:monospace; font-size:11px; color:var(--text-secondary);">${row.expire_date || '-'}</td>
+                        <td><span class="status-badge ${badgeClass}">${row.status_tag || '正常'}</span></td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html;
+
+            if (tfoot) {
+                tfoot.innerHTML = `
+                    <tr>
+                        <td colspan="3" style="text-align:center; font-weight:800; color:var(--text-primary);">全盘总计 (合计)</td>
+                        <td style="text-align:right; font-weight:800; color:var(--text-primary);">${Number(totalQuotaSum).toLocaleString(undefined, {minimumFractionDigits: 1})}</td>
+                        <td style="text-align:right; font-weight:800; color:var(--text-secondary);">${Number(sum5).toLocaleString(undefined, {minimumFractionDigits: 1})}</td>
+                        <td style="text-align:right; font-weight:800; color:var(--text-secondary);">${Number(sum6).toLocaleString(undefined, {minimumFractionDigits: 1})}</td>
+                        <td style="text-align:right; font-weight:800; color:var(--text-secondary);">${Number(sum7).toLocaleString(undefined, {minimumFractionDigits: 1})}</td>
+                        <td style="text-align:right; font-weight:800; color:var(--text-secondary);">${Number(sum8).toLocaleString(undefined, {minimumFractionDigits: 1})}</td>
+                        <td style="text-align:right; font-weight:800; color:var(--color-in);">${Number(totalConsumedSum).toLocaleString(undefined, {minimumFractionDigits: 1})}</td>
+                        <td style="text-align:right; font-weight:800; color:var(--color-stay);">${Number(totalRemainingSum).toLocaleString(undefined, {minimumFractionDigits: 1})}</td>
+                        <td colspan="3" style="text-align:center; color:var(--text-muted); font-size:11px;">
+                            消纳落实率: ${(sum && sum.total_project_volume > 0 ? ((totalQuotaSum / sum.total_project_volume) * 100).toFixed(1) : 0)}%
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        function filterCapacityTable() {
+            const query = (document.getElementById('cap-site-search')?.value || '').trim().toUpperCase();
+            const status = document.getElementById('cap-status-filter')?.value || 'all';
+
+            document.querySelectorAll('.cap-table-row').forEach(row => {
+                const name = (row.getAttribute('data-name') || '').toUpperCase();
+                const st = row.getAttribute('data-status') || '';
+                
+                let matchName = !query || name.includes(query);
+                let matchStatus = true;
+                if (status === 'warning') matchStatus = st.includes('warning');
+                else if (status === 'expired') matchStatus = st.includes('expired');
+                else if (status === 'normal') matchStatus = st.includes('normal');
+
+                row.style.display = (matchName && matchStatus) ? '' : 'none';
+            });
+        }
+
+        async function loadDailyFlowStats(targetDate = null) {
+            try {
+                const url = targetDate ? `/api/absorptive/daily_flow_stats?date=${targetDate}` : `/api/absorptive/daily_flow_stats`;
+                const res = await fetch(url);
+                const data = await res.json();
+                if (data.success) {
+                    currentFlowData = data;
+                    renderDailyFlowDashboard(data);
+                } else {
+                    console.error('获取每日流向失败:', data.message);
+                }
+            } catch (err) {
+                console.error('加载每日流向异常:', err);
+            }
+        }
+
+        function renderDailyFlowDashboard(data) {
+            const sum = data.summary || {};
+            const availableDates = data.available_dates || [];
+            const currentDate = data.target_date || '';
+
+            // 1. 日期下拉选项
+            const dateSelect = document.getElementById('flow-date-select');
+            if (dateSelect && availableDates.length > 0) {
+                dateSelect.innerHTML = availableDates.map(d => `<option value="${d}" ${d === currentDate ? 'selected' : ''}>${d}</option>`).join('');
+            }
+
+            // 2. 微型 KPI
+            const tripsEl = document.getElementById('flow-sum-trips');
+            const volEl = document.getElementById('flow-sum-volume');
+            const vehEl = document.getElementById('flow-sum-vehicles');
+            const sitesEl = document.getElementById('flow-sum-sites');
+
+            if (tripsEl) tripsEl.innerText = `${Number(sum.total_trips || 0).toLocaleString()} 趟`;
+            if (volEl) volEl.innerText = `${Number(sum.total_volume || 0).toLocaleString(undefined, {minimumFractionDigits: 2})} m³`;
+            if (vehEl) vehEl.innerText = `${Number(sum.active_vehicles || 0).toLocaleString()} 辆`;
+            if (sitesEl) sitesEl.innerText = `${Number(sum.active_sites || 0).toLocaleString()} 个`;
+
+            // 3. 消纳去向分布
+            const siteListEl = document.getElementById('flow-sites-list');
+            if (siteListEl) {
+                const sites = data.site_distribution || [];
+                if (sites.length === 0) {
+                    siteListEl.innerHTML = `<div style="color:var(--text-muted); font-size:12px; padding:10px 0;">当日无去向拉运记录</div>`;
+                } else {
+                    siteListEl.innerHTML = sites.map(s => `
+                        <div class="flow-card">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                                <span style="font-weight:700; font-size:12px; color:var(--text-primary);">${s.site_name}</span>
+                                <span style="font-size:12px; font-weight:800; color:var(--color-out);">${s.trips} 趟 (${s.percentage}%)</span>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--text-muted);">
+                                <span>拉运方量: <b style="color:var(--color-in);">${Number(s.volume).toLocaleString(undefined, {minimumFractionDigits: 1})}</b> m³</span>
+                            </div>
+                            <div class="progress-bar-container" style="height:4px; margin-top:6px;">
+                                <div class="progress-bar-fill progress-fill-emerald" style="width:${s.percentage}%;"></div>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            }
+
+            // 4. 24小时柱状图
+            const chartEl = document.getElementById('flow-hourly-chart');
+            if (chartEl) {
+                const hourly = data.hourly_curve || [];
+                const maxTrips = Math.max(...hourly.map(h => h.trips), 1);
+                chartEl.innerHTML = hourly.map(h => {
+                    const heightPct = Math.max(4, Math.round((h.trips / maxTrips) * 100));
+                    return `
+                        <div class="hourly-bar-col" title="${h.hour}: ${h.trips} 趟 (${h.volume} m³)">
+                            <div class="hourly-bar" style="height:${heightPct}%;"></div>
+                            <span class="hourly-label">${h.hour.split(':')[0]}</span>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            // 5. 车辆排行表
+            const tbodyVeh = document.getElementById('tbody-flow-vehicles');
+            if (tbodyVeh) {
+                const vehs = data.vehicle_rankings || [];
+                if (vehs.length === 0) {
+                    tbodyVeh.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--text-muted); padding:20px;">当日无出车记录</td></tr>`;
+                } else {
+                    tbodyVeh.innerHTML = vehs.map((v, i) => `
+                        <tr class="flow-veh-row" data-plate="${v.plate_no}">
+                            <td style="color:var(--text-muted); font-size:11px;">${i + 1}</td>
+                            <td>${renderPlateBadge(v.plate_no, '蓝色')}</td>
+                            <td style="color:var(--text-secondary); font-size:12px;">${v.transport_name}</td>
+                            <td style="font-weight:700; color:var(--color-out); text-align:center;">${v.trips} 趟</td>
+                            <td style="font-weight:700; color:var(--color-in); text-align:right;">${Number(v.volume).toLocaleString(undefined, {minimumFractionDigits: 1})}</td>
+                            <td style="font-size:11px; color:var(--text-primary);">${v.sites.join(' / ')}</td>
+                            <td style="font-size:11px; color:var(--text-secondary);">${v.cargo_types.join('、')}</td>
+                        </tr>
+                    `).join('');
+                }
+            }
+
+            // 6. 电子联单明细表
+            const tbodyWb = document.getElementById('tbody-flow-waybills');
+            const countLabel = document.getElementById('flow-waybill-count-label');
+            if (tbodyWb) {
+                const waybills = data.waybills || [];
+                if (countLabel) countLabel.innerText = `展示当日最新 ${waybills.length} 条`;
+                if (waybills.length === 0) {
+                    tbodyWb.innerHTML = `<tr><td colspan="9" style="text-align:center; color:var(--text-muted); padding:20px;">暂无联单明细</td></tr>`;
+                } else {
+                    tbodyWb.innerHTML = waybills.map(w => `
+                        <tr>
+                            <td style="font-family:monospace; font-size:11px; color:var(--text-muted);">${w.code || '-'}</td>
+                            <td>${renderPlateBadge(w.plate_no, '蓝色')}</td>
+                            <td style="color:var(--text-secondary); font-size:11px;">${w.transport_name || '-'}</td>
+                            <td style="font-size:11px; color:var(--text-primary);">${w.absorptive_name || '-'}</td>
+                            <td style="font-family:monospace; font-size:11px; color:var(--text-secondary);">${w.leave_time ? w.leave_time.slice(11) : '-'}</td>
+                            <td style="font-family:monospace; font-size:11px; color:var(--text-secondary);">${w.arrive_time ? w.arrive_time.slice(11) : '-'}</td>
+                            <td><span style="font-size:11px; padding:2px 6px; border-radius:4px; background:rgba(255,255,255,0.04);">${w.rubbish_type || '渣土'}</span></td>
+                            <td style="font-weight:700; color:var(--color-in); text-align:right;">${Number(w.volume || 0).toLocaleString(undefined, {minimumFractionDigits: 1})}</td>
+                            <td><span class="status-badge status-normal">${w.state || '已完成'}</span></td>
+                        </tr>
+                    `).join('');
+                }
+            }
+
+            safeIcons();
+        }
+
+        function onFlowDateChange(val) {
+            if (val) loadDailyFlowStats(val);
+        }
+
+        function stepFlowDate(delta) {
+            if (!currentFlowData || !currentFlowData.available_dates) return;
+            const dates = currentFlowData.available_dates;
+            const cur = currentFlowData.target_date;
+            const idx = dates.indexOf(cur);
+            if (idx === -1) return;
+            const nextIdx = idx - delta; // dates is sorted desc (idx 0 is latest)
+            if (nextIdx >= 0 && nextIdx < dates.length) {
+                loadDailyFlowStats(dates[nextIdx]);
+            }
+        }
+
+        function loadLatestFlowDate() {
+            if (currentFlowData && currentFlowData.available_dates && currentFlowData.available_dates.length > 0) {
+                loadDailyFlowStats(currentFlowData.available_dates[0]);
+            }
+        }
+
+        function filterFlowVehicleTable() {
+            const query = (document.getElementById('flow-veh-search')?.value || '').trim().toUpperCase();
+            document.querySelectorAll('.flow-veh-row').forEach(row => {
+                const plate = (row.getAttribute('data-plate') || '').toUpperCase();
+                row.style.display = (!query || plate.includes(query)) ? '' : 'none';
+            });
+        }
+
+        async function triggerRemoteSyncManually() {
+            const btn = document.getElementById('btn-trigger-sync') || document.getElementById('btn-sync-top');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = `<i data-lucide="loader-2" class="spin"></i><span>正在同步远程数据...</span>`;
+                safeIcons();
+            }
+            showToast('已向 CapCloud 平台发起同步请求，正在增量同步最新联单...', 'info');
+
+            try {
+                const res = await fetch('/api/sync/execute', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({start_month: 5, year: 2026, sync_type: 'manual'})
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(`同步完成！共拉取 ${data.total_fetched} 条联单 (耗时 ${data.duration_ms}ms)`, 'success');
+                    await loadCapacityAnalysis();
+                    await loadDailyFlowStats();
+                } else {
+                    showToast('同步未完全成功: ' + (data.message || ''), 'warning');
+                }
+            } catch (err) {
+                console.error('同步异常:', err);
+                showToast('同步请求发生错误，请检查网络连接', 'error');
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = `<i data-lucide="refresh-cw"></i><span>立即同步数据</span>`;
+                    safeIcons();
+                }
+            }
+        }
+
+        async function openSitesConfigModal() {
+            try {
+                const res = await fetch('/api/absorptive/sites_config');
+                const data = await res.json();
+                if (data.success) {
+                    currentCapacitySitesConfig = data.sites || [];
+                    const tbody = document.getElementById('tbody-modal-sites-config');
+                    if (tbody) {
+                        tbody.innerHTML = currentCapacitySitesConfig.map((s, i) => `
+                            <tr>
+                                <td style="font-weight:700; color:var(--text-primary); font-size:12px;">${s.name}</td>
+                                <td>
+                                    <select class="input-control cfg-site-type-input" data-idx="${i}" style="height:30px; font-size:11px; padding:2px 6px;">
+                                        <option value="资源化厂" ${s.site_type === '资源化厂' ? 'selected' : ''}>资源化厂</option>
+                                        <option value="回填土点" ${s.site_type === '回填土点' ? 'selected' : ''}>回填土点</option>
+                                        <option value="消纳场" ${s.site_type === '消纳场' ? 'selected' : ''}>消纳场</option>
+                                    </select>
+                                </td>
+                                <td>
+                                    <input type="number" class="input-control cfg-site-quota-input" data-idx="${i}" value="${s.total_quota}" style="height:30px; font-size:12px; font-weight:700; text-align:right; width:130px;">
+                                </td>
+                                <td>
+                                    <input type="text" class="input-control cfg-site-expire-input" data-idx="${i}" value="${s.expire_date}" style="height:30px; font-size:12px; width:120px;" placeholder="2026/12/13">
+                                </td>
+                            </tr>
+                        `).join('');
+                    }
+                    
+                    const projVolInput = document.getElementById('cfg-proj-total-vol');
+                    if (projVolInput && currentCapacityData && currentCapacityData.summary) {
+                        projVolInput.value = currentCapacityData.summary.total_project_volume || 938164.0;
+                    }
+
+                    const modal = document.getElementById('sites-config-modal');
+                    if (modal) modal.classList.add('active');
+                }
+            } catch (err) {
+                console.error('读取土点配置失败:', err);
+                showToast('读取土点配置失败', 'error');
+            }
+        }
+
+        function closeSitesConfigModal() {
+            const modal = document.getElementById('sites-config-modal');
+            if (modal) modal.classList.remove('active');
+        }
+
+        async function saveSitesConfigModal() {
+            const projVol = parseFloat(document.getElementById('cfg-proj-total-vol')?.value || 938164.0);
+            const quotaInputs = document.querySelectorAll('.cfg-site-quota-input');
+            const expireInputs = document.querySelectorAll('.cfg-site-expire-input');
+            const typeInputs = document.querySelectorAll('.cfg-site-type-input');
+
+            const updatedSites = currentCapacitySitesConfig.map((s, i) => {
+                const qVal = parseFloat(quotaInputs[i]?.value || s.total_quota);
+                const expVal = expireInputs[i]?.value.trim() || s.expire_date;
+                const typeVal = typeInputs[i]?.value || s.site_type;
+                return {
+                    name: s.name,
+                    alias: s.alias,
+                    total_quota: qVal,
+                    expire_date: expVal,
+                    site_type: typeVal
+                };
+            });
+
+            try {
+                const res = await fetch('/api/absorptive/sites_config', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        sites: updatedSites,
+                        total_project_volume: projVol
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast('土点配额与到期配置已成功保存', 'success');
+                    closeSitesConfigModal();
+                    await loadCapacityAnalysis();
+                } else {
+                    showToast('保存失败: ' + (data.message || ''), 'error');
+                }
+            } catch (err) {
+                console.error('保存土点配置异常:', err);
+                showToast('保存配置发生错误', 'error');
+            }
+        }
+
+        async function openSyncConfigModal() {
+            try {
+                const res = await fetch('/api/sync/config');
+                const data = await res.json();
+                if (data.success && data.config) {
+                    const c = data.config;
+                    const onRadio = document.getElementById('cfg-auto-sync-on');
+                    const offRadio = document.getElementById('cfg-auto-sync-off');
+                    if (onRadio && offRadio) {
+                        if (c.auto_sync_enabled) onRadio.checked = true;
+                        else offRadio.checked = true;
+                    }
+                    const timeInput = document.getElementById('cfg-auto-sync-time');
+                    if (timeInput) timeInput.value = c.auto_sync_time || '02:00';
+                    const tokenInput = document.getElementById('cfg-authtoken-input');
+                    if (tokenInput) tokenInput.value = c.authtoken || '';
+                    const worksiteInput = document.getElementById('cfg-worksite-id');
+                    if (worksiteInput) worksiteInput.value = c.worksite_id || '225642';
+
+                    const modal = document.getElementById('sync-config-modal');
+                    if (modal) modal.classList.add('active');
+                }
+            } catch (err) {
+                console.error('读取同步配置失败:', err);
+                showToast('读取同步配置失败', 'error');
+            }
+        }
+
+        function closeSyncConfigModal() {
+            const modal = document.getElementById('sync-config-modal');
+            if (modal) modal.classList.remove('active');
+        }
+
+        async function saveSyncConfigModal() {
+            const onRadio = document.getElementById('cfg-auto-sync-on');
+            const autoEnabled = onRadio ? onRadio.checked : true;
+            const syncTime = document.getElementById('cfg-auto-sync-time')?.value.trim() || '02:00';
+            const authtoken = document.getElementById('cfg-authtoken-input')?.value.trim() || '';
+
+            try {
+                const res = await fetch('/api/sync/config', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        auto_sync_enabled: autoEnabled ? '1' : '0',
+                        auto_sync_time: syncTime,
+                        authtoken: authtoken
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast('同步设置已更新', 'success');
+                    closeSyncConfigModal();
+                } else {
+                    showToast('更新失败: ' + (data.message || ''), 'error');
+                }
+            } catch (err) {
+                console.error('保存同步配置异常:', err);
+                showToast('保存同步设置发生错误', 'error');
+            }
+        }
+
 
         // Suggestions for Ledger Manual entry
         const manualPlateInput = document.getElementById('manual-plate');
