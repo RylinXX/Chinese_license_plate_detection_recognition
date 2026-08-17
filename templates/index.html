@@ -2107,19 +2107,19 @@
                 </div>
 
                 <div class="kpi-card kpi-card-theme-purple" style="padding:14px 16px;">
-                    <div class="kpi-icon" style="background:rgba(168,85,247,0.2); color:#a855f7;"><i data-lucide="zap"></i></div>
+                    <div class="kpi-icon" style="background:rgba(168,85,247,0.2); color:#a855f7;"><i data-lucide="building-2"></i></div>
                     <div class="kpi-info">
-                        <span class="kpi-label" style="font-weight:700;">新能源车队贡献</span>
+                        <span class="kpi-label" style="font-weight:700;">主力承运企业</span>
                         <div style="display:flex; align-items:baseline; gap:4px; margin-top:2px;">
-                            <span class="kpi-value" id="sum-ev-trips" style="color:#a855f7; font-size:22px; font-weight:800;">0 趟</span>
-                            <span style="font-size:12px; color:var(--text-secondary);" id="sum-ev-pct">(73.4%)</span>
+                            <span class="kpi-value" id="sum-company-count" style="color:#a855f7; font-size:22px; font-weight:800;">5</span>
+                            <span style="font-size:12px; color:var(--text-secondary);">家运输公司</span>
                         </div>
-                        <span style="font-size:11px; color:var(--text-muted); margin-top:2px;" id="sum-ev-tons-sub">拉运 36,356.84 吨</span>
+                        <span style="font-size:11px; color:var(--text-muted); margin-top:2px;" id="sum-company-sub">营力特 3.66万吨 (74.1%) 领跑</span>
                     </div>
                 </div>
             </div>
 
-            <!-- 图表展示区 第一行 (双轴趋势 + 能源结构) -->
+            <!-- 图表展示区 第一行 (双轴趋势 + 各承运公司拉运吨数占比分布) -->
             <div style="display:grid; grid-template-columns: 2fr 1fr; gap:12px; margin-top:10px;">
                 <!-- 左侧: 每日拉运吨数与实际收入双轴走势 -->
                 <div class="glass-card" style="padding:16px;">
@@ -2135,16 +2135,19 @@
                     <div id="chart-daily-trend" style="width:100%; height:310px;"></div>
                 </div>
 
-                <!-- 右侧: 运输车队能源结构与占比 -->
+                <!-- 右侧: 各承运公司拉运吨数占比分布 -->
                 <div class="glass-card" style="padding:16px;">
-                    <h3 class="card-header-title" style="margin-bottom:12px; font-size:14px;">
-                        <i data-lucide="pie-chart" style="color:#c084fc;"></i>运输车队能源类型分布
-                    </h3>
-                    <div id="chart-fleet-energy" style="width:100%; height:310px;"></div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                        <h3 class="card-header-title" style="margin-bottom:0; font-size:14px;">
+                            <i data-lucide="pie-chart" style="color:#c084fc;"></i>承运公司拉运吨数占比
+                        </h3>
+                        <span style="font-size:11px; color:var(--text-muted);">共 5 家车队企业</span>
+                    </div>
+                    <div id="chart-company-pie" style="width:100%; height:310px;"></div>
                 </div>
             </div>
 
-            <!-- 图表展示区 第二行 (车辆排行 TOP 15 + 每日单车均载效率) -->
+            <!-- 图表展示区 第二行 (车辆排行 TOP 15 + 各运输公司拉运吨数与产值对比) -->
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-top:10px;">
                 <!-- 左侧: 主力车辆拉运吨数排行榜 TOP 15 -->
                 <div class="glass-card" style="padding:16px;">
@@ -2157,15 +2160,18 @@
                     <div id="chart-vehicle-ranking" style="width:100%; height:310px;"></div>
                 </div>
 
-                <!-- 右侧: 每日出车趟数与高峰分析 -->
+                <!-- 右侧: 各运输公司拉运吨数与产值对比 -->
                 <div class="glass-card" style="padding:16px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
                         <h3 class="card-header-title" style="margin-bottom:0; font-size:14px;">
-                            <i data-lucide="activity" style="color:var(--color-out);"></i>每日出车趟数与运力峰值分布
+                            <i data-lucide="building-2" style="color:var(--color-in);"></i>各运输公司拉运吨数与产值对比
                         </h3>
-                        <span style="font-size:11px; color:var(--text-muted);">每日出场总车次 (趟)</span>
+                        <div style="display:flex; align-items:center; gap:10px; font-size:11px;">
+                            <span style="display:flex; align-items:center; gap:4px; color:var(--text-secondary);"><span style="display:inline-block; width:8px; height:8px; background:#6366f1; border-radius:2px;"></span>拉运吨数 (t)</span>
+                            <span style="display:flex; align-items:center; gap:4px; color:var(--text-secondary);"><span style="display:inline-block; width:8px; height:8px; background:#10b981; border-radius:2px;"></span>实际产值 (元)</span>
+                        </div>
                     </div>
-                    <div id="chart-daily-trips" style="width:100%; height:310px;"></div>
+                    <div id="chart-company-bar" style="width:100%; height:310px;"></div>
                 </div>
             </div>
 
@@ -2751,9 +2757,9 @@
             // 即时刷新 ECharts 图表与数据透视表颜色自适应
             if (currentSummaryData) {
                 renderDailyTrendChart(currentSummaryData.daily_trend || []);
-                renderFleetEnergyChart(currentSummaryData);
+                renderCompanyPieChart(currentSummaryData.by_transport_company || []);
                 renderVehicleRankingChart(currentSummaryData.vehicle_ranking || []);
-                renderDailyTripsChart(currentSummaryData.daily_trend || []);
+                renderCompanyBarChart(currentSummaryData.by_transport_company || []);
                 renderVehiclePivotTable(currentSummaryData.vehicle_pivot || {});
             }
             if (currentTab === 'ledger') {
@@ -5175,28 +5181,28 @@
         // ==========================================================================
 
         let chartDailyTrend = null;
-        let chartFleetEnergy = null;
+        let chartCompanyPie = null;
         let chartVehicleRanking = null;
-        let chartDailyTrips = null;
+        let chartCompanyBar = null;
         let vehiclePivotData = null;
 
         function initSummaryCharts() {
             const trendDom = document.getElementById('chart-daily-trend');
-            const energyDom = document.getElementById('chart-fleet-energy');
+            const companyPieDom = document.getElementById('chart-company-pie');
             const rankingDom = document.getElementById('chart-vehicle-ranking');
-            const tripsDom = document.getElementById('chart-daily-trips');
+            const companyBarDom = document.getElementById('chart-company-bar');
 
             if (trendDom && !chartDailyTrend && window.echarts) {
                 chartDailyTrend = echarts.init(trendDom, null, { renderer: 'canvas' });
             }
-            if (energyDom && !chartFleetEnergy && window.echarts) {
-                chartFleetEnergy = echarts.init(energyDom, null, { renderer: 'canvas' });
+            if (companyPieDom && !chartCompanyPie && window.echarts) {
+                chartCompanyPie = echarts.init(companyPieDom, null, { renderer: 'canvas' });
             }
             if (rankingDom && !chartVehicleRanking && window.echarts) {
                 chartVehicleRanking = echarts.init(rankingDom, null, { renderer: 'canvas' });
             }
-            if (tripsDom && !chartDailyTrips && window.echarts) {
-                chartDailyTrips = echarts.init(tripsDom, null, { renderer: 'canvas' });
+            if (companyBarDom && !chartCompanyBar && window.echarts) {
+                chartCompanyBar = echarts.init(companyBarDom, null, { renderer: 'canvas' });
             }
 
             window.addEventListener('resize', resizeSummaryCharts);
@@ -5204,9 +5210,9 @@
 
         function resizeSummaryCharts() {
             if (chartDailyTrend) chartDailyTrend.resize();
-            if (chartFleetEnergy) chartFleetEnergy.resize();
+            if (chartCompanyPie) chartCompanyPie.resize();
             if (chartVehicleRanking) chartVehicleRanking.resize();
-            if (chartDailyTrips) chartDailyTrips.resize();
+            if (chartCompanyBar) chartCompanyBar.resize();
         }
 
         function loadSummaryAnalytics(preset = 'all', startDate = '', endDate = '') {
@@ -5255,9 +5261,9 @@
                     renderSummaryKPIs(res);
                     initSummaryCharts();
                     renderDailyTrendChart(res.daily_trend || []);
-                    renderFleetEnergyChart(res);
+                    renderCompanyPieChart(res.by_transport_company || []);
                     renderVehicleRankingChart(res.vehicle_ranking || []);
-                    renderDailyTripsChart(res.daily_trend || []);
+                    renderCompanyBarChart(res.by_transport_company || []);
                     renderVehiclePivotTable(res.vehicle_pivot || {});
                     safeIcons();
                 })
@@ -5313,15 +5319,12 @@
             const totalOut = data.total_out_trips || 0;
             const totalVol = data.total_volume || 0;
             const totalRevenue = data.total_revenue || (totalVol * 30.0);
-            const evCount = data.ev_count || 0;
-            const evVol = data.ev_volume || 0;
-            const fuelCount = data.fuel_count || 0;
-            const fuelVol = data.fuel_volume || 0;
+            const companyList = data.by_transport_company || [];
+            const topCompany = companyList.length > 0 ? companyList[0] : null;
             
             const daysCount = (data.daily_trend && data.daily_trend.length > 0) ? data.daily_trend.length : 1;
             const avgTripsPerDay = (totalOut / daysCount).toFixed(1);
             const avgTonsPerTrip = totalOut > 0 ? (totalVol / totalOut).toFixed(2) : '0.00';
-            const evPct = totalOut > 0 ? ((evCount / totalOut) * 100).toFixed(1) : '0.0';
 
             if (document.getElementById('sum-total-trips')) document.getElementById('sum-total-trips').innerText = totalOut.toLocaleString('zh-CN');
             if (document.getElementById('sum-trips-sub')) document.getElementById('sum-trips-sub').innerText = `日均 ${avgTripsPerDay} 趟 · 覆盖 ${daysCount} 个运输日`;
@@ -5331,9 +5334,11 @@
 
             if (document.getElementById('sum-total-revenue')) document.getElementById('sum-total-revenue').innerText = '￥' + totalRevenue.toLocaleString('zh-CN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
             
-            if (document.getElementById('sum-ev-trips')) document.getElementById('sum-ev-trips').innerText = `${evCount} 趟`;
-            if (document.getElementById('sum-ev-pct')) document.getElementById('sum-ev-pct').innerText = `(${evPct}%)`;
-            if (document.getElementById('sum-ev-tons-sub')) document.getElementById('sum-ev-tons-sub').innerText = `拉运 ${evVol.toLocaleString('zh-CN', {minimumFractionDigits:1, maximumFractionDigits:1})} 吨`;
+            if (document.getElementById('sum-company-count')) document.getElementById('sum-company-count').innerText = companyList.length;
+            if (document.getElementById('sum-company-sub') && topCompany) {
+                const wTons = (topCompany.volume / 10000).toFixed(2);
+                document.getElementById('sum-company-sub').innerText = `${topCompany.short_name} ${wTons}万吨 (${topCompany.percentage}%) 领跑`;
+            }
         }
 
         // 🎨 动态获取当前主题图表配色
@@ -5466,13 +5471,31 @@
             chartDailyTrend.setOption(option, true);
         }
 
-        function renderFleetEnergyChart(data) {
-            if (!chartFleetEnergy) return;
+        function renderCompanyPieChart(companyList) {
+            if (!chartCompanyPie) return;
             const tc = getThemeChartColors();
-            const evVol = data.ev_volume || 0;
-            const fuelVol = data.fuel_volume || 0;
-            const evCnt = data.ev_count || 0;
-            const fuelCnt = data.fuel_count || 0;
+            
+            const colorPalette = [
+                new echarts.graphic.LinearGradient(0, 0, 1, 1, [{ offset: 0, color: '#818cf8' }, { offset: 1, color: '#4f46e5' }]),
+                new echarts.graphic.LinearGradient(0, 0, 1, 1, [{ offset: 0, color: '#38bdf8' }, { offset: 1, color: '#0284c7' }]),
+                new echarts.graphic.LinearGradient(0, 0, 1, 1, [{ offset: 0, color: '#34d399' }, { offset: 1, color: '#059669' }]),
+                new echarts.graphic.LinearGradient(0, 0, 1, 1, [{ offset: 0, color: '#fbbf24' }, { offset: 1, color: '#d97706' }]),
+                new echarts.graphic.LinearGradient(0, 0, 1, 1, [{ offset: 0, color: '#f472b6' }, { offset: 1, color: '#db2777' }]),
+                new echarts.graphic.LinearGradient(0, 0, 1, 1, [{ offset: 0, color: '#a78bfa' }, { offset: 1, color: '#7c3aed' }])
+            ];
+
+            const pieData = companyList.map((c, i) => ({
+                name: c.short_name,
+                value: c.volume,
+                fullName: c.company_name,
+                trips: c.trips,
+                revenue: c.revenue,
+                vehicleCount: c.vehicle_count,
+                percentage: c.percentage,
+                itemStyle: {
+                    color: colorPalette[i % colorPalette.length]
+                }
+            }));
 
             const option = {
                 backgroundColor: 'transparent',
@@ -5484,27 +5507,30 @@
                     textStyle: { color: tc.tooltipText, fontSize: 12 },
                     extraCssText: 'box-shadow: 0 10px 30px rgba(0,0,0,0.15); border-radius: 8px;',
                     formatter: function(params) {
-                        const cnt = params.name === '新能源电车' ? evCnt : fuelCnt;
+                        const d = params.data;
                         return `
-                            <div style="font-weight:700; color:${tc.tooltipStrong};">${params.marker} ${params.name}</div>
-                            <div style="color:${tc.textSecondary}; margin-top:4px;">拉运吨数: <strong style="color:${tc.tooltipStrong};">${params.value.toLocaleString('zh-CN', {minimumFractionDigits:2})} 吨</strong></div>
-                            <div style="color:${tc.textSecondary};">出车趟数: <strong style="color:${tc.tooltipStrong};">${cnt} 趟</strong></div>
-                            <div style="color:var(--color-in);">吨数占比: <strong>${params.percent}%</strong></div>
+                            <div style="font-weight:700; color:${tc.tooltipStrong}; border-bottom:1px solid ${tc.tooltipHeaderBorder}; padding-bottom:4px;">
+                                🏢 ${d.fullName}
+                            </div>
+                            <div style="color:var(--color-primary); margin-top:4px;">⚖️ 拉运总重: <strong>${d.value.toLocaleString('zh-CN', {minimumFractionDigits:2})} 吨</strong></div>
+                            <div style="color:var(--color-out);">🚛 出车趟数: <strong>${d.trips} 趟</strong> (主力车辆: ${d.vehicleCount} 辆)</div>
+                            <div style="color:var(--color-in);">💰 实际产值: <strong>￥${d.revenue.toLocaleString('zh-CN', {minimumFractionDigits:2})}</strong></div>
+                            <div style="color:${tc.textMuted}; font-size:11px; margin-top:2px;">吨数占比: <strong style="color:var(--color-primary);">${params.percent}%</strong></div>
                         `;
                     }
                 },
                 legend: {
-                    bottom: '2%',
+                    bottom: '0%',
                     left: 'center',
                     textStyle: { color: tc.textSecondary, fontSize: 11, fontWeight: '600' },
-                    itemGap: 16
+                    itemGap: 10
                 },
                 series: [
                     {
-                        name: '能源结构',
+                        name: '承运公司占比',
                         type: 'pie',
-                        radius: ['48%', '72%'],
-                        center: ['50%', '45%'],
+                        radius: ['45%', '72%'],
+                        center: ['50%', '43%'],
                         avoidLabelOverlap: false,
                         itemStyle: {
                             borderRadius: 6,
@@ -5518,39 +5544,18 @@
                         emphasis: {
                             label: {
                                 show: true,
-                                fontSize: 14,
+                                fontSize: 13,
                                 fontWeight: 'bold',
                                 color: tc.textColor,
                                 formatter: '{b}\n{d}%'
                             }
                         },
                         labelLine: { show: false },
-                        data: [
-                            {
-                                value: evVol,
-                                name: '新能源电车',
-                                itemStyle: {
-                                    color: new echarts.graphic.LinearGradient(0, 0, 1, 1, [
-                                        { offset: 0, color: '#34d399' },
-                                        { offset: 1, color: '#059669' }
-                                    ])
-                                }
-                            },
-                            {
-                                value: fuelVol,
-                                name: '传统燃油车',
-                                itemStyle: {
-                                    color: new echarts.graphic.LinearGradient(0, 0, 1, 1, [
-                                        { offset: 0, color: '#38bdf8' },
-                                        { offset: 1, color: '#2563eb' }
-                                    ])
-                                }
-                            }
-                        ]
+                        data: pieData
                     }
                 ]
             };
-            chartFleetEnergy.setOption(option, true);
+            chartCompanyPie.setOption(option, true);
         }
 
         function renderVehicleRankingChart(rankingList) {
@@ -5638,71 +5643,107 @@
             chartVehicleRanking.setOption(option, true);
         }
 
-        function renderDailyTripsChart(trendList) {
-            if (!chartDailyTrips) return;
+        function renderCompanyBarChart(companyList) {
+            if (!chartCompanyBar) return;
             const tc = getThemeChartColors();
-            const dates = trendList.map(item => item.date.slice(5));
-            const trips = trendList.map(item => item.trips);
-            const evTrips = trendList.map(item => item.ev_trips);
-            const fuelTrips = trendList.map(item => item.fuel_trips);
+            const names = companyList.map(c => c.short_name);
+            const volumes = companyList.map(c => c.volume);
+            const revenues = companyList.map(c => c.revenue);
 
             const option = {
                 backgroundColor: 'transparent',
                 tooltip: {
                     trigger: 'axis',
-                    axisPointer: { type: 'cross' },
+                    axisPointer: { type: 'shadow' },
                     backgroundColor: tc.tooltipBg,
                     borderColor: tc.tooltipBorder,
                     borderWidth: 1,
                     textStyle: { color: tc.tooltipText, fontSize: 12 },
-                    extraCssText: 'box-shadow: 0 10px 30px rgba(0,0,0,0.15); border-radius: 8px;'
+                    extraCssText: 'box-shadow: 0 10px 30px rgba(0,0,0,0.15); border-radius: 8px;',
+                    formatter: function(params) {
+                        const idx = params[0].dataIndex;
+                        const c = companyList[idx];
+                        return `
+                            <div style="font-weight:700; color:${tc.tooltipStrong}; border-bottom:1px solid ${tc.tooltipHeaderBorder}; padding-bottom:4px;">
+                                🏢 ${c.company_name}
+                            </div>
+                            <div style="color:var(--color-primary); margin-top:4px;">⚖️ 拉运总吨数: <strong>${c.volume.toLocaleString('zh-CN', {minimumFractionDigits:2})} 吨</strong> (${c.percentage}%)</div>
+                            <div style="color:var(--color-in);">💰 实际结算产值: <strong>￥${c.revenue.toLocaleString('zh-CN', {minimumFractionDigits:2})}</strong></div>
+                            <div style="color:var(--color-out);">🚛 累计出车: <strong>${c.trips} 趟</strong> · ${c.vehicle_count} 辆运输车</div>
+                        `;
+                    }
                 },
                 legend: {
-                    top: '2%',
-                    right: '2%',
-                    textStyle: { color: tc.textSecondary, fontSize: 11 }
+                    show: false
                 },
                 grid: {
                     top: '16%',
                     left: '3%',
-                    right: '3%',
-                    bottom: '8%',
+                    right: '4%',
+                    bottom: '10%',
                     containLabel: true
                 },
-                xAxis: {
-                    type: 'category',
-                    data: dates,
-                    axisLine: { lineStyle: { color: tc.axisLine } },
-                    axisLabel: { color: tc.textSecondary, fontSize: 11 }
-                },
-                yAxis: {
-                    type: 'value',
-                    name: '出车车次 (趟)',
-                    nameTextStyle: { color: tc.textSecondary, fontSize: 11 },
-                    axisLine: { show: false },
-                    splitLine: { lineStyle: { color: tc.splitLine, type: 'dashed' } },
-                    axisLabel: { color: tc.textSecondary, fontSize: 11 }
-                },
-                series: [
+                xAxis: [
                     {
-                        name: '新能源电车',
-                        type: 'bar',
-                        stack: 'total',
-                        barMaxWidth: 18,
-                        itemStyle: { color: '#10b981' },
-                        data: evTrips
+                        type: 'category',
+                        data: names,
+                        axisPointer: { type: 'shadow' },
+                        axisLine: { lineStyle: { color: tc.axisLine } },
+                        axisLabel: { color: tc.textColor, fontSize: 11, fontWeight: 'bold' }
+                    }
+                ],
+                yAxis: [
+                    {
+                        type: 'value',
+                        name: '拉运吨数 (t)',
+                        nameTextStyle: { color: tc.textSecondary, fontSize: 11 },
+                        axisLine: { show: false },
+                        splitLine: { lineStyle: { color: tc.splitLine, type: 'dashed' } },
+                        axisLabel: { color: tc.textSecondary, fontSize: 10, formatter: '{value} t' }
                     },
                     {
-                        name: '燃油重卡',
+                        type: 'value',
+                        name: '结算产值 (￥)',
+                        nameTextStyle: { color: tc.textSecondary, fontSize: 11 },
+                        axisLine: { show: false },
+                        splitLine: { show: false },
+                        axisLabel: { 
+                            color: tc.textSecondary, 
+                            fontSize: 10, 
+                            formatter: function(val) {
+                                return (val >= 10000) ? (val / 10000).toFixed(0) + 'w' : val;
+                            } 
+                        }
+                    }
+                ],
+                series: [
+                    {
+                        name: '拉运吨数',
                         type: 'bar',
-                        stack: 'total',
-                        barMaxWidth: 18,
-                        itemStyle: { color: '#38bdf8', borderRadius: [4, 4, 0, 0] },
-                        data: fuelTrips
+                        barMaxWidth: 26,
+                        itemStyle: {
+                            borderRadius: [4, 4, 0, 0],
+                            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                { offset: 0, color: '#818cf8' },
+                                { offset: 1, color: '#4f46e5' }
+                            ])
+                        },
+                        data: volumes
+                    },
+                    {
+                        name: '结算产值',
+                        type: 'line',
+                        yAxisIndex: 1,
+                        smooth: true,
+                        showSymbol: true,
+                        symbolSize: 7,
+                        itemStyle: { color: '#10b981', borderWidth: 2 },
+                        lineStyle: { width: 3, color: '#10b981' },
+                        data: revenues
                     }
                 ]
             };
-            chartDailyTrips.setOption(option, true);
+            chartCompanyBar.setOption(option, true);
         }
 
         function renderVehiclePivotTable(pivotData) {

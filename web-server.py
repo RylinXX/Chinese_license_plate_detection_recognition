@@ -1333,6 +1333,44 @@ def get_summary_analytics(
         daily_sum_row["total_volume"] = round(daily_sum_row["total_volume"] + dt_vol, 2)
         daily_sum_row["total_trips"] += dt_trips
 
+    # 8. 按运输公司/承运车队汇总 (各公司拉运吨数、趟数、产值与车辆数)
+    cursor.execute("""
+        SELECT COALESCE(w.transport_name, '未知运输公司') as company_name,
+               COUNT(r.id) as trips,
+               SUM(r.volume) as vol_sum,
+               COUNT(DISTINCT r.plate_no) as vehicle_count
+        FROM vehicle_records r
+        LEFT JOIN (
+            SELECT DISTINCT plate_no, transport_name 
+            FROM remote_waybills 
+            WHERE transport_name IS NOT NULL AND transport_name != ''
+        ) w ON r.plate_no = w.plate_no
+        WHERE r.direction = 'OUT' AND r.pass_time BETWEEN ? AND ?
+        GROUP BY company_name
+        ORDER BY vol_sum DESC
+    """, (query_start, query_end))
+    company_rows = cursor.fetchall()
+    by_company = []
+    for r in company_rows:
+        c_name = r[0]
+        c_trips = r[1]
+        c_vol = round(float(r[2] or 0.0), 2)
+        c_rev = round(c_vol * 30.0, 2)
+        c_veh = r[3]
+        pct = f"{(c_vol / total_vol * 100):.1f}" if total_vol > 0 else "0.0"
+        
+        # 简化公司名称便于图表展示
+        s_name = c_name.replace("北京", "").replace("有限公司", "").replace("建筑工程", "").replace("道路运输", "").replace("机械施工工程", "").replace("机械施工", "").replace("工程", "")
+        by_company.append({
+            "company_name": c_name,
+            "short_name": s_name,
+            "trips": c_trips,
+            "volume": c_vol,
+            "revenue": c_rev,
+            "vehicle_count": c_veh,
+            "percentage": pct
+        })
+
     conn.close()
     
     return {
@@ -1347,6 +1385,7 @@ def get_summary_analytics(
         "unit_price": 30.0,
         "by_soil_type": by_soil_type,
         "by_dump_site": by_dump_site,
+        "by_transport_company": by_company,
         "daily_trend": daily_trend,
         "vehicle_ranking": vehicle_ranking,
         "vehicle_pivot": {
