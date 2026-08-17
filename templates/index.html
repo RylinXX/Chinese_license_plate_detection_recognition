@@ -352,17 +352,11 @@
             border-color: var(--card-border-hover);
         }
 
-        .navbar-left-section {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-            flex-shrink: 0;
-        }
-
         .navbar-brand {
             display: flex;
             align-items: center;
             gap: 10px;
+            flex-shrink: 0;
         }
 
         .brand-logo-container {
@@ -407,6 +401,9 @@
             border-radius: var(--border-radius-sm);
             border: 1px solid var(--card-border);
             z-index: 10;
+            margin-right: auto;
+            margin-left: 10px;
+            flex-shrink: 0;
         }
 
         :root[data-theme="dark"] .nav-links {
@@ -445,6 +442,7 @@
             align-items: center;
             gap: 10px;
             flex-shrink: 0;
+            margin-left: auto;
         }
 
         .navbar-actions > * {
@@ -1398,437 +1396,322 @@
             transition: opacity 0.15s ease;
         }
 
-        @media (max-width: 1220px) and (min-width: 992px) {
-            body {
-                padding-top: 180px;
-            }
-            .floating-navbar {
-                padding: 16px 24px;
-                gap: 12px;
-            }
-            .navbar-actions {
-                flex-basis: 100%;
-                width: 100%;
-                justify-content: flex-end;
-                gap: 20px;
-                border-top: 1px solid var(--card-border);
-                padding-top: 12px;
-                margin-top: 4px;
-            }
-        }
-
-        @media (max-width: 992px) {
-            body {
-                padding: 0px 24px 24px 24px !important; /* 顶部自适应留白，导航栏为sticky占位 */
-            }
-            .btn-text-responsive {
-                display: none !important;
-            }
-            .btn-xs i {
-                margin-right: 0 !important;
-            }
-            .brand-subtitle {
-                display: none !important;
-            }
-            .floating-navbar {
-                position: sticky !important;
-                top: 0 !important;
-                left: 0 !important;
-                right: 0 !important;
-                border-radius: 0 !important;
-                border-left: none !important;
-                border-right: none !important;
-                border-top: none !important;
-                padding: 8px 16px !important;
-                gap: 8px !important;
-                margin-bottom: 16px !important;
-            }
-            .nav-links {
-                gap: 2px !important;
-                padding: 2px !important;
-            }
-            .nav-item {
-                padding: 6px 10px !important;
-                font-size: 12px !important;
-            }
-        }
-
         /* ==========================================================================
-           📱 移动端自适应媒体查询 (Mobile Responsiveness)
+           📱 移动端与平板端多端自适应体系 (Mobile & Tablet Responsiveness)
            ========================================================================== */
+
+        @media (max-width: 1024px) {
+            .summary-charts-grid-row {
+                grid-template-columns: 1fr !important;
+                gap: 12px !important;
+            }
+        }
+
         @media (max-width: 768px) {
             /* 1. 视口与全局 Body 适配 */
             body {
-                padding: 104px 10px 84px 10px !important; /* 留出两行导航栏的高度 (约 88px) 加上安全间距，防止内容被遮挡 */
-                background-attachment: scroll !important; /* 提高移动端滚动性能 */
+                padding: 102px 8px 30px 8px !important;
+                background-attachment: scroll !important;
+                -webkit-text-size-adjust: 100%;
             }
 
-            /* 2. 顶部浮动导航栏微调 */
+            /* 2. 顶部双层移动端导航栏 */
             .floating-navbar {
-                position: fixed !important; /* 改为 fixed 定位，100% 稳固固定在顶部，不随页面滚动移位 */
+                position: fixed !important;
                 top: 0 !important;
                 left: 0 !important;
                 right: 0 !important;
-                border-radius: 0 !important;
+                width: 100% !important;
+                height: auto !important;
+                min-height: 90px !important;
+                border-radius: 0 0 14px 14px !important;
                 border-left: none !important;
                 border-right: none !important;
                 border-top: none !important;
-                height: auto !important;
-                min-height: 56px !important;
-                padding: 10px !important;
-                background: var(--header-bg) !important;
-                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05) !important;
-                flex-wrap: wrap !important;
-                margin-bottom: 0 !important; /* 脱离文档流后 margin 设为0 */
-                -webkit-transform: none !important; /* 清除 3D 图层限制，使子级吸底 TabBar (nav-links) 能定位到屏幕最底端 */
-                transform: none !important;
+                padding: 6px 10px 8px 10px !important;
                 display: flex !important;
+                flex-wrap: wrap !important;
+                justify-content: space-between !important;
                 align-items: center !important;
+                gap: 6px !important;
+                background: var(--header-bg) !important;
+                backdrop-filter: blur(25px) !important;
+                -webkit-backdrop-filter: blur(25px) !important;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25) !important;
+                z-index: 1000 !important;
             }
 
+            /* 第一行左侧：品牌 Logo + 标题 */
             .navbar-brand {
-                order: 1 !important; /* 强制排在第一项 */
-                display: flex !important;
-                align-items: center !important;
+                order: 1 !important;
+                margin: 0 !important;
+                gap: 6px !important;
+                max-width: 55% !important;
             }
 
             .brand-logo-container {
-                display: none !important; /* 手机端隐藏 Logo，为第一行右侧日期操作栏留出充裕空间 */
+                width: 28px !important;
+                height: 28px !important;
+                border-radius: 6px !important;
+            }
+
+            .brand-logo-container i {
+                width: 14px !important;
+                height: 14px !important;
             }
 
             .brand-title {
                 font-size: 13px !important;
+                font-weight: 800 !important;
                 white-space: nowrap !important;
+                overflow: hidden !important;
+                text-overflow: ellipsis !important;
             }
 
             .brand-subtitle {
-                display: none !important; /* 隐藏公司名称，节省空间 */
+                display: none !important;
             }
 
-            /* 顶部操作区 - 移至第一行标题右侧，免除折行 */
+            /* 第一行右侧：工具栏 (时间段 / 对账日期 / 同步 / 主题) */
             .navbar-actions {
-                order: 2 !important; /* 强制排在第二项，与标题在一行 */
-                flex-basis: auto !important;
-                width: auto !important;
-                justify-content: flex-end !important;
-                gap: 4px !important;
-                border-top: none !important;
-                padding-top: 0 !important;
-                margin-top: 0 !important;
-                display: flex !important;
-                align-items: center !important;
-            }
-
-            .date-selector-wrapper .navbar-label {
-                display: none !important; /* 隐藏“对账日期:”字样 */
-            }
-
-            .date-selector-wrapper input[type="date"] {
-                width: 110px !important; /* 限制宽度，完美适配第一行排版 */
-                height: 30px !important;  /* 统一30px高度 */
-                font-size: 11px !important;
-                padding: 4px 6px !important;
-                cursor: pointer !important;
-                border-radius: var(--border-radius-sm) !important;
-                -webkit-appearance: none; /* 移动端清除默认外观 */
-                position: relative !important;
-                z-index: 5 !important;
-            }
-
-            #header-actions-area .btn {
-                padding: 6px 8px !important;
-                height: 30px !important;
-            }
-
-            #header-actions-area .btn span {
-                display: none !important; /* 隐藏按钮文字，仅保留图标 */
-            }
-
-            #header-actions-area .btn i {
+                order: 2 !important;
                 margin: 0 !important;
+                margin-left: auto !important;
+                gap: 4px !important;
+                justify-content: flex-end !important;
+                max-width: 45% !important;
+            }
+
+            .navbar-label {
+                display: none !important;
+            }
+
+            #btn-preset-all, #btn-preset-7d, #btn-preset-custom {
+                padding: 0 6px !important;
+                height: 26px !important;
+                font-size: 11px !important;
+            }
+
+            #query-date-picker {
+                width: 112px !important;
+                height: 28px !important;
+                font-size: 11px !important;
+                padding: 2px 4px !important;
+                border-radius: 4px !important;
+            }
+
+            #btn-sync-top {
+                height: 28px !important;
+                padding: 0 6px !important;
+                font-size: 11px !important;
+            }
+
+            #btn-sync-top .btn-text-responsive {
+                display: none !important;
             }
 
             .theme-toggle-btn {
-                width: 30px !important;
-                height: 30px !important;
+                width: 28px !important;
+                height: 28px !important;
+                min-width: 28px !important;
+                border-radius: 6px !important;
             }
 
-            .clock-display-wrapper {
-                display: none !important; /* 隐藏实时时钟 */
+            .theme-toggle-btn i {
+                width: 13px !important;
+                height: 13px !important;
             }
 
-            /* 3. 顶部导航链接折行排列 (不再吸底，防重叠) */
+            /* 第二行：3 大主 Tab 满宽分段控件 (Thumb-friendly) */
             .nav-links {
-                order: 3 !important; /* 强制排在第三项，另起一行 */
-                position: static !important;
+                order: 3 !important;
                 width: 100% !important;
-                height: auto !important;
-                border-radius: var(--border-radius-md) !important;
-                border: 1px solid var(--card-border) !important;
-                background: rgba(0, 0, 0, 0.02) !important;
-                backdrop-filter: none !important;
-                -webkit-backdrop-filter: none !important;
+                margin: 0 !important;
+                margin-top: 2px !important;
                 display: flex !important;
                 justify-content: space-between !important;
-                padding: 4px !important;
-                z-index: 10 !important;
                 gap: 4px !important;
-                margin: 4px 0 0 0 !important;
-                box-shadow: none !important;
-            }
-
-            :root[data-theme="dark"] .nav-links {
-                background: rgba(255, 255, 255, 0.02) !important;
+                padding: 3px !important;
+                background: rgba(0, 0, 0, 0.15) !important;
+                border-radius: 8px !important;
+                border: 1px solid var(--card-border) !important;
             }
 
             .nav-item {
                 flex: 1 !important;
-                flex-direction: row !important;
-                justify-content: center !important;
-                align-items: center !important;
-                padding: 6px 4px !important;
+                height: 30px !important;
+                padding: 0 4px !important;
                 font-size: 11px !important;
+                font-weight: 700 !important;
+                justify-content: center !important;
                 gap: 4px !important;
-                border-radius: var(--border-radius-sm) !important;
-                background: transparent !important;
-                box-shadow: none !important;
-                color: var(--text-secondary) !important;
+                border-radius: 6px !important;
+                text-align: center !important;
             }
 
-            .nav-item:hover {
-                background-color: rgba(99, 102, 241, 0.08) !important;
+            .nav-item i {
+                width: 12px !important;
+                height: 12px !important;
             }
 
-            .nav-item.active {
-                color: #ffffff !important;
-                background: var(--color-primary) !important;
-                box-shadow: 0 2px 8px var(--color-primary-active-shadow) !important;
-            }
-
-            .nav-item.active i {
-                color: #ffffff !important;
-            }
-
-            /* 移动端台账表格防换行与紧凑排版 */
-            .table-responsive {
-                overflow-x: auto !important;
-            }
-            .ledger-table td, .ledger-table th {
-                white-space: nowrap !important;
-                padding: 10px 8px !important;
-            }
-
-            /* 4. 面板一：多维大屏移动端适配 */
-            #panel-monitor.active {
-                gap: 16px !important;
-            }
-
-            /* KPI指标卡片堆叠 */
-            #panel-monitor .kpi-grid {
-                grid-template-columns: 1fr !important; /* 转为单栏垂直排列 */
+            /* 3. 首页数据看板 (panel-summary) 移动端自适应 */
+            .kpi-grid {
+                grid-template-columns: repeat(2, 1fr) !important;
                 gap: 8px !important;
             }
 
             .kpi-card {
-                padding: 10px 14px !important;
-                gap: 10px !important;
+                padding: 10px 12px !important;
+                gap: 8px !important;
+                min-height: unset !important;
             }
 
             .kpi-icon {
-                width: 34px !important;
-                height: 34px !important;
-                font-size: 14px !important;
+                width: 32px !important;
+                height: 32px !important;
+                font-size: 13px !important;
+                border-radius: 8px !important;
             }
-            
+
             .kpi-icon i {
                 width: 14px !important;
                 height: 14px !important;
             }
 
             .kpi-value {
-                font-size: 16px !important;
+                font-size: 18px !important;
+                font-weight: 800 !important;
             }
 
             .kpi-label {
-                font-size: 10px !important;
+                font-size: 11px !important;
             }
 
-            /* 图表区降级为垂直单列 */
-            .charts-panel .charts-row {
+            .summary-charts-grid-row {
                 grid-template-columns: 1fr !important;
-                gap: 14px !important;
+                gap: 10px !important;
             }
 
-            .chart-card-box {
-                min-height: 180px !important;
+            #chart-daily-trend, #chart-company-pie, #chart-vehicle-ranking, #chart-company-bar {
+                height: 270px !important;
+            }
+
+            .glass-card {
                 padding: 12px !important;
+                border-radius: var(--border-radius-sm) !important;
             }
 
-            /* 5. 面板二：现场记账移动端适配 */
-            #panel-ledger.active {
-                grid-template-columns: 1fr !important; /* 左右两栏转为上下堆叠 */
-                gap: 16px !important;
+            /* 交叉透视矩阵表格移动端滚动优化 */
+            #v-pivot-matrix-table {
+                font-size: 11px !important;
             }
 
-            .ledger-left-col {
-                width: 100% !important;
-                gap: 14px !important;
-                display: flex !important;
-                flex-direction: column !important;
+            #v-pivot-matrix-table th, #v-pivot-matrix-table td {
+                padding: 6px 6px !important;
+                font-size: 11px !important;
+                white-space: nowrap !important;
             }
 
-            #ledger-form-card {
-                order: 1 !important;
+            #v-pivot-matrix-table thead th:first-child,
+            #v-pivot-matrix-table tbody td:first-child,
+            #v-pivot-matrix-table tfoot td:first-child {
+                position: sticky !important;
+                left: 0 !important;
+                background: var(--card-bg) !important;
+                box-shadow: 2px 0 6px rgba(0, 0, 0, 0.25) !important;
             }
 
-            #ledger-kpis-card {
-                order: 2 !important;
+            #v-pivot-matrix-table thead th:first-child {
+                z-index: 12 !important;
+            }
+            #v-pivot-matrix-table tfoot td:first-child {
+                z-index: 12 !important;
             }
 
-            /* 表单输入控件高度对齐 */
-            .input-control {
-                padding: 8px 12px !important;
-                font-size: 13px !important;
-            }
-
-            /* 记账页面右上角筛选栏 */
-            .ledger-filter-bar {
-                flex-direction: column !important;
-                align-items: stretch !important;
-                gap: 8px !important;
-                padding: 10px 14px !important;
-            }
-
-            .ledger-filter-bar h3 {
-                font-size: 13px !important;
-            }
-
-            .ledger-filter-bar > div {
-                display: flex !important;
-                flex-direction: column !important;
-                align-items: stretch !important;
-                gap: 4px !important;
-            }
-
-            .ledger-filter-bar select {
+            #v-pivot-search-input {
                 width: 100% !important;
             }
 
-            /* 对账汇总横幅吸底样式适配 */
-            .ledger-summary-bar {
+            /* 4. 项目明细台账 (panel-ledger) 移动端优化 */
+            .ledger-header-row {
                 flex-direction: column !important;
                 align-items: stretch !important;
-                gap: 8px !important;
-                padding: 10px 14px !important;
-                text-align: center !important;
+                gap: 10px !important;
             }
 
-            .ledger-summary-bar > div:last-child {
-                flex-direction: column !important;
-                gap: 6px !important;
-                align-items: center !important;
-            }
-
-            /* 结算对账移动端适配 */
-            #panel-reconcile.active {
-                grid-template-columns: 1fr !important;
-                gap: 16px !important;
-            }
-
-            /* 6. 面板三：系统配置移动端适配 */
-            #panel-config.active {
-                grid-template-columns: 1fr !important; /* 左右配置面板垂直堆叠 */
-                gap: 16px !important;
-            }
-
-            /* 让配置面板头部的同步按钮和标题在手机端堆叠 */
-            .config-panel > div:first-child {
+            .ledger-header-tools {
                 flex-direction: column !important;
                 align-items: stretch !important;
+                width: 100% !important;
                 gap: 8px !important;
             }
-            .config-panel > div:first-child h3 {
-                border-bottom: 1px solid var(--card-border);
-                padding-bottom: 8px;
-                width: 100%;
+
+            #ledger-plate-search {
+                width: 100% !important;
             }
-            .config-panel #btn-sync-vehicles {
+
+            .ledger-export-btn {
                 width: 100% !important;
                 justify-content: center !important;
             }
 
-            /* 添加按钮在一行太挤，自动换行堆叠 */
+            .table-responsive {
+                overflow-x: auto !important;
+                -webkit-overflow-scrolling: touch !important;
+                border-radius: 8px !important;
+            }
+
+            .ledger-table th, .ledger-table td {
+                padding: 8px 6px !important;
+                font-size: 11px !important;
+                white-space: nowrap !important;
+            }
+
+            #ledger-summary-bar {
+                display: grid !important;
+                grid-template-columns: 1fr 1fr !important;
+                gap: 8px !important;
+                padding: 10px 12px !important;
+            }
+
+            /* 5. 系统配置面板 (panel-config) 移动端优化 */
             .config-add-grid {
                 grid-template-columns: 1fr !important;
                 gap: 8px !important;
-                align-items: stretch !important;
             }
 
             .config-add-grid button {
                 width: 100% !important;
                 height: 38px !important;
-                margin-top: 4px !important;
             }
 
-            /* 7. 表格与卡片自适应微调 */
-            .ledger-table th, .ledger-table td {
-                padding: 8px 6px !important;
-                font-size: 11px !important;
-            }
-
-            .plate-badge {
-                min-width: 75px !important;
-                font-size: 11px !important;
-                padding: 2px 6px !important;
-            }
-
-            /* 8. 模态弹窗自适应 */
+            /* 6. 弹窗与提示框 */
             .modal-card {
                 width: 95vw !important;
-                height: 90vh !important;
+                max-width: 95vw !important;
+                max-height: 90vh !important;
                 padding: 14px !important;
-                margin: 0 auto !important;
             }
 
-            .adjust-modal-card {
-                height: auto !important;
-                max-height: 92vh !important;
-            }
-
-            .modal-header {
-                margin-bottom: 12px !important;
-                padding-bottom: 8px !important;
-            }
-
-            .modal-title {
-                font-size: 15px !important;
-            }
-
-            .modal-close-btn {
-                font-size: 24px !important;
-            }
-
-            .modal-table-container {
-                border-radius: var(--border-radius-sm) !important;
-            }
-
-            .modal-table th, .modal-table td {
-                padding: 8px 4px !important;
-                font-size: 11px !important;
-            }
-
-            /* 9. Toast 提示框手机端顶部居中 */
             .toast-container {
-                top: 12px !important;
-                right: 12px !important;
-                left: 12px !important;
-            }
-
-            .toast-card {
+                top: 10px !important;
+                left: 10px !important;
+                right: 10px !important;
                 min-width: auto !important;
-                width: 100% !important;
-                padding: 10px 14px !important;
             }
+        }
+
+        @media (max-width: 480px) {
+            .kpi-value {
+                font-size: 16px !important;
+            }
+            .kpi-info span {
+                font-size: 10px !important;
+            }
+            .brand-title {
+                font-size: 12px !important;
+            }
+        }
             /* 新增：付款状态徽章样式 */
             .payment-badge {
                 font-size: 10px;
@@ -1973,60 +1856,41 @@
             color: #34d399;
             border: 1px solid rgba(16, 185, 129, 0.3);
         }
-        .status-warning {
-            background: rgba(245, 158, 11, 0.15);
-            color: #fbbf24;
-            border: 1px solid rgba(245, 158, 11, 0.3);
-        }
-        .status-expired {
-            background: rgba(239, 68, 68, 0.15);
-            color: #f87171;
-            border: 1px solid rgba(239, 68, 68, 0.3);
-        }
-        .flow-card {
-            background: rgba(255, 255, 255, 0.02);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            border-radius: 10px;
-            padding: 12px 14px;
-            margin-bottom: 10px;
-            transition: all 0.2s ease;
-        }
-        .flow-card:hover {
-            background: rgba(255, 255, 255, 0.04);
-            border-color: rgba(99, 102, 241, 0.3);
-            transform: translateY(-1px);
-        }
         .hourly-bar-chart {
             display: flex;
-            al    <!-- 顶部单行集成式浮动导航栏 -->
+            align-items: flex-end;
+            gap: 2px;
+            height: 48px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 顶部单行集成式浮动导航栏 -->
     <nav class="floating-navbar">
-        <!-- 左侧固定区：品牌标识 + 3个主Tab (位置绝对固定，不再左右跳动) -->
-        <div class="navbar-left-section">
-            <div class="navbar-brand">
-                <div class="brand-logo-container">
-                    <i data-lucide="truck" style="color:#fff; width:16px; height:16px;"></i>
-                </div>
-                <div class="brand-text">
-                    <span class="brand-title">中央电视台项目 · 车辆对账</span>
-                    <span class="brand-subtitle">首建恒纪 · 开槽砂石 (30元/吨)</span>
-                </div>
+        <div class="navbar-brand">
+            <div class="brand-logo-container">
+                <i data-lucide="truck" style="color:#fff; width:16px; height:16px;"></i>
             </div>
-            
-            <!-- 主切换 Tabs (统一锚定在左侧，位置稳固) -->
-            <div class="nav-links">
-                <a class="nav-item active" id="menu-summary" onclick="switchTab('summary')">
-                    <i data-lucide="pie-chart" style="width:14px; height:14px;"></i>
-                    <span>数据汇总中心</span>
-                </a>
-                <a class="nav-item" id="menu-ledger" onclick="switchTab('ledger')">
-                    <i data-lucide="file-spreadsheet" style="width:14px; height:14px;"></i>
-                    <span>项目明细台账</span>
-                </a>
-                <a class="nav-item" id="menu-config" onclick="switchTab('config')">
-                    <i data-lucide="settings" style="width:14px; height:14px;"></i>
-                    <span>配置与存档</span>
-                </a>
+            <div class="brand-text">
+                <span class="brand-title">中央电视台项目 · 车辆对账</span>
+                <span class="brand-subtitle">首建恒纪 · 开槽砂石 (30元/吨)</span>
             </div>
+        </div>
+        
+        <!-- 主切换 Tabs -->
+        <div class="nav-links">
+            <a class="nav-item active" id="menu-summary" onclick="switchTab('summary')">
+                <i data-lucide="pie-chart" style="width:14px; height:14px;"></i>
+                <span>数据汇总中心</span>
+            </a>
+            <a class="nav-item" id="menu-ledger" onclick="switchTab('ledger')">
+                <i data-lucide="file-spreadsheet" style="width:14px; height:14px;"></i>
+                <span>项目明细台账</span>
+            </a>
+            <a class="nav-item" id="menu-config" onclick="switchTab('config')">
+                <i data-lucide="settings" style="width:14px; height:14px;"></i>
+                <span>配置与存档</span>
+            </a>
         </div>
         
         <!-- 右侧集成工具栏 (按钮尺寸适度放大，舒适易点) -->
@@ -2055,7 +1919,7 @@
             <!-- 精简同步运单按钮 (适度增大尺寸，舒适点击) -->
             <button class="btn btn-sm btn-primary" onclick="triggerRemoteSyncManually()" id="btn-sync-top" style="height:32px; padding:0 12px; font-size:12px; font-weight:700; display:inline-flex; align-items:center; gap:5px;" title="从 CapCloud 接口同步最新运单">
                 <i data-lucide="refresh-cw" style="width:13px; height:13px;"></i>
-                <span>同步运单</span>
+                <span class="btn-text-responsive">同步运单</span>
             </button>
             
             <!-- 改颜色 (主题切换按钮，32x32) -->
@@ -2096,7 +1960,7 @@
                 </div>
 
                 <div class="kpi-card kpi-card-theme-in" style="padding:14px 16px;">
-                    <div class="kpi-icon" style="background:rgba(16,185,129,0.2); color:var(--color-in);"><i data-lucide="coins"></i></div>
+                    <div class="kpi-icon" style="background:rgba(168,85,247,0.2); color:var(--color-in);"><i data-lucide="coins"></i></div>
                     <div class="kpi-info">
                         <span class="kpi-label" style="font-weight:700;">开槽砂石实际总收入</span>
                         <div style="display:flex; align-items:baseline; gap:4px; margin-top:2px;">
@@ -2120,7 +1984,7 @@
             </div>
 
             <!-- 图表展示区 第一行 (双轴趋势 + 各承运公司拉运吨数占比分布) -->
-            <div style="display:grid; grid-template-columns: 2fr 1fr; gap:12px; margin-top:10px;">
+            <div class="summary-charts-grid-row" style="display:grid; grid-template-columns: 2fr 1fr; gap:12px; margin-top:10px;">
                 <!-- 左侧: 每日拉运吨数与实际收入双轴走势 -->
                 <div class="glass-card" style="padding:16px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
@@ -2148,7 +2012,7 @@
             </div>
 
             <!-- 图表展示区 第二行 (车辆排行 TOP 15 + 各运输公司拉运吨数与产值对比) -->
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-top:10px;">
+            <div class="summary-charts-grid-row" style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-top:10px;">
                 <!-- 左侧: 主力车辆拉运吨数排行榜 TOP 15 -->
                 <div class="glass-card" style="padding:16px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
@@ -2354,7 +2218,7 @@
         <!-- 📑 面板二: 项目明细台账 (全宽纯明细对账单) -->
         <section class="main-content" id="panel-ledger">
             <div class="glass-card" style="width: 100%; padding: 20px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
+                <div class="ledger-header-row" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
                     <div>
                         <div style="display:flex; align-items:center; gap:8px;">
                             <h3 class="card-header-title" style="margin-bottom:0; font-size:16px;">
@@ -2367,9 +2231,9 @@
                         </div>
                     </div>
                     
-                    <div style="display:flex; align-items:center; gap:10px;">
+                    <div class="ledger-header-tools" style="display:flex; align-items:center; gap:10px;">
                         <input type="text" id="ledger-plate-search" class="input-control" placeholder="🔍 快速搜索车牌 (如 京A38428D)" oninput="filterLedgerTable()" style="width: 210px; height: 32px; font-size: 12px; padding: 4px 10px;">
-                        <button class="btn btn-sm btn-accent" onclick="exportCurrentDateCSV()" style="height:32px; padding:0 12px; font-size:12px; display:inline-flex; align-items:center; gap:4px;">
+                        <button class="btn btn-sm btn-accent ledger-export-btn" onclick="exportCurrentDateCSV()" style="height:32px; padding:0 12px; font-size:12px; display:inline-flex; align-items:center; gap:4px;">
                             <i data-lucide="download" style="width:13px; height:13px;"></i>
                             <span>导出当日明细 (CSV)</span>
                         </button>
@@ -5206,6 +5070,7 @@
             }
 
             window.addEventListener('resize', resizeSummaryCharts);
+            window.addEventListener('orientationchange', () => setTimeout(resizeSummaryCharts, 250));
         }
 
         function resizeSummaryCharts() {
