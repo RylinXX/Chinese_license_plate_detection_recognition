@@ -1501,6 +1501,29 @@
                 display: none !important;
             }
 
+            #summary-custom-date-box {
+                position: fixed !important;
+                top: 48px !important;
+                right: 8px !important;
+                background: var(--header-bg) !important;
+                backdrop-filter: blur(25px) !important;
+                -webkit-backdrop-filter: blur(25px) !important;
+                border: 1px solid var(--color-primary) !important;
+                border-radius: 8px !important;
+                padding: 6px 8px !important;
+                box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4) !important;
+                z-index: 1005 !important;
+                gap: 4px !important;
+                align-items: center !important;
+            }
+
+            #summary-start-date, #summary-end-date {
+                width: 105px !important;
+                height: 28px !important;
+                font-size: 11px !important;
+                padding: 2px 4px !important;
+            }
+
             #btn-preset-all, #btn-preset-7d, #btn-preset-custom {
                 padding: 0 6px !important;
                 height: 26px !important;
@@ -1535,6 +1558,17 @@
             .theme-toggle-btn i {
                 width: 13px !important;
                 height: 13px !important;
+            }
+
+            #ledger-pagination-container {
+                flex-direction: column !important;
+                align-items: stretch !important;
+                gap: 8px !important;
+                padding: 8px 10px !important;
+            }
+
+            #ledger-pagination-container > div {
+                justify-content: center !important;
             }
 
             /* 第二行：3 大主 Tab 满宽分段控件 (Thumb-friendly) */
@@ -2278,8 +2312,13 @@
                     </table>
                 </div>
 
+                <!-- 翻页控制工具栏 -->
+                <div id="ledger-pagination-container" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-top:12px; padding:10px 14px; background:rgba(0,0,0,0.12); border:1px solid var(--card-border); border-radius:8px;">
+                    <!-- 动态分页控件 -->
+                </div>
+
                 <!-- 底部对账汇总横幅 -->
-                <div class="ledger-summary-bar" id="ledger-summary-bar" style="margin-top:14px; padding:12px 18px; border-radius:var(--border-radius-sm); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+                <div class="ledger-summary-bar" id="ledger-summary-bar" style="margin-top:12px; padding:12px 18px; border-radius:var(--border-radius-sm); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; background:rgba(99,102,241,0.06); border:1px solid rgba(99,102,241,0.2);">
                     <!-- 动态指标 -->
                 </div>
             </div>
@@ -4058,9 +4097,12 @@
                 showToast("异常", "切换付款状态异常: " + err.toString(), "error");
             });
         }
-        let ledgerLayoutMode = 'table'; // 默认列表视图，省空间
+        let ledgerLayoutMode = 'table'; // 默认列表视图
 
         let currentLedgerRecords = [];
+        let filteredLedgerRecords = [];
+        let ledgerPageSize = 15;
+        let ledgerCurrentPage = 1;
 
         function refreshLedger() {
             const dateBadge = document.getElementById('ledger-date-badge');
@@ -4074,8 +4116,8 @@
                 // 仅展示出场 (OUT) 记录
                 const outRecords = (data.records || []).filter(r => r.direction === 'OUT' || !r.direction);
                 currentLedgerRecords = outRecords;
-
-                renderLedgerTableRows(outRecords);
+                
+                applyLedgerFilterAndPagination();
             })
             .catch(err => {
                 console.error('Fetch ledger failed:', err);
@@ -4083,33 +4125,76 @@
             });
         }
 
-        function renderLedgerTableRows(records) {
+        function filterLedgerTable() {
+            ledgerCurrentPage = 1; // 检索时重置为第1页
+            applyLedgerFilterAndPagination();
+        }
+
+        function applyLedgerFilterAndPagination() {
+            const searchInput = document.getElementById('ledger-plate-search');
+            const query = (searchInput ? searchInput.value : '').trim().toUpperCase();
+            
+            if (!query) {
+                filteredLedgerRecords = currentLedgerRecords;
+            } else {
+                filteredLedgerRecords = currentLedgerRecords.filter(r => (r.plate_no || '').toUpperCase().includes(query));
+            }
+            
+            // 计算并渲染当日/过滤后的全局汇总指标
+            renderLedgerSummaryBar(filteredLedgerRecords, currentLedgerRecords.length);
+            
+            // 渲染当前分页数据行
+            renderLedgerCurrentPageRows();
+            
+            // 渲染分页导航器
+            renderLedgerPaginationBar();
+        }
+
+        function setLedgerPageSize(newSize) {
+            ledgerPageSize = parseInt(newSize, 10) || 15;
+            ledgerCurrentPage = 1;
+            renderLedgerCurrentPageRows();
+            renderLedgerPaginationBar();
+        }
+
+        function changeLedgerPage(page) {
+            const totalPages = Math.ceil(filteredLedgerRecords.length / ledgerPageSize) || 1;
+            if (page < 1) page = 1;
+            if (page > totalPages) page = totalPages;
+            ledgerCurrentPage = page;
+            renderLedgerCurrentPageRows();
+            renderLedgerPaginationBar();
+        }
+
+        function jumpLedgerPage(event) {
+            if (event.key === 'Enter') {
+                const input = document.getElementById('ledger-jump-input');
+                if (input) {
+                    let p = parseInt(input.value, 10);
+                    if (!isNaN(p)) changeLedgerPage(p);
+                }
+            }
+        }
+
+        function renderLedgerCurrentPageRows() {
             const tbody = document.getElementById('ledger-table-body');
-            const summaryBar = document.getElementById('ledger-summary-bar');
             if (!tbody) return;
 
-            if (!records || records.length === 0) {
+            if (!filteredLedgerRecords || filteredLedgerRecords.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="10" style="color:var(--text-muted); padding: 45px 10px; text-align:center; font-size:13px;">暂无该日 (${selectedQueryDate}) 车辆通行明细记录</td></tr>`;
-                if (summaryBar) {
-                    summaryBar.innerHTML = `
-                        <div style="font-weight:700; color:var(--text-secondary);">【${selectedQueryDate} 对账明细汇总】</div>
-                        <div style="color:var(--text-muted); font-size:12px;">该日暂无拉运出场记录</div>
-                    `;
-                }
                 return;
             }
 
-            let totalTrips = records.length;
-            let totalVolume = 0.0;
-            let totalRevenue = 0.0;
+            const startIndex = (ledgerCurrentPage - 1) * ledgerPageSize;
+            const endIndex = Math.min(startIndex + ledgerPageSize, filteredLedgerRecords.length);
+            const pageRecords = filteredLedgerRecords.slice(startIndex, endIndex);
 
             let html = '';
-            records.forEach((r, idx) => {
+            pageRecords.forEach((r, idx) => {
+                const globalIdx = startIndex + idx + 1;
                 const vol = parseFloat(r.volume || 0.0);
                 const price = 30.00;
                 const rev = vol * price;
-                totalVolume += vol;
-                totalRevenue += rev;
 
                 const plateBadge = renderPlateBadge(r.plate_no, r.plate_color);
                 const timeStr = r.pass_time ? r.pass_time.slice(11, 19) : '--:--:--';
@@ -4119,7 +4204,7 @@
 
                 html += `
                     <tr class="ledger-row-item" data-plate="${r.plate_no}">
-                        <td style="text-align:center; font-weight:600; color:var(--text-muted);">${idx + 1}</td>
+                        <td style="text-align:center; font-weight:600; color:var(--text-muted);">${globalIdx}</td>
                         <td style="font-weight:700; padding:6px 10px;">${plateBadge}</td>
                         <td style="text-align:center; font-family:monospace; font-size:12px; font-weight:600;" title="${fullTimeStr}">${timeStr}</td>
                         <td style="font-weight:600; color:var(--text-primary); font-size:12px;">${siteName}</td>
@@ -4139,37 +4224,98 @@
                 `;
             });
             tbody.innerHTML = html;
-
-            const avgVol = totalTrips > 0 ? (totalVolume / totalTrips).toFixed(2) : '0.00';
-            if (summaryBar) {
-                summaryBar.innerHTML = `
-                    <div style="font-weight:700; color:var(--text-primary); font-size:13px; display:flex; align-items:center; gap:6px;">
-                        <i data-lucide="calculator" style="width:14px; height:14px; color:var(--color-primary);"></i>
-                        <span>【${selectedQueryDate} 对账明细汇总】</span>
-                    </div>
-                    <div style="display:flex; align-items:center; gap:20px; flex-wrap:wrap; font-size:13px;">
-                        <span>当日出车: <strong style="color:var(--color-out); font-weight:800; font-size:14px;">${totalTrips} 趟</strong></span>
-                        <span>拉运总吨数: <strong style="color:var(--color-primary); font-weight:800; font-size:14px;">${totalVolume.toLocaleString('zh-CN', {minimumFractionDigits:2, maximumFractionDigits:2})} 吨</strong></span>
-                        <span>单车均重: <strong style="color:var(--text-secondary); font-weight:700;">${avgVol} 吨/趟</strong></span>
-                        <span>实际纯收入: <strong style="color:var(--color-in); font-weight:800; font-size:15px;">+￥${totalRevenue.toLocaleString('zh-CN', {minimumFractionDigits:2, maximumFractionDigits:2})}</strong></span>
-                    </div>
-                `;
-            }
             safeIcons();
         }
 
-        function filterLedgerTable() {
-            const searchInput = document.getElementById('ledger-plate-search');
-            const query = (searchInput ? searchInput.value : '').trim().toUpperCase();
-            const rows = document.querySelectorAll('.ledger-row-item');
-            rows.forEach(row => {
-                const plate = (row.getAttribute('data-plate') || '').toUpperCase();
-                if (!query || plate.includes(query)) {
-                    row.style.display = '';
-                } else {
-                    row.style.display = 'none';
-                }
+        function renderLedgerPaginationBar() {
+            const container = document.getElementById('ledger-pagination-container');
+            if (!container) return;
+
+            const totalCount = filteredLedgerRecords.length;
+            const totalPages = Math.ceil(totalCount / ledgerPageSize) || 1;
+
+            if (totalCount === 0) {
+                container.style.display = 'none';
+                return;
+            }
+            container.style.display = 'flex';
+
+            let html = `
+                <div style="display:flex; align-items:center; gap:10px; font-size:12px; color:var(--text-secondary);">
+                    <span>共 <strong style="color:var(--text-primary); font-size:13px;">${totalCount}</strong> 条明细</span>
+                    <span style="display:inline-flex; align-items:center; gap:4px;">
+                        每页
+                        <select class="input-control" onchange="setLedgerPageSize(this.value)" style="height:28px; padding:0 6px; font-size:12px; width:72px; border-radius:4px; font-weight:600;">
+                            <option value="10" ${ledgerPageSize === 10 ? 'selected' : ''}>10 条</option>
+                            <option value="15" ${ledgerPageSize === 15 ? 'selected' : ''}>15 条</option>
+                            <option value="20" ${ledgerPageSize === 20 ? 'selected' : ''}>20 条</option>
+                            <option value="50" ${ledgerPageSize === 50 ? 'selected' : ''}>50 条</option>
+                        </select>
+                    </span>
+                </div>
+                <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                    <button class="btn btn-sm btn-secondary" style="height:28px; padding:0 8px; font-size:11px; display:inline-flex; align-items:center; gap:2px;" onclick="changeLedgerPage(1)" ${ledgerCurrentPage <= 1 ? 'disabled style="opacity:0.4; cursor:not-allowed;"' : ''}>
+                        <i data-lucide="chevrons-left" style="width:12px; height:12px;"></i>首页
+                    </button>
+                    <button class="btn btn-sm btn-secondary" style="height:28px; padding:0 8px; font-size:11px; display:inline-flex; align-items:center; gap:2px;" onclick="changeLedgerPage(${ledgerCurrentPage - 1})" ${ledgerCurrentPage <= 1 ? 'disabled style="opacity:0.4; cursor:not-allowed;"' : ''}>
+                        <i data-lucide="chevron-left" style="width:12px; height:12px;"></i>上一页
+                    </button>
+                    <span style="font-size:12px; font-weight:700; color:var(--color-primary); padding:0 6px;">
+                        第 ${ledgerCurrentPage} / ${totalPages} 页
+                    </span>
+                    <button class="btn btn-sm btn-secondary" style="height:28px; padding:0 8px; font-size:11px; display:inline-flex; align-items:center; gap:2px;" onclick="changeLedgerPage(${ledgerCurrentPage + 1})" ${ledgerCurrentPage >= totalPages ? 'disabled style="opacity:0.4; cursor:not-allowed;"' : ''}>
+                        下一页<i data-lucide="chevron-right" style="width:12px; height:12px;"></i>
+                    </button>
+                    <button class="btn btn-sm btn-secondary" style="height:28px; padding:0 8px; font-size:11px; display:inline-flex; align-items:center; gap:2px;" onclick="changeLedgerPage(${totalPages})" ${ledgerCurrentPage >= totalPages ? 'disabled style="opacity:0.4; cursor:not-allowed;"' : ''}>
+                        末页<i data-lucide="chevrons-right" style="width:12px; height:12px;"></i>
+                    </button>
+                    <span style="font-size:11px; color:var(--text-muted); display:inline-flex; align-items:center; gap:3px; margin-left:4px;">
+                        跳至 <input type="number" id="ledger-jump-input" min="1" max="${totalPages}" placeholder="${ledgerCurrentPage}" onkeydown="jumpLedgerPage(event)" style="width:44px; height:26px; font-size:11px; text-align:center; padding:0 2px; border-radius:4px; border:1px solid var(--card-border); background:rgba(0,0,0,0.2); color:var(--text-primary);"> 页
+                    </span>
+                </div>
+            `;
+            container.innerHTML = html;
+            safeIcons();
+        }
+
+        function renderLedgerSummaryBar(records, totalUnfilteredCount) {
+            const summaryBar = document.getElementById('ledger-summary-bar');
+            if (!summaryBar) return;
+
+            if (!records || records.length === 0) {
+                summaryBar.innerHTML = `
+                    <div style="font-weight:700; color:var(--text-secondary); font-size:13px;">【${selectedQueryDate} 对账明细汇总】</div>
+                    <div style="color:var(--text-muted); font-size:12px;">该日暂无拉运出场记录</div>
+                `;
+                return;
+            }
+
+            let totalTrips = records.length;
+            let totalVolume = 0.0;
+            let totalRevenue = 0.0;
+
+            records.forEach(r => {
+                const vol = parseFloat(r.volume || 0.0);
+                totalVolume += vol;
+                totalRevenue += (vol * 30.00);
             });
+
+            const avgVol = totalTrips > 0 ? (totalVolume / totalTrips).toFixed(2) : '0.00';
+            const isFiltered = (totalUnfilteredCount && totalTrips < totalUnfilteredCount);
+
+            summaryBar.innerHTML = `
+                <div style="font-weight:800; color:var(--text-primary); font-size:13px; display:flex; align-items:center; gap:6px;">
+                    <i data-lucide="calculator" style="width:15px; height:15px; color:var(--color-primary);"></i>
+                    <span>【${selectedQueryDate} ${isFiltered ? '筛选匹配汇总' : '当日全天对账汇总'}】</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:20px; flex-wrap:wrap; font-size:13px;">
+                    <span>出场趟数: <strong style="color:var(--color-out); font-weight:800; font-size:15px;">${totalTrips} 趟</strong></span>
+                    <span>实际总吨数: <strong style="color:var(--color-primary); font-weight:800; font-size:15px;">${totalVolume.toLocaleString('zh-CN', {minimumFractionDigits:2, maximumFractionDigits:2})} 吨</strong></span>
+                    <span>单车均重: <strong style="color:var(--text-secondary); font-weight:700;">${avgVol} 吨/趟</strong></span>
+                    <span>实际纯收入: <strong style="color:var(--color-in); font-weight:800; font-size:16px;">+￥${totalRevenue.toLocaleString('zh-CN', {minimumFractionDigits:2, maximumFractionDigits:2})}</strong></span>
+                </div>
+            `;
+            safeIcons();
         }
 
         function exportCurrentDateCSV() {
@@ -5174,8 +5320,9 @@
         function toggleCustomSummaryDate() {
             const customBox = document.getElementById('summary-custom-date-box');
             if (!customBox) return;
-            if (customBox.style.display === 'none') {
-                customBox.style.display = 'inline-flex';
+            const isHidden = (customBox.style.display === 'none' || !customBox.style.display);
+            if (isHidden) {
+                customBox.style.display = 'flex';
                 if (currentSummaryData && currentSummaryData.db_range) {
                     document.getElementById('summary-start-date').value = currentSummaryData.db_range.min;
                     document.getElementById('summary-end-date').value = currentSummaryData.db_range.max;
