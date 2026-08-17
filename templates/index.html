@@ -326,10 +326,10 @@
         .floating-navbar {
             position: fixed;
             top: 10px;
-            left: 12px;
-            right: 12px;
-            height: 48px;
-            min-height: 48px;
+            left: 14px;
+            right: 14px;
+            height: 52px;
+            min-height: 52px;
             background: var(--header-bg);
             backdrop-filter: blur(25px);
             -webkit-backdrop-filter: blur(25px);
@@ -339,8 +339,8 @@
             justify-content: space-between;
             align-items: center;
             flex-wrap: nowrap;
-            gap: 10px;
-            padding: 0 14px;
+            gap: 16px;
+            padding: 0 16px;
             z-index: 1000;
             box-shadow: var(--card-shadow);
             transition: var(--transition-base);
@@ -352,10 +352,17 @@
             border-color: var(--card-border-hover);
         }
 
+        .navbar-left-section {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-shrink: 0;
+        }
+
         .navbar-brand {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
         }
 
         .brand-logo-container {
@@ -367,6 +374,7 @@
             align-items: center;
             justify-content: center;
             box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+            flex-shrink: 0;
         }
 
         .brand-text {
@@ -375,49 +383,50 @@
         }
 
         .brand-title {
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 800;
             color: var(--text-primary);
-            letter-spacing: 0.5px;
+            letter-spacing: 0.3px;
+            white-space: nowrap;
         }
 
         .brand-subtitle {
-            font-size: 9px;
+            font-size: 10px;
             color: var(--text-muted);
             font-weight: 700;
-            letter-spacing: 1px;
+            letter-spacing: 0.5px;
             margin-top: 1px;
-            text-transform: uppercase;
+            white-space: nowrap;
         }
 
         .nav-links {
             display: flex;
             gap: 4px;
-            background: rgba(0, 0, 0, 0.03);
-            padding: 4px;
-            border-radius: var(--border-radius-md);
+            background: rgba(0, 0, 0, 0.04);
+            padding: 3px;
+            border-radius: var(--border-radius-sm);
             border: 1px solid var(--card-border);
             z-index: 10;
         }
 
-
-
         :root[data-theme="dark"] .nav-links {
-            background: rgba(255, 255, 255, 0.02);
+            background: rgba(255, 255, 255, 0.04);
         }
 
         .nav-item {
             display: flex;
             align-items: center;
-            gap: 8px;
-            padding: 8px 18px;
+            gap: 6px;
+            padding: 5px 14px;
+            height: 32px;
             color: var(--text-secondary);
             font-size: 13px;
             font-weight: 700;
             text-decoration: none;
-            border-radius: var(--border-radius-sm);
+            border-radius: 6px;
             transition: var(--transition-base);
             cursor: pointer;
+            white-space: nowrap;
         }
 
         .nav-item:hover {
@@ -434,7 +443,7 @@
         .navbar-actions {
             display: flex;
             align-items: center;
-            gap: 16px;
+            gap: 10px;
             flex-shrink: 0;
         }
 
@@ -1989,130 +1998,69 @@
         }
         .hourly-bar-chart {
             display: flex;
-            align-items: flex-end;
-            gap: 4px;
-            height: 120px;
-            padding: 10px 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        .hourly-bar-col {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            height: 100%;
-            justify-content: flex-end;
-            position: relative;
-        }
-        .hourly-bar {
-            width: 100%;
-            background: linear-gradient(180deg, #6366f1, #38bdf8);
-            border-radius: 3px 3px 0 0;
-            min-height: 2px;
-            transition: height 0.4s ease;
-        }
-        .hourly-bar:hover {
-            background: linear-gradient(180deg, #818cf8, #7dd3fc);
-        }
-        .hourly-label {
-            font-size: 9px;
-            color: var(--text-muted);
-            margin-top: 4px;
-            white-space: nowrap;
-        }
-        .sync-indicator-pill {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            background: rgba(99, 102, 241, 0.1);
-            border: 1px solid rgba(99, 102, 241, 0.25);
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 11px;
-            color: #a5b4fc;
-        }
-        #panel-capacity.active {
-            display: flex !important;
-            flex-direction: column !important;
-            width: 100% !important;
-        }
-    </style>
-</head>
-<body>
-    
-    <!-- 背景发光体 -->
-    <div class="glow-bg-blob blob-1"></div>
-    <div class="glow-bg-blob blob-2"></div>
-
-    <!-- 顶部单行集成式浮动导航栏 -->
+            al    <!-- 顶部单行集成式浮动导航栏 -->
     <nav class="floating-navbar">
-        <!-- 品牌标识 -->
-        <div class="navbar-brand">
-            <div class="brand-logo-container">
-                <i data-lucide="truck" style="color:#fff; width:15px; height:15px;"></i>
-            </div>
-            <div class="brand-text">
-                <span class="brand-title">中央电视台项目 · 车辆对账</span>
-                <span class="brand-subtitle">首建恒纪 · 开槽砂石 (30元/吨)</span>
-            </div>
-        </div>
-        
-        <!-- 主切换 Tabs -->
-        <div class="nav-links">
-            <a class="nav-item active" id="menu-summary" onclick="switchTab('summary')">
-                <i data-lucide="pie-chart" style="width:13px; height:13px;"></i>
-                <span>数据汇总中心</span>
-            </a>
-            <a class="nav-item" id="menu-ledger" onclick="switchTab('ledger')">
-                <i data-lucide="file-spreadsheet" style="width:13px; height:13px;"></i>
-                <span>项目明细台账</span>
-            </a>
-            <a class="nav-item" id="menu-config" onclick="switchTab('config')">
-                <i data-lucide="settings" style="width:13px; height:13px;"></i>
-                <span>配置与存档</span>
-            </a>
-        </div>
-        
-        <!-- 右侧集成工具栏 (同一行平铺) -->
-        <div class="navbar-actions" style="display:flex; align-items:center; gap:8px;">
-            <!-- 汇总中心时间段切换 (仅在汇总中心显示) -->
-            <div id="nav-summary-range-group" style="display:flex; align-items:center; gap:4px;">
-                <div class="btn-group" style="display:flex; gap:2px; background:rgba(0,0,0,0.2); padding:2px; border-radius:6px; border:1px solid var(--card-border);">
-                    <button class="btn btn-sm btn-accent" id="btn-preset-all" onclick="loadSummaryAnalytics('all')" style="padding:2px 8px; font-size:11px; height:24px; border-radius:4px;">全周期</button>
-                    <button class="btn btn-sm btn-secondary" id="btn-preset-7d" onclick="loadSummaryPresetDays(7)" style="padding:2px 8px; font-size:11px; height:24px; border-radius:4px;">近7天</button>
-                    <button class="btn btn-sm btn-secondary" id="btn-preset-custom" onclick="toggleCustomSummaryDate()" style="padding:2px 8px; font-size:11px; height:24px; border-radius:4px;">范围</button>
+        <!-- 左侧固定区：品牌标识 + 3个主Tab (位置绝对固定，不再左右跳动) -->
+        <div class="navbar-left-section">
+            <div class="navbar-brand">
+                <div class="brand-logo-container">
+                    <i data-lucide="truck" style="color:#fff; width:16px; height:16px;"></i>
                 </div>
-                <div id="summary-custom-date-box" style="display:none; align-items:center; gap:3px;">
-                    <input type="date" class="input-control" id="summary-start-date" style="width:115px; height:24px; font-size:11px; padding:1px 4px;">
-                    <span style="color:var(--text-muted); font-size:11px;">-</span>
-                    <input type="date" class="input-control" id="summary-end-date" style="width:115px; height:24px; font-size:11px; padding:1px 4px;">
-                    <button class="btn btn-sm btn-accent" onclick="applyCustomSummaryDate()" style="padding:1px 6px; height:24px; font-size:11px;">查</button>
+                <div class="brand-text">
+                    <span class="brand-title">中央电视台项目 · 车辆对账</span>
+                    <span class="brand-subtitle">首建恒纪 · 开槽砂石 (30元/吨)</span>
                 </div>
-            </div>
-
-            <!-- 对账日期快捷选择 (单选一个日期) -->
-            <div class="date-selector-wrapper" id="nav-date-picker-box" style="display:none; align-items:center; gap:4px;">
-                <span class="navbar-label" style="font-size:11px; color:var(--text-secondary);">对账日期:</span>
-                <input type="date" class="input-control" id="query-date-picker" style="width:125px; height:26px; padding:2px 6px; font-size:11px;">
-            </div>
-
-            <!-- 导出当前日流水按钮 (仅在明细台账显示) -->
-            <div id="nav-ledger-export-box" style="display:none;">
-                <button class="btn btn-sm btn-secondary" onclick="exportCurrentDateCSV()" style="height:26px; padding:0 8px; font-size:11px; display:inline-flex; align-items:center; gap:3px;">
-                    <i data-lucide="download" style="width:11px; height:11px;"></i>
-                    <span>导出流水</span>
-                </button>
             </div>
             
-            <!-- 精简同步运单按钮 -->
-            <button class="btn btn-sm btn-primary" onclick="triggerRemoteSyncManually()" id="btn-sync-top" style="height:26px; padding:0 8px; font-size:11px; display:inline-flex; align-items:center; gap:3px;" title="从 CapCloud 接口同步最新运单">
-                <i data-lucide="refresh-cw" style="width:11px; height:11px;"></i>
+            <!-- 主切换 Tabs (统一锚定在左侧，位置稳固) -->
+            <div class="nav-links">
+                <a class="nav-item active" id="menu-summary" onclick="switchTab('summary')">
+                    <i data-lucide="pie-chart" style="width:14px; height:14px;"></i>
+                    <span>数据汇总中心</span>
+                </a>
+                <a class="nav-item" id="menu-ledger" onclick="switchTab('ledger')">
+                    <i data-lucide="file-spreadsheet" style="width:14px; height:14px;"></i>
+                    <span>项目明细台账</span>
+                </a>
+                <a class="nav-item" id="menu-config" onclick="switchTab('config')">
+                    <i data-lucide="settings" style="width:14px; height:14px;"></i>
+                    <span>配置与存档</span>
+                </a>
+            </div>
+        </div>
+        
+        <!-- 右侧集成工具栏 (按钮尺寸适度放大，舒适易点) -->
+        <div class="navbar-actions">
+            <!-- 汇总中心时间段切换 (仅在汇总中心显示) -->
+            <div id="nav-summary-range-group" style="display:flex; align-items:center; gap:6px;">
+                <div class="btn-group" style="display:flex; gap:3px; background:rgba(0,0,0,0.18); padding:3px; border-radius:6px; border:1px solid var(--card-border);">
+                    <button class="btn btn-sm btn-accent" id="btn-preset-all" onclick="loadSummaryAnalytics('all')" style="padding:0 12px; font-size:12px; height:28px; border-radius:4px; font-weight:700;">全周期</button>
+                    <button class="btn btn-sm btn-secondary" id="btn-preset-7d" onclick="loadSummaryPresetDays(7)" style="padding:0 12px; font-size:12px; height:28px; border-radius:4px; font-weight:700;">近7天</button>
+                    <button class="btn btn-sm btn-secondary" id="btn-preset-custom" onclick="toggleCustomSummaryDate()" style="padding:0 12px; font-size:12px; height:28px; border-radius:4px; font-weight:700;">范围</button>
+                </div>
+                <div id="summary-custom-date-box" style="display:none; align-items:center; gap:4px;">
+                    <input type="date" class="input-control" id="summary-start-date" style="width:125px; height:32px; font-size:12px; padding:2px 6px;">
+                    <span style="color:var(--text-muted); font-size:12px;">-</span>
+                    <input type="date" class="input-control" id="summary-end-date" style="width:125px; height:32px; font-size:12px; padding:2px 6px;">
+                    <button class="btn btn-sm btn-accent" onclick="applyCustomSummaryDate()" style="padding:0 10px; height:32px; font-size:12px; font-weight:700;">查</button>
+                </div>
+            </div>
+
+            <!-- 对账日期快捷选择 (单选一个日期，仅在明细台账显示) -->
+            <div class="date-selector-wrapper" id="nav-date-picker-box" style="display:none; align-items:center; gap:6px;">
+                <span class="navbar-label" style="font-size:12px; font-weight:700; color:var(--text-secondary);">对账日期:</span>
+                <input type="date" class="input-control" id="query-date-picker" style="width:135px; height:32px; padding:2px 8px; font-size:12px; font-weight:600;">
+            </div>
+            
+            <!-- 精简同步运单按钮 (适度增大尺寸，舒适点击) -->
+            <button class="btn btn-sm btn-primary" onclick="triggerRemoteSyncManually()" id="btn-sync-top" style="height:32px; padding:0 12px; font-size:12px; font-weight:700; display:inline-flex; align-items:center; gap:5px;" title="从 CapCloud 接口同步最新运单">
+                <i data-lucide="refresh-cw" style="width:13px; height:13px;"></i>
                 <span>同步运单</span>
             </button>
             
-            <!-- 改颜色 (主题切换) -->
-            <button class="theme-toggle-btn" onclick="toggleTheme()" id="theme-toggle-btn" title="切换暗黑/明亮主题" style="width:26px; height:26px; padding:0; display:flex; align-items:center; justify-content:center;">
-                <i data-lucide="moon" id="theme-toggle-icon" style="width:13px; height:13px;"></i>
+            <!-- 改颜色 (主题切换按钮，32x32) -->
+            <button class="theme-toggle-btn" onclick="toggleTheme()" id="theme-toggle-btn" title="切换暗黑/明亮主题" style="width:32px; height:32px; min-width:32px; padding:0; display:flex; align-items:center; justify-content:center; border-radius:6px;">
+                <i data-lucide="moon" id="theme-toggle-icon" style="width:15px; height:15px;"></i>
             </button>
         </div>
     </nav>
@@ -2122,8 +2070,8 @@
         <!-- 📊 面板一: 数据汇总中心 (数据可视化看板) -->
         <section class="main-content active" id="panel-summary">
             <!-- 核心 KPI 汇总卡 -->
-            <div class="kpi-grid" style="grid-template-columns: repeat(4, 1fr); gap: 14px;">
-                <div class="kpi-card kpi-card-theme-out">
+            <div class="kpi-grid" style="grid-template-columns: repeat(4, 1fr); gap: 12px;">
+                <div class="kpi-card kpi-card-theme-out" style="padding:14px 16px;">
                     <div class="kpi-icon" style="background:rgba(56,189,248,0.2); color:var(--color-out);"><i data-lucide="truck"></i></div>
                     <div class="kpi-info">
                         <span class="kpi-label" style="font-weight:700;">累计出场车次</span>
@@ -2135,7 +2083,7 @@
                     </div>
                 </div>
 
-                <div class="kpi-card kpi-card-theme-primary">
+                <div class="kpi-card kpi-card-theme-primary" style="padding:14px 16px;">
                     <div class="kpi-icon" style="background:rgba(99,102,241,0.2); color:var(--color-primary);"><i data-lucide="scale"></i></div>
                     <div class="kpi-info">
                         <span class="kpi-label" style="font-weight:700;">实际拉运总吨数</span>
@@ -2147,7 +2095,7 @@
                     </div>
                 </div>
 
-                <div class="kpi-card kpi-card-theme-in">
+                <div class="kpi-card kpi-card-theme-in" style="padding:14px 16px;">
                     <div class="kpi-icon" style="background:rgba(16,185,129,0.2); color:var(--color-in);"><i data-lucide="coins"></i></div>
                     <div class="kpi-info">
                         <span class="kpi-label" style="font-weight:700;">开槽砂石实际总收入</span>
@@ -2158,7 +2106,7 @@
                     </div>
                 </div>
 
-                <div class="kpi-card kpi-card-theme-purple">
+                <div class="kpi-card kpi-card-theme-purple" style="padding:14px 16px;">
                     <div class="kpi-icon" style="background:rgba(168,85,247,0.2); color:#a855f7;"><i data-lucide="zap"></i></div>
                     <div class="kpi-info">
                         <span class="kpi-label" style="font-weight:700;">新能源车队贡献</span>
@@ -2172,7 +2120,7 @@
             </div>
 
             <!-- 图表展示区 第一行 (双轴趋势 + 能源结构) -->
-            <div style="display:grid; grid-template-columns: 2fr 1fr; gap:16px; margin-top:16px;">
+            <div style="display:grid; grid-template-columns: 2fr 1fr; gap:12px; margin-top:10px;">
                 <!-- 左侧: 每日拉运吨数与实际收入双轴走势 -->
                 <div class="glass-card" style="padding:16px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
@@ -2197,7 +2145,7 @@
             </div>
 
             <!-- 图表展示区 第二行 (车辆排行 TOP 15 + 每日单车均载效率) -->
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-top:16px;">
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-top:10px;">
                 <!-- 左侧: 主力车辆拉运吨数排行榜 TOP 15 -->
                 <div class="glass-card" style="padding:16px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
@@ -2222,7 +2170,7 @@
             </div>
 
             <!-- 车辆 × 每日拉运吨数交叉透视明细表 (严密复刻 Excel 台账) -->
-            <div class="glass-card" style="margin-top:16px; padding:18px;">
+            <div class="glass-card" style="margin-top:10px; padding:18px;">
                 <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:14px;">
                     <div>
                         <h3 class="card-header-title" style="margin-bottom:0; font-size:14px;">
