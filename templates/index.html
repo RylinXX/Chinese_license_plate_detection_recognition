@@ -6,8 +6,9 @@
     <title>智慧工地系统 - LPR & Pass Billing Platform</title>
     <!-- 字体 - 本地静态文件（无需 CDN，离线可用） -->
     <link href="/static/css/fonts.css" rel="stylesheet">
-    <!-- Lucide Icons - 本地静态文件（无需 CDN，离线可用） -->
+    <!-- Lucide Icons & ECharts - 本地静态文件（无需 CDN，离线可用） -->
     <script src="/static/js/lucide.min.js"></script>
+    <script src="/static/js/echarts.min.js"></script>
     <style>
         
         :root {
@@ -2024,10 +2025,6 @@
                 <i data-lucide="file-spreadsheet" style="width:14px; height:14px;"></i>
                 <span>项目明细台账</span>
             </a>
-            <a class="nav-item" id="menu-import" onclick="switchTab('import')">
-                <i data-lucide="upload-cloud" style="width:14px; height:14px;"></i>
-                <span>Excel 导入与导出</span>
-            </a>
             <a class="nav-item" id="menu-config" onclick="switchTab('config')">
                 <i data-lucide="settings" style="width:14px; height:14px;"></i>
                 <span>配置与存档</span>
@@ -2061,17 +2058,28 @@
 
         <!-- 📊 面板一: 实时监控看板 -->
                 <!-- 📊 面板一: 中央电视台项目 · 数据汇总中心 (默认首屏) -->
+        <!-- 📊 面板一: 数据汇总中心 (数据可视化看板) -->
         <section class="main-content active" id="panel-summary">
-            <!-- 顶部筛选与汇总概览 -->
-            <div class="glass-card">
-                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
-                    <h3 class="card-header-title" style="margin-bottom:0;">
-                        <i data-lucide="pie-chart"></i>中央电视台项目 · 全周期多维数据汇总
-                    </h3>
+            <!-- 顶部筛选与核心指标横幅 -->
+            <div class="glass-card" style="padding:18px 20px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:18px;">
+                    <div>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <h3 class="card-header-title" style="margin-bottom:0; font-size:16px;">
+                                <i data-lucide="layout-dashboard" style="color:var(--color-primary);"></i>首建恒纪 · 开槽砂石数据汇总大屏
+                            </h3>
+                            <span class="badge" style="background:rgba(99,102,241,0.2); color:var(--color-primary-hover); font-size:11px; padding:2px 8px; border-radius:12px;">实时计算</span>
+                        </div>
+                        <div style="font-size:12px; color:var(--text-secondary); margin-top:4px;">
+                            消纳去向：<strong style="color:var(--text-primary);">首建恒纪建筑垃圾资源化处置场</strong> | 结算标准：<strong style="color:var(--color-in);">30.00 元/吨 (纯收入)</strong>
+                        </div>
+                    </div>
+                    
                     <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
                         <div class="btn-group" style="display:flex; gap:6px;">
                             <button class="btn btn-sm btn-accent" id="btn-preset-all" onclick="loadSummaryAnalytics('all')">全周期汇总</button>
-                            <button class="btn btn-sm btn-secondary" id="btn-preset-custom" onclick="toggleCustomSummaryDate()">按时间段筛选</button>
+                            <button class="btn btn-sm btn-secondary" id="btn-preset-7d" onclick="loadSummaryPresetDays(7)">最近 7 天</button>
+                            <button class="btn btn-sm btn-secondary" id="btn-preset-custom" onclick="toggleCustomSummaryDate()">自定义范围</button>
                         </div>
                         <div id="summary-custom-date-box" style="display:none; align-items:center; gap:6px;">
                             <input type="date" class="input-control" id="summary-start-date" style="width:130px; height:32px; font-size:12px;">
@@ -2082,171 +2090,134 @@
                     </div>
                 </div>
 
-                <!-- 核心 KPI 汇总卡 (首建恒纪 · 开槽砂石 30元/吨收入核算) -->
+                <!-- 核心 KPI 汇总卡 -->
                 <div class="kpi-grid" style="grid-template-columns: repeat(4, 1fr); gap: 14px;">
-                    <div class="kpi-card">
-                        <div class="kpi-icon kpi-icon-out"><i data-lucide="truck"></i></div>
+                    <div class="kpi-card" style="background: linear-gradient(135deg, rgba(56,189,248,0.12) 0%, rgba(30,41,59,0.7) 100%); border-color: rgba(56,189,248,0.3);">
+                        <div class="kpi-icon" style="background:rgba(56,189,248,0.2); color:var(--color-out);"><i data-lucide="truck"></i></div>
                         <div class="kpi-info">
-                            <span class="kpi-label">累计出场车次</span>
-                            <div style="display:flex; align-items:baseline; gap:4px;">
-                                <span class="kpi-value" id="sum-total-trips">0</span>
+                            <span class="kpi-label" style="font-weight:600;">累计出场车次</span>
+                            <div style="display:flex; align-items:baseline; gap:4px; margin-top:2px;">
+                                <span class="kpi-value" id="sum-total-trips" style="color:var(--color-out); font-size:24px; font-weight:800;">0</span>
                                 <span style="font-size:12px; color:var(--text-secondary);">趟</span>
                             </div>
+                            <span style="font-size:11px; color:var(--text-muted); margin-top:2px;" id="sum-trips-sub">日均 -- 趟 · 20 辆主力车</span>
                         </div>
                     </div>
-                    <div class="kpi-card">
-                        <div class="kpi-icon" style="background:rgba(59,130,246,0.15); color:var(--color-primary);"><i data-lucide="scale"></i></div>
+
+                    <div class="kpi-card" style="background: linear-gradient(135deg, rgba(99,102,241,0.15) 0%, rgba(30,41,59,0.7) 100%); border-color: rgba(99,102,241,0.35);">
+                        <div class="kpi-icon" style="background:rgba(99,102,241,0.2); color:var(--color-primary-hover);"><i data-lucide="scale"></i></div>
                         <div class="kpi-info">
-                            <span class="kpi-label">实际拉运总吨数</span>
-                            <div style="display:flex; align-items:baseline; gap:4px;">
-                                <span class="kpi-value" id="sum-total-tons" style="color:var(--color-primary);">0.00</span>
+                            <span class="kpi-label" style="font-weight:600;">实际拉运总吨数</span>
+                            <div style="display:flex; align-items:baseline; gap:4px; margin-top:2px;">
+                                <span class="kpi-value" id="sum-total-tons" style="color:#818cf8; font-size:24px; font-weight:800;">0.00</span>
                                 <span style="font-size:12px; color:var(--text-secondary);">吨</span>
                             </div>
+                            <span style="font-size:11px; color:var(--text-muted); margin-top:2px;" id="sum-tons-sub">均重 50.35 吨/车</span>
                         </div>
                     </div>
-                    <div class="kpi-card">
-                        <div class="kpi-icon" style="background:rgba(16,185,129,0.15); color:var(--color-in);"><i data-lucide="coins"></i></div>
+
+                    <div class="kpi-card" style="background: linear-gradient(135deg, rgba(16,185,129,0.15) 0%, rgba(30,41,59,0.7) 100%); border-color: rgba(16,185,129,0.35);">
+                        <div class="kpi-icon" style="background:rgba(16,185,129,0.2); color:var(--color-in);"><i data-lucide="coins"></i></div>
                         <div class="kpi-info">
-                            <span class="kpi-label">开槽砂石实际总收入 (30元/吨)</span>
-                            <div style="display:flex; align-items:baseline; gap:4px;">
-                                <span class="kpi-value" id="sum-total-revenue" style="color:var(--color-in); font-size:20px;">￥0.00</span>
+                            <span class="kpi-label" style="font-weight:600;">开槽砂石实际总收入</span>
+                            <div style="display:flex; align-items:baseline; gap:4px; margin-top:2px;">
+                                <span class="kpi-value" id="sum-total-revenue" style="color:var(--color-in); font-size:22px; font-weight:800;">￥0.00</span>
                             </div>
+                            <span style="font-size:11px; color:var(--text-muted); margin-top:2px;">单价 30.00 元/吨 (纯收入)</span>
                         </div>
                     </div>
-                    <div class="kpi-card">
-                        <div class="kpi-icon" style="background:rgba(16,185,129,0.15); color:var(--color-in);"><i data-lucide="zap"></i></div>
+
+                    <div class="kpi-card" style="background: linear-gradient(135deg, rgba(168,85,247,0.12) 0%, rgba(30,41,59,0.7) 100%); border-color: rgba(168,85,247,0.3);">
+                        <div class="kpi-icon" style="background:rgba(168,85,247,0.2); color:#c084fc;"><i data-lucide="zap"></i></div>
                         <div class="kpi-info">
-                            <span class="kpi-label">新能源电车拉运</span>
-                            <div style="display:flex; align-items:baseline; gap:4px;">
-                                <span class="kpi-value" id="sum-ev-trips" style="color:var(--color-in);">0</span>
-                                <span style="font-size:12px; color:var(--text-secondary);" id="sum-ev-pct">(0%)</span>
+                            <span class="kpi-label" style="font-weight:600;">新能源车队贡献</span>
+                            <div style="display:flex; align-items:baseline; gap:4px; margin-top:2px;">
+                                <span class="kpi-value" id="sum-ev-trips" style="color:#c084fc; font-size:22px; font-weight:800;">0 趟</span>
+                                <span style="font-size:12px; color:var(--text-secondary);" id="sum-ev-pct">(73.4%)</span>
                             </div>
+                            <span style="font-size:11px; color:var(--text-muted); margin-top:2px;" id="sum-ev-tons-sub">拉运 36,356.84 吨</span>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- 多维汇总卡片网格 -->
+            <!-- 图表展示区 第一行 (双轴趋势 + 能源结构) -->
+            <div style="display:grid; grid-template-columns: 2fr 1fr; gap:16px; margin-top:16px;">
+                <!-- 左侧: 每日拉运吨数与实际收入双轴走势 -->
+                <div class="glass-card" style="padding:16px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                        <h3 class="card-header-title" style="margin-bottom:0; font-size:14px;">
+                            <i data-lucide="trending-up" style="color:var(--color-primary);"></i>每日拉运吨数与实际收入双轴走势
+                        </h3>
+                        <div style="display:flex; align-items:center; gap:12px; font-size:11px;">
+                            <span style="display:flex; align-items:center; gap:4px; color:var(--text-secondary);"><span style="display:inline-block; width:10px; height:10px; background:linear-gradient(180deg, #38bdf8, #6366f1); border-radius:2px;"></span>拉运吨数 (吨)</span>
+                            <span style="display:flex; align-items:center; gap:4px; color:var(--text-secondary);"><span style="display:inline-block; width:10px; height:3px; background:#10b981; border-radius:2px;"></span>实际收入 (元)</span>
+                        </div>
+                    </div>
+                    <div id="chart-daily-trend" style="width:100%; height:310px;"></div>
+                </div>
+
+                <!-- 右侧: 运输车队能源结构与占比 -->
+                <div class="glass-card" style="padding:16px;">
+                    <h3 class="card-header-title" style="margin-bottom:12px; font-size:14px;">
+                        <i data-lucide="pie-chart" style="color:#c084fc;"></i>运输车队能源类型分布
+                    </h3>
+                    <div id="chart-fleet-energy" style="width:100%; height:310px;"></div>
+                </div>
+            </div>
+
+            <!-- 图表展示区 第二行 (车辆排行 TOP 15 + 每日单车均载效率) -->
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-top:16px;">
-                <!-- 按【土方/车辆规格】汇总 -->
-                <div class="glass-card">
-                    <h3 class="card-header-title">
-                        <i data-lucide="box"></i>按【货物/土方规格】汇总明细
-                    </h3>
-                    <div class="table-responsive" style="max-height: 360px;">
-                        <table class="ledger-table">
-                            <thead>
-                                <tr>
-                                    <th>序号</th>
-                                    <th>货物规格</th>
-                                    <th>总拉运趟数</th>
-                                    <th>总拉运吨数</th>
-                                    <th>收入单价</th>
-                                    <th>实际总收入</th>
-                                    <th>电车占比</th>
-                                </tr>
-                            </thead>
-                            <tbody id="table-body-soil-summary">
-                                <tr><td colspan="7" style="color:var(--text-muted);">正在计算汇总数据...</td></tr>
-                            </tbody>
-                        </table>
+                <!-- 左侧: 主力车辆拉运吨数排行榜 TOP 15 -->
+                <div class="glass-card" style="padding:16px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                        <h3 class="card-header-title" style="margin-bottom:0; font-size:14px;">
+                            <i data-lucide="award" style="color:#fbbf24;"></i>主力车辆累计拉运吨数排行 TOP 15
+                        </h3>
+                        <span style="font-size:11px; color:var(--text-muted);">单车累计吨数 (吨)</span>
                     </div>
+                    <div id="chart-vehicle-ranking" style="width:100%; height:310px;"></div>
                 </div>
 
-                <!-- 按【消纳场地/卸土点】汇总 -->
-                <div class="glass-card">
-                    <h3 class="card-header-title">
-                        <i data-lucide="map-pin"></i>按【消纳场地】汇总明细
-                    </h3>
-                    <div class="table-responsive" style="max-height: 360px;">
-                        <table class="ledger-table">
-                            <thead>
-                                <tr>
-                                    <th>序号</th>
-                                    <th>消纳目的地</th>
-                                    <th>总拉运趟数</th>
-                                    <th>总拉运吨数</th>
-                                    <th>单价标准</th>
-                                    <th>实际产生收入</th>
-                                    <th>电车占比</th>
-                                </tr>
-                            </thead>
-                            <tbody id="table-body-site-summary">
-                                <tr><td colspan="7" style="color:var(--text-muted);">正在计算汇总数据...</td></tr>
-                            </tbody>
-                        </table>
+                <!-- 右侧: 每日出车趟数与高峰分析 -->
+                <div class="glass-card" style="padding:16px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                        <h3 class="card-header-title" style="margin-bottom:0; font-size:14px;">
+                            <i data-lucide="activity" style="color:var(--color-out);"></i>每日出车趟数与运力峰值分布
+                        </h3>
+                        <span style="font-size:11px; color:var(--text-muted);">每日出场总车次 (趟)</span>
                     </div>
+                    <div id="chart-daily-trips" style="width:100%; height:310px;"></div>
                 </div>
             </div>
 
-            <!-- 交互式日期 × 场地拉运趟数与吨数透视矩阵 -->
-            <div class="glass-card" style="margin-top:16px;">
+            <!-- 车辆 × 每日拉运吨数交叉透视明细表 (严密复刻 Excel 台账) -->
+            <div class="glass-card" style="margin-top:16px; padding:18px;">
                 <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:14px;">
-                    <h3 class="card-header-title" style="margin-bottom:0;">
-                        <i data-lucide="table"></i>消纳场地 × 每日拉运趟数与吨数交叉透视矩阵
-                    </h3>
+                    <div>
+                        <h3 class="card-header-title" style="margin-bottom:0; font-size:14px;">
+                            <i data-lucide="table-properties" style="color:var(--color-in);"></i>车辆 × 每日拉运吨数与收入交叉透视台账
+                        </h3>
+                        <span style="font-size:11px; color:var(--text-secondary); margin-top:2px;">
+                            共收录 20 辆主力运输车全周期各日拉运明细，与电子运单台账 100% 对应。
+                        </span>
+                    </div>
                     <div style="display:flex; align-items:center; gap:8px;">
-                        <input type="text" class="input-control" id="pivot-search-input" placeholder="搜索消纳点名称..." oninput="filterPivotMatrix()" style="width:180px; height:32px; font-size:12px;">
+                        <input type="text" class="input-control" id="v-pivot-search-input" placeholder="筛选车牌 (如 京A00241D)..." oninput="filterVehiclePivotTable()" style="width:200px; height:32px; font-size:12px;">
                     </div>
                 </div>
-                <div class="table-responsive" style="max-height: 480px;">
-                    <table class="ledger-table" id="pivot-matrix-table">
-                        <thead id="pivot-thead">
+                <div class="table-responsive" style="max-height: 520px; border: 1px solid var(--card-border); border-radius: 8px;">
+                    <table class="ledger-table" id="v-pivot-matrix-table" style="font-size:12px;">
+                        <thead id="v-pivot-thead">
                             <!-- 动态列头 -->
                         </thead>
-                        <tbody id="pivot-tbody">
+                        <tbody id="v-pivot-tbody">
                             <!-- 动态数据行 -->
                         </tbody>
+                        <tfoot id="v-pivot-tfoot" style="position:sticky; bottom:0; z-index:10; background:rgba(15,23,42,0.95); font-weight:800; border-top:2px solid var(--color-primary);">
+                            <!-- 动态每日总计行 -->
+                        </tfoot>
                     </table>
-                </div>
-            </div>
-        </section>
-
-        <!-- 📤 面板三: Excel 台账导入与报表导出 -->
-        <section class="main-content" id="panel-import">
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
-                <!-- 一键导入 -->
-                <div class="glass-card">
-                    <h3 class="card-header-title">
-                        <i data-lucide="upload-cloud"></i>一键上传 Excel 车辆台账
-                    </h3>
-                    <p style="font-size:12px; color:var(--text-secondary); margin-bottom:16px;">
-                        支持导入标准格式的 Excel/CSV 车辆台账。系统将自动解析 <strong style="color:var(--text-primary);">[日期]、[种类]、[卸土点]、[是否自有电车]、[车辆数]、[备注]</strong> 并同步至汇总数据库。
-                    </p>
-                    
-                    <div id="drop-zone-excel" style="border:2px dashed var(--card-border-hover); border-radius:var(--border-radius-md); padding:40px 20px; text-align:center; background:rgba(99,102,241,0.03); cursor:pointer; transition:all 0.2s;" onclick="document.getElementById('excel-file-input').click()">
-                        <i data-lucide="file-spreadsheet" style="width:48px; height:48px; color:var(--color-primary); margin-bottom:12px;"></i>
-                        <div style="font-size:14px; font-weight:700; color:var(--text-primary); margin-bottom:4px;">点击选择或将 Excel 文件拖拽至此处</div>
-                        <div style="font-size:11px; color:var(--text-muted);">支持 .xlsx, .xls, .csv 格式</div>
-                        <input type="file" id="excel-file-input" accept=".xlsx,.xls,.csv" style="display:none;" onchange="handleExcelFileSelect(event)">
-                    </div>
-
-                    <div id="upload-preview-box" style="margin-top:16px; display:none; background:rgba(255,255,255,0.03); border:1px solid var(--card-border); border-radius:var(--border-radius-sm); padding:12px;">
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                            <span style="font-size:13px; font-weight:700;" id="upload-filename">ledger.xlsx</span>
-                            <button class="btn btn-sm btn-accent" id="btn-do-import" onclick="executeExcelUpload()">确认开始导入</button>
-                        </div>
-                        <div id="upload-status-msg" style="font-size:12px; color:var(--text-secondary);">准备导入中...</div>
-                    </div>
-                </div>
-
-                <!-- 导出报表 -->
-                <div class="glass-card">
-                    <h3 class="card-header-title">
-                        <i data-lucide="download"></i>数据导出与报表下载
-                    </h3>
-                    <p style="font-size:12px; color:var(--text-secondary); margin-bottom:16px;">
-                        导出中央电视台项目的多维汇总数据与详细流水，格式完全兼容 Excel 打开。
-                    </p>
-                    <div style="display:flex; flex-direction:column; gap:12px;">
-                        <button class="btn btn-secondary" onclick="exportCurrentDateCSV()" style="justify-content:flex-start; padding:14px;">
-                            <i data-lucide="file-text" style="color:var(--color-primary); margin-right:8px;"></i>
-                            <div style="text-align:left;">
-                                <div style="font-weight:700;">导出当前选定日期的通行日志流水 (.csv)</div>
-                                <div style="font-size:11px; color:var(--text-muted);">导出包含车牌、时间、消纳点、种类及置信度的完整记录</div>
-                            </div>
-                        </button>
-                    </div>
                 </div>
             </div>
         </section>
@@ -3046,6 +3017,7 @@
                     `;
                 }
                 loadSummaryAnalytics('all');
+                setTimeout(() => { if (typeof resizeSummaryCharts === 'function') resizeSummaryCharts(); }, 150);
             } else if (tab === 'ledger') {
                 if (headerTitle) headerTitle.innerText = "项目明细台账 (首建恒纪 · 开槽砂石)";
                 if (headerIcon) headerIcon.setAttribute('data-lucide', 'file-spreadsheet');
@@ -3060,9 +3032,6 @@
                     `;
                 }
                 refreshLedger();
-            } else if (tab === 'import') {
-                if (headerTitle) headerTitle.innerText = "Excel 导入与导出";
-                if (headerIcon) headerIcon.setAttribute('data-lucide', 'upload-cloud');
             } else if (tab === 'config') {
                 if (headerTitle) headerTitle.innerText = "系统配置与存档";
                 if (headerIcon) headerIcon.setAttribute('data-lucide', 'settings');
@@ -5800,8 +5769,43 @@
         }
 
         // ==========================================================================
-        // 📊 中央电视台项目 - 全周期与多维数据汇总中心 JavaScript 逻辑
+        // 📊 中央电视台项目 · 数据汇总中心 ECharts 可视化图表与交叉透视矩阵
         // ==========================================================================
+
+        let chartDailyTrend = null;
+        let chartFleetEnergy = null;
+        let chartVehicleRanking = null;
+        let chartDailyTrips = null;
+        let vehiclePivotData = null;
+
+        function initSummaryCharts() {
+            const trendDom = document.getElementById('chart-daily-trend');
+            const energyDom = document.getElementById('chart-fleet-energy');
+            const rankingDom = document.getElementById('chart-vehicle-ranking');
+            const tripsDom = document.getElementById('chart-daily-trips');
+
+            if (trendDom && !chartDailyTrend && window.echarts) {
+                chartDailyTrend = echarts.init(trendDom, null, { renderer: 'canvas' });
+            }
+            if (energyDom && !chartFleetEnergy && window.echarts) {
+                chartFleetEnergy = echarts.init(energyDom, null, { renderer: 'canvas' });
+            }
+            if (rankingDom && !chartVehicleRanking && window.echarts) {
+                chartVehicleRanking = echarts.init(rankingDom, null, { renderer: 'canvas' });
+            }
+            if (tripsDom && !chartDailyTrips && window.echarts) {
+                chartDailyTrips = echarts.init(tripsDom, null, { renderer: 'canvas' });
+            }
+
+            window.addEventListener('resize', resizeSummaryCharts);
+        }
+
+        function resizeSummaryCharts() {
+            if (chartDailyTrend) chartDailyTrend.resize();
+            if (chartFleetEnergy) chartFleetEnergy.resize();
+            if (chartVehicleRanking) chartVehicleRanking.resize();
+            if (chartDailyTrips) chartDailyTrips.resize();
+        }
 
         function loadSummaryAnalytics(preset = 'all', startDate = '', endDate = '') {
             let url = `/api/summary_analytics?preset=${preset}`;
@@ -5815,15 +5819,23 @@
 
             // 更新按钮状态
             const btnAll = document.getElementById('btn-preset-all');
+            const btn7d = document.getElementById('btn-preset-7d');
             const btnCustom = document.getElementById('btn-preset-custom');
             const customBox = document.getElementById('summary-custom-date-box');
 
             if (preset === 'all') {
                 if (btnAll) btnAll.className = 'btn btn-sm btn-accent';
+                if (btn7d) btn7d.className = 'btn btn-sm btn-secondary';
+                if (btnCustom) btnCustom.className = 'btn btn-sm btn-secondary';
+                if (customBox) customBox.style.display = 'none';
+            } else if (preset === '7d') {
+                if (btnAll) btnAll.className = 'btn btn-sm btn-secondary';
+                if (btn7d) btn7d.className = 'btn btn-sm btn-accent';
                 if (btnCustom) btnCustom.className = 'btn btn-sm btn-secondary';
                 if (customBox) customBox.style.display = 'none';
             } else {
                 if (btnAll) btnAll.className = 'btn btn-sm btn-secondary';
+                if (btn7d) btn7d.className = 'btn btn-sm btn-secondary';
                 if (btnCustom) btnCustom.className = 'btn btn-sm btn-accent';
                 if (customBox) customBox.style.display = 'inline-flex';
             }
@@ -5836,15 +5848,39 @@
                         return;
                     }
                     currentSummaryData = res;
+                    vehiclePivotData = res.vehicle_pivot || null;
+
                     renderSummaryKPIs(res);
-                    renderSoilSummaryTable(res.by_soil_type || []);
-                    renderSiteSummaryTable(res.by_dump_site || []);
-                    renderPivotMatrix(res.pivot_matrix || {});
+                    initSummaryCharts();
+                    renderDailyTrendChart(res.daily_trend || []);
+                    renderFleetEnergyChart(res);
+                    renderVehicleRankingChart(res.vehicle_ranking || []);
+                    renderDailyTripsChart(res.daily_trend || []);
+                    renderVehiclePivotTable(res.vehicle_pivot || {});
+                    safeIcons();
                 })
                 .catch(err => {
                     console.error('Fetch summary failed:', err);
                     showToast('异常', '加载汇总数据出错', 'error');
                 });
+        }
+
+        function loadSummaryPresetDays(days) {
+            const today = new Date();
+            const endStr = today.toISOString().slice(0, 10);
+            const startObj = new Date(today.getTime() - (days - 1) * 24 * 3600 * 1000);
+            const startStr = startObj.toISOString().slice(0, 10);
+            
+            document.getElementById('summary-start-date').value = startStr;
+            document.getElementById('summary-end-date').value = endStr;
+            loadSummaryAnalytics('custom', startStr, endStr);
+            
+            const btn7d = document.getElementById('btn-preset-7d');
+            const btnAll = document.getElementById('btn-preset-all');
+            const btnCustom = document.getElementById('btn-preset-custom');
+            if (btn7d) btn7d.className = 'btn btn-sm btn-accent';
+            if (btnAll) btnAll.className = 'btn btn-sm btn-secondary';
+            if (btnCustom) btnCustom.className = 'btn btn-sm btn-secondary';
         }
 
         function toggleCustomSummaryDate() {
@@ -5874,181 +5910,476 @@
         function renderSummaryKPIs(data) {
             const totalOut = data.total_out_trips || 0;
             const totalVol = data.total_volume || 0;
-            const totalRevenue = data.total_revenue || 0;
+            const totalRevenue = data.total_revenue || (totalVol * 30.0);
             const evCount = data.ev_count || 0;
             const evVol = data.ev_volume || 0;
             const fuelCount = data.fuel_count || 0;
+            const fuelVol = data.fuel_volume || 0;
             
+            const daysCount = (data.daily_trend && data.daily_trend.length > 0) ? data.daily_trend.length : 1;
+            const avgTripsPerDay = (totalOut / daysCount).toFixed(1);
+            const avgTonsPerTrip = totalOut > 0 ? (totalVol / totalOut).toFixed(2) : '0.00';
             const evPct = totalOut > 0 ? ((evCount / totalOut) * 100).toFixed(1) : '0.0';
-            const fuelPct = totalOut > 0 ? ((fuelCount / totalOut) * 100).toFixed(1) : '0.0';
 
             if (document.getElementById('sum-total-trips')) document.getElementById('sum-total-trips').innerText = totalOut.toLocaleString('zh-CN');
+            if (document.getElementById('sum-trips-sub')) document.getElementById('sum-trips-sub').innerText = `日均 ${avgTripsPerDay} 趟 · 覆盖 ${daysCount} 个运输日`;
+            
             if (document.getElementById('sum-total-tons')) document.getElementById('sum-total-tons').innerText = totalVol.toLocaleString('zh-CN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            if (document.getElementById('sum-tons-sub')) document.getElementById('sum-tons-sub').innerText = `单车均重 ${avgTonsPerTrip} 吨/车`;
+
             if (document.getElementById('sum-total-revenue')) document.getElementById('sum-total-revenue').innerText = '￥' + totalRevenue.toLocaleString('zh-CN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-            if (document.getElementById('sum-ev-trips')) document.getElementById('sum-ev-trips').innerText = `${evCount} 趟 / ${evVol.toFixed(1)} 吨`;
+            
+            if (document.getElementById('sum-ev-trips')) document.getElementById('sum-ev-trips').innerText = `${evCount} 趟`;
             if (document.getElementById('sum-ev-pct')) document.getElementById('sum-ev-pct').innerText = `(${evPct}%)`;
+            if (document.getElementById('sum-ev-tons-sub')) document.getElementById('sum-ev-tons-sub').innerText = `拉运 ${evVol.toLocaleString('zh-CN', {minimumFractionDigits:1, maximumFractionDigits:1})} 吨`;
         }
 
-        function renderSoilSummaryTable(list) {
-            const tbody = document.getElementById('table-body-soil-summary');
-            if (!tbody) return;
-            if (list.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" style="color:var(--text-muted);">暂无货物规格汇总数据</td></tr>`;
-                return;
-            }
-            let html = '';
-            list.forEach((item, idx) => {
-                const volStr = item.volume ? `${parseFloat(item.volume).toLocaleString('zh-CN', {minimumFractionDigits:2, maximumFractionDigits:2})} 吨` : '0.00 吨';
-                const revStr = item.total_cost ? `￥${parseFloat(item.total_cost).toLocaleString('zh-CN', {minimumFractionDigits:2, maximumFractionDigits:2})}` : '￥0.00';
-                html += `
-                    <tr>
-                        <td style="font-weight:700;">${idx + 1}</td>
-                        <td style="font-weight:700; color:var(--text-primary); text-align:left;">${item.soil_type}</td>
-                        <td style="font-weight:800; color:var(--color-out);">${item.trips} 趟 (${item.percentage}%)</td>
-                        <td style="font-weight:800; color:var(--color-primary);">${volStr}</td>
-                        <td>￥${item.unit_price} / 吨 (收入)</td>
-                        <td style="font-weight:800; color:var(--color-in);">${revStr}</td>
-                        <td style="font-weight:700; color:var(--color-in);">${item.ev_trips} 趟 (${item.ev_percentage}%)</td>
-                    </tr>
-                `;
-            });
-            tbody.innerHTML = html;
+        function renderDailyTrendChart(trendList) {
+            if (!chartDailyTrend) return;
+            const dates = trendList.map(item => item.date.slice(5)); // '07-31', '08-04'
+            const volumes = trendList.map(item => item.volume);
+            const revenues = trendList.map(item => item.revenue);
+            const trips = trendList.map(item => item.trips);
+
+            const option = {
+                backgroundColor: 'transparent',
+                tooltip: {
+                    trigger: 'axis',
+                    axisPointer: { type: 'cross', crossStyle: { color: '#94a3b8' } },
+                    backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                    borderColor: 'rgba(99, 102, 241, 0.4)',
+                    borderWidth: 1,
+                    textStyle: { color: '#f8fafc', fontSize: 12 },
+                    formatter: function(params) {
+                        const idx = params[0].dataIndex;
+                        const item = trendList[idx];
+                        return `
+                            <div style="font-weight:700; color:#fff; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:4px; margin-bottom:4px;">
+                                📅 运输日期: 2026-${dates[idx]}
+                            </div>
+                            <div style="color:var(--color-out);">🚛 当日出车: <strong>${item.trips} 趟</strong></div>
+                            <div style="color:#818cf8;">⚖️ 拉运总重: <strong>${item.volume.toLocaleString('zh-CN', {minimumFractionDigits:2})} 吨</strong></div>
+                            <div style="color:var(--color-in);">💰 实际收入: <strong>￥${item.revenue.toLocaleString('zh-CN', {minimumFractionDigits:2})}</strong></div>
+                            <div style="color:var(--text-muted); font-size:11px; margin-top:2px;">单车均重: ${(item.volume / item.trips).toFixed(2)} 吨/趟</div>
+                        `;
+                    }
+                },
+                grid: {
+                    top: '16%',
+                    left: '3%',
+                    right: '4%',
+                    bottom: '8%',
+                    containLabel: true
+                },
+                legend: {
+                    show: false
+                },
+                xAxis: [
+                    {
+                        type: 'category',
+                        data: dates,
+                        axisPointer: { type: 'shadow' },
+                        axisLine: { lineStyle: { color: 'rgba(255, 255, 255, 0.15)' } },
+                        axisLabel: { color: '#94a3b8', fontSize: 11 }
+                    }
+                ],
+                yAxis: [
+                    {
+                        type: 'value',
+                        name: '拉运吨数 (t)',
+                        nameTextStyle: { color: '#94a3b8', fontSize: 11 },
+                        axisLine: { show: false },
+                        splitLine: { lineStyle: { color: 'rgba(255, 255, 255, 0.05)', type: 'dashed' } },
+                        axisLabel: { color: '#94a3b8', fontSize: 11, formatter: '{value} t' }
+                    },
+                    {
+                        type: 'value',
+                        name: '实际收入 (￥)',
+                        nameTextStyle: { color: '#94a3b8', fontSize: 11 },
+                        axisLine: { show: false },
+                        splitLine: { show: false },
+                        axisLabel: { 
+                            color: '#94a3b8', 
+                            fontSize: 11, 
+                            formatter: function(val) {
+                                return (val >= 10000) ? (val / 10000).toFixed(1) + 'w' : val;
+                            } 
+                        }
+                    }
+                ],
+                series: [
+                    {
+                        name: '拉运总吨数',
+                        type: 'bar',
+                        barMaxWidth: 22,
+                        itemStyle: {
+                            borderRadius: [4, 4, 0, 0],
+                            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                { offset: 0, color: '#38bdf8' },
+                                { offset: 1, color: '#6366f1' }
+                            ])
+                        },
+                        data: volumes
+                    },
+                    {
+                        name: '实际收入',
+                        type: 'line',
+                        yAxisIndex: 1,
+                        smooth: true,
+                        showSymbol: true,
+                        symbolSize: 6,
+                        itemStyle: { color: '#10b981', borderWidth: 2 },
+                        lineStyle: { width: 3, color: '#10b981' },
+                        areaStyle: {
+                            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                { offset: 0, color: 'rgba(16, 185, 129, 0.35)' },
+                                { offset: 1, color: 'rgba(16, 185, 129, 0.00)' }
+                            ])
+                        },
+                        data: revenues
+                    }
+                ]
+            };
+            chartDailyTrend.setOption(option);
         }
 
-        function renderSiteSummaryTable(list) {
-            const tbody = document.getElementById('table-body-site-summary');
-            if (!tbody) return;
-            if (list.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" style="color:var(--text-muted);">暂无消纳场地汇总数据</td></tr>`;
-                return;
-            }
-            let html = '';
-            list.forEach((item, idx) => {
-                const volStr = item.volume ? `${parseFloat(item.volume).toLocaleString('zh-CN', {minimumFractionDigits:2, maximumFractionDigits:2})} 吨` : '0.00 吨';
-                const revStr = item.total_cost ? `￥${parseFloat(item.total_cost).toLocaleString('zh-CN', {minimumFractionDigits:2, maximumFractionDigits:2})}` : '￥0.00';
-                html += `
-                    <tr>
-                        <td style="font-weight:700;">${idx + 1}</td>
-                        <td style="font-weight:700; color:var(--text-primary); text-align:left;">${item.dump_site}</td>
-                        <td style="font-weight:800; color:var(--color-out);">${item.trips} 趟 (${item.percentage}%)</td>
-                        <td style="font-weight:800; color:var(--color-primary);">${volStr}</td>
-                        <td>￥30.0 / 吨 (收入)</td>
-                        <td style="font-weight:800; color:var(--color-in);">${revStr}</td>
-                        <td style="font-weight:700; color:var(--color-in);">${item.ev_trips} 趟 (${item.ev_percentage}%)</td>
-                    </tr>
-                `;
-            });
-            tbody.innerHTML = html;
+        function renderFleetEnergyChart(data) {
+            if (!chartFleetEnergy) return;
+            const evVol = data.ev_volume || 0;
+            const fuelVol = data.fuel_volume || 0;
+            const evCnt = data.ev_count || 0;
+            const fuelCnt = data.fuel_count || 0;
+            const totalVol = evVol + fuelVol;
+
+            const option = {
+                backgroundColor: 'transparent',
+                tooltip: {
+                    trigger: 'item',
+                    backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                    borderColor: 'rgba(99, 102, 241, 0.4)',
+                    borderWidth: 1,
+                    textStyle: { color: '#f8fafc', fontSize: 12 },
+                    formatter: function(params) {
+                        const cnt = params.name === '新能源电车' ? evCnt : fuelCnt;
+                        return `
+                            <div style="font-weight:700; color:#fff;">${params.marker} ${params.name}</div>
+                            <div style="color:var(--text-secondary); margin-top:4px;">拉运吨数: <strong style="color:#fff;">${params.value.toLocaleString('zh-CN', {minimumFractionDigits:2})} 吨</strong></div>
+                            <div style="color:var(--text-secondary);">出车趟数: <strong style="color:#fff;">${cnt} 趟</strong></div>
+                            <div style="color:var(--color-in);">吨数占比: <strong>${params.percent}%</strong></div>
+                        `;
+                    }
+                },
+                legend: {
+                    bottom: '2%',
+                    left: 'center',
+                    textStyle: { color: '#94a3b8', fontSize: 11 },
+                    itemGap: 16
+                },
+                series: [
+                    {
+                        name: '能源结构',
+                        type: 'pie',
+                        radius: ['48%', '72%'],
+                        center: ['50%', '45%'],
+                        avoidLabelOverlap: false,
+                        itemStyle: {
+                            borderRadius: 6,
+                            borderColor: '#0b0f19',
+                            borderWidth: 3
+                        },
+                        label: {
+                            show: false,
+                            position: 'center'
+                        },
+                        emphasis: {
+                            label: {
+                                show: true,
+                                fontSize: 14,
+                                fontWeight: 'bold',
+                                color: '#f8fafc',
+                                formatter: '{b}\n{d}%'
+                            }
+                        },
+                        labelLine: { show: false },
+                        data: [
+                            {
+                                value: evVol,
+                                name: '新能源电车',
+                                itemStyle: {
+                                    color: new echarts.graphic.LinearGradient(0, 0, 1, 1, [
+                                        { offset: 0, color: '#34d399' },
+                                        { offset: 1, color: '#059669' }
+                                    ])
+                                }
+                            },
+                            {
+                                value: fuelVol,
+                                name: '传统燃油车',
+                                itemStyle: {
+                                    color: new echarts.graphic.LinearGradient(0, 0, 1, 1, [
+                                        { offset: 0, color: '#38bdf8' },
+                                        { offset: 1, color: '#2563eb' }
+                                    ])
+                                }
+                            }
+                        ]
+                    }
+                ]
+            };
+            chartFleetEnergy.setOption(option);
         }
 
-        function renderPivotMatrix(pivotData) {
-            const thead = document.getElementById('pivot-thead');
-            const tbody = document.getElementById('pivot-tbody');
+        function renderVehicleRankingChart(rankingList) {
+            if (!chartVehicleRanking) return;
+            const topList = rankingList.slice(0, 15).reverse(); // top 15 from bottom up
+            const plates = topList.map(r => r.plate_no);
+            const volumes = topList.map(r => r.volume);
+
+            const option = {
+                backgroundColor: 'transparent',
+                tooltip: {
+                    trigger: 'axis',
+                    axisPointer: { type: 'shadow' },
+                    backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                    borderColor: 'rgba(99, 102, 241, 0.4)',
+                    borderWidth: 1,
+                    textStyle: { color: '#f8fafc', fontSize: 12 },
+                    formatter: function(params) {
+                        const idx = params[0].dataIndex;
+                        const item = topList[idx];
+                        return `
+                            <div style="font-weight:700; color:#fff; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:4px;">
+                                🚛 ${item.plate_no} (${item.is_ev === '是' ? '⚡绿牌电车' : '🛢️蓝牌燃油'})
+                            </div>
+                            <div style="color:#818cf8; margin-top:4px;">累计拉运: <strong>${item.volume.toLocaleString('zh-CN', {minimumFractionDigits:2})} 吨</strong></div>
+                            <div style="color:var(--color-out);">出车趟数: <strong>${item.trips} 趟</strong></div>
+                            <div style="color:var(--color-in);">创造收入: <strong>￥${item.revenue.toLocaleString('zh-CN', {minimumFractionDigits:2})}</strong></div>
+                            <div style="color:var(--text-muted); font-size:11px;">单车均重: ${item.avg_volume} 吨/趟</div>
+                        `;
+                    }
+                },
+                grid: {
+                    top: '4%',
+                    left: '2%',
+                    right: '12%',
+                    bottom: '2%',
+                    containLabel: true
+                },
+                xAxis: {
+                    type: 'value',
+                    axisLine: { show: false },
+                    splitLine: { lineStyle: { color: 'rgba(255, 255, 255, 0.05)', type: 'dashed' } },
+                    axisLabel: { color: '#94a3b8', fontSize: 10, formatter: '{value} t' }
+                },
+                yAxis: {
+                    type: 'category',
+                    data: plates,
+                    axisLine: { lineStyle: { color: 'rgba(255, 255, 255, 0.15)' } },
+                    axisLabel: { color: '#f8fafc', fontSize: 11, fontWeight: 'bold' }
+                },
+                series: [
+                    {
+                        name: '拉运总吨数',
+                        type: 'bar',
+                        barMaxWidth: 16,
+                        itemStyle: {
+                            borderRadius: [0, 4, 4, 0],
+                            color: function(params) {
+                                const item = topList[params.dataIndex];
+                                if (item && item.is_ev === '是') {
+                                    return new echarts.graphic.LinearGradient(0, 0, 1, 0, [
+                                        { offset: 0, color: '#10b981' },
+                                        { offset: 1, color: '#34d399' }
+                                    ]);
+                                }
+                                return new echarts.graphic.LinearGradient(0, 0, 1, 0, [
+                                    { offset: 0, color: '#6366f1' },
+                                    { offset: 1, color: '#38bdf8' }
+                                ]);
+                            }
+                        },
+                        label: {
+                            show: true,
+                            position: 'right',
+                            color: '#cbd5e1',
+                            fontSize: 10,
+                            formatter: '{c} t'
+                        },
+                        data: volumes
+                    }
+                ]
+            };
+            chartVehicleRanking.setOption(option);
+        }
+
+        function renderDailyTripsChart(trendList) {
+            if (!chartDailyTrips) return;
+            const dates = trendList.map(item => item.date.slice(5));
+            const trips = trendList.map(item => item.trips);
+            const evTrips = trendList.map(item => item.ev_trips);
+            const fuelTrips = trendList.map(item => item.fuel_trips);
+
+            const option = {
+                backgroundColor: 'transparent',
+                tooltip: {
+                    trigger: 'axis',
+                    axisPointer: { type: 'cross' },
+                    backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                    borderColor: 'rgba(99, 102, 241, 0.4)',
+                    borderWidth: 1,
+                    textStyle: { color: '#f8fafc', fontSize: 12 }
+                },
+                legend: {
+                    top: '2%',
+                    right: '2%',
+                    textStyle: { color: '#94a3b8', fontSize: 11 }
+                },
+                grid: {
+                    top: '16%',
+                    left: '3%',
+                    right: '3%',
+                    bottom: '8%',
+                    containLabel: true
+                },
+                xAxis: {
+                    type: 'category',
+                    data: dates,
+                    axisLine: { lineStyle: { color: 'rgba(255, 255, 255, 0.15)' } },
+                    axisLabel: { color: '#94a3b8', fontSize: 11 }
+                },
+                yAxis: {
+                    type: 'value',
+                    name: '出车车次 (趟)',
+                    nameTextStyle: { color: '#94a3b8', fontSize: 11 },
+                    axisLine: { show: false },
+                    splitLine: { lineStyle: { color: 'rgba(255, 255, 255, 0.05)', type: 'dashed' } },
+                    axisLabel: { color: '#94a3b8', fontSize: 11 }
+                },
+                series: [
+                    {
+                        name: '新能源电车',
+                        type: 'bar',
+                        stack: 'total',
+                        barMaxWidth: 18,
+                        itemStyle: { color: '#10b981' },
+                        data: evTrips
+                    },
+                    {
+                        name: '燃油重卡',
+                        type: 'bar',
+                        stack: 'total',
+                        barMaxWidth: 18,
+                        itemStyle: { color: '#38bdf8', borderRadius: [4, 4, 0, 0] },
+                        data: fuelTrips
+                    }
+                ]
+            };
+            chartDailyTrips.setOption(option);
+        }
+
+        function renderVehiclePivotTable(pivotData) {
+            const thead = document.getElementById('v-pivot-thead');
+            const tbody = document.getElementById('v-pivot-tbody');
+            const tfoot = document.getElementById('v-pivot-tfoot');
             if (!thead || !tbody) return;
 
             const dates = pivotData.dates || [];
-            const sites = pivotData.sites || [];
+            const vehicles = pivotData.vehicles || [];
+            const summaryRow = pivotData.summary_row || {};
 
-            if (dates.length === 0 || sites.length === 0) {
+            if (dates.length === 0 || vehicles.length === 0) {
                 thead.innerHTML = '';
-                tbody.innerHTML = `<tr><td style="color:var(--text-muted);">暂无交叉透视表数据</td></tr>`;
+                tbody.innerHTML = `<tr><td style="color:var(--text-muted); padding:30px; text-align:center;">暂无车辆交叉透视数据</td></tr>`;
+                if (tfoot) tfoot.innerHTML = '';
                 return;
             }
 
             // 表头
-            let headHtml = `<tr><th style="position:sticky; left:0; z-index:15; background:var(--table-th-bg); min-width:140px;">消纳目的地</th><th style="min-width:70px;">累计车次</th><th style="min-width:90px;">累计吨数</th><th style="min-width:110px;">累计收入(￥)</th>`;
+            let headHtml = `
+                <tr>
+                    <th style="position:sticky; left:0; z-index:15; background:var(--header-bg); min-width:110px;">车牌号码</th>
+                    <th style="min-width:70px;">累计趟数</th>
+                    <th style="min-width:90px;">累计吨数</th>
+                    <th style="min-width:110px;">实际总收入</th>
+            `;
             dates.forEach(d => {
-                headHtml += `<th style="min-width:70px; font-size:11px;">${d.slice(5)}</th>`;
+                headHtml += `<th style="min-width:70px; font-size:11px; text-align:center;">${d.slice(5)}</th>`;
             });
             headHtml += `</tr>`;
             thead.innerHTML = headHtml;
 
             // 数据行
             let bodyHtml = '';
-            sites.forEach(siteItem => {
-                const totalVolStr = siteItem.total_volume ? `${siteItem.total_volume.toLocaleString('zh-CN', {minimumFractionDigits:1, maximumFractionDigits:1})}t` : '0t';
-                const totalRevStr = siteItem.total_revenue ? `￥${siteItem.total_revenue.toLocaleString('zh-CN', {minimumFractionDigits:2, maximumFractionDigits:2})}` : '￥0.00';
-                bodyHtml += `<tr class="pivot-site-row" data-site="${siteItem.dump_site}">`;
-                bodyHtml += `<td style="position:sticky; left:0; z-index:5; background:var(--table-th-bg); font-weight:800; text-align:left;">${siteItem.dump_site}</td>`;
-                bodyHtml += `<td style="font-weight:800; color:var(--color-out);">${siteItem.total_trips} 趟</td>`;
-                bodyHtml += `<td style="font-weight:800; color:var(--color-primary);">${totalVolStr}</td>`;
-                bodyHtml += `<td style="font-weight:800; color:var(--color-in);">${totalRevStr}</td>`;
-                
+            vehicles.forEach(v => {
+                const plateBadge = renderPlateBadge(v.plate_no, v.plate_color);
+                const totalVolStr = v.total_volume ? `${v.total_volume.toLocaleString('zh-CN', {minimumFractionDigits:2, maximumFractionDigits:2})} 吨` : '0.00 吨';
+                const totalRevStr = v.total_revenue ? `￥${v.total_revenue.toLocaleString('zh-CN', {minimumFractionDigits:2, maximumFractionDigits:2})}` : '￥0.00';
+
+                bodyHtml += `<tr class="v-pivot-row" data-plate="${v.plate_no}">`;
+                bodyHtml += `<td style="position:sticky; left:0; z-index:5; background:var(--header-bg); font-weight:700; padding:6px 10px;">${plateBadge}</td>`;
+                bodyHtml += `<td style="font-weight:800; color:var(--color-out); text-align:center;">${v.total_trips} 趟</td>`;
+                bodyHtml += `<td style="font-weight:800; color:var(--color-primary); text-align:center;">${totalVolStr}</td>`;
+                bodyHtml += `<td style="font-weight:800; color:var(--color-in); text-align:center;">+${totalRevStr}</td>`;
+
                 dates.forEach(d => {
-                    const cnt = siteItem.daily_trips ? siteItem.daily_trips[d] || 0 : 0;
-                    const vol = siteItem.daily_volumes ? siteItem.daily_volumes[d] || 0 : 0;
-                    const rev = siteItem.daily_revenues ? siteItem.daily_revenues[d] || 0 : 0;
-                    if (cnt > 0) {
-                        bodyHtml += `<td title="${d}: ${cnt}车, ${vol}吨, ￥${rev}"><span class="direction-pill out" style="width:auto; padding:1px 5px; font-size:10px;">${cnt}车<br/><span style="opacity:0.8; font-size:9px;">${vol.toFixed(0)}t</span></span></td>`;
+                    const vol = v.daily_volumes ? v.daily_volumes[d] : null;
+                    const trips = v.daily_trips ? v.daily_trips[d] : null;
+                    if (vol !== undefined && vol !== null && vol > 0) {
+                        bodyHtml += `
+                            <td style="text-align:center; padding:4px 6px;" title="${v.plate_no} 在 ${d}: ${trips}车, ${vol.toFixed(2)}吨">
+                                <span style="font-weight:700; color:var(--text-primary); font-size:12px;">${vol.toFixed(2)}</span>
+                                <div style="font-size:10px; color:var(--color-out); opacity:0.8;">${trips}趟</div>
+                            </td>
+                        `;
                     } else {
-                        bodyHtml += `<td style="color:var(--text-muted); opacity:0.3;">-</td>`;
+                        bodyHtml += `<td style="text-align:center; color:var(--text-muted); opacity:0.25;">-</td>`;
                     }
                 });
                 bodyHtml += `</tr>`;
             });
             tbody.innerHTML = bodyHtml;
+
+            // 底部总计行 (严密复刻 Excel 台账总计)
+            if (tfoot) {
+                const grandTons = summaryRow.total_volume || 0;
+                const grandTrips = summaryRow.total_trips || 0;
+                const grandRev = grandTons * 30.0;
+                let footHtml = `
+                    <tr style="background:rgba(30, 41, 59, 0.95); border-top:2px solid var(--color-primary);">
+                        <td style="position:sticky; left:0; z-index:15; background:rgba(30, 41, 59, 0.95); font-weight:800; color:#fff; padding:8px 10px;">【全周期每日总计】</td>
+                        <td style="font-weight:800; color:var(--color-out); text-align:center;">${grandTrips} 趟</td>
+                        <td style="font-weight:800; color:#818cf8; text-align:center;">${grandTons.toLocaleString('zh-CN', {minimumFractionDigits:2})} 吨</td>
+                        <td style="font-weight:800; color:var(--color-in); text-align:center;">￥${grandRev.toLocaleString('zh-CN', {minimumFractionDigits:2})}</td>
+                `;
+                dates.forEach(d => {
+                    const dVol = summaryRow.daily_volumes ? summaryRow.daily_volumes[d] || 0 : 0;
+                    const dTrips = summaryRow.daily_trips ? summaryRow.daily_trips[d] || 0 : 0;
+                    if (dVol > 0) {
+                        footHtml += `
+                            <td style="text-align:center; padding:6px 4px; background:rgba(99,102,241,0.08);">
+                                <span style="font-weight:800; color:#818cf8; font-size:12px;">${dVol.toFixed(2)}</span>
+                                <div style="font-size:10px; color:var(--color-out);">${dTrips}车</div>
+                            </td>
+                        `;
+                    } else {
+                        footHtml += `<td style="text-align:center; color:var(--text-muted); opacity:0.25;">-</td>`;
+                    }
+                });
+                footHtml += `</tr>`;
+                tfoot.innerHTML = footHtml;
+            }
         }
 
-        function filterPivotMatrix() {
-            const query = document.getElementById('pivot-search-input').value.trim().toLowerCase();
-            const rows = document.querySelectorAll('.pivot-site-row');
+        function filterVehiclePivotTable() {
+            const query = document.getElementById('v-pivot-search-input').value.trim().toUpperCase();
+            const rows = document.querySelectorAll('.v-pivot-row');
             rows.forEach(row => {
-                const siteName = (row.getAttribute('data-site') || '').toLowerCase();
-                if (siteName.includes(query)) {
+                const plate = (row.getAttribute('data-plate') || '').toUpperCase();
+                if (plate.includes(query)) {
                     row.style.display = '';
                 } else {
                     row.style.display = 'none';
                 }
-            });
-        }
-
-        // ==========================================================================
-        // 📤 Excel 台账拖拽与一键上传导入 逻辑
-        // ==========================================================================
-        let selectedExcelFile = null;
-
-        function handleExcelFileSelect(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            selectedExcelFile = file;
-            document.getElementById('upload-filename').innerText = file.name;
-            document.getElementById('upload-status-msg').innerText = `文件可就绪，文件大小: ${(file.size / 1024).toFixed(1)} KB`;
-            document.getElementById('upload-preview-box').style.display = 'block';
-        }
-
-        function executeExcelUpload() {
-            if (!selectedExcelFile) {
-                showToast('提示', '请先选择要上传的 Excel 文件', 'error');
-                return;
-            }
-            const btn = document.getElementById('btn-do-import');
-            const statusMsg = document.getElementById('upload-status-msg');
-            btn.disabled = true;
-            statusMsg.innerText = '正在解析 Excel 表格并灌入数据库，请稍候...';
-
-            const formData = new FormData();
-            formData.append('file', selectedExcelFile);
-
-            fetch('/api/import_excel', {
-                method: 'POST',
-                body: formData
-            })
-            .then(res => res.json())
-            .then(res => {
-                btn.disabled = false;
-                if (res.success) {
-                    showToast('成功', res.message, 'success');
-                    statusMsg.innerText = `✅ ${res.message}`;
-                    loadSummaryAnalytics('all');
-                } else {
-                    showToast('导入失败', res.detail || res.message, 'error');
-                    statusMsg.innerText = `❌ 导入失败: ${res.detail || res.message}`;
-                }
-            })
-            .catch(err => {
-                btn.disabled = false;
-                showToast('异常', '文件导入出错', 'error');
-                statusMsg.innerText = `❌ 导入请求发生网络错误: ${err}`;
             });
         }
     </script>

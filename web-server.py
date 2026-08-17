@@ -1222,57 +1222,117 @@ def get_summary_analytics(
             "ev_percentage": ev_pct
         })
         
-    # 5. 构建交叉透视矩阵（包含每日车次、每日吨数、每日收入）
+    # 5. 构建每日走势数据 (供 ECharts 趋势图使用)
     cursor.execute("""
-        SELECT substr(pass_time,1,10) as day_date, dump_site, COUNT(*) as trips, SUM(volume) as vol_sum
+        SELECT substr(pass_time, 1, 10) as dt,
+               COUNT(*) as trips,
+               SUM(volume) as total_vol,
+               SUM(CASE WHEN is_ev = '是' THEN 1 ELSE 0 END) as ev_trips,
+               SUM(CASE WHEN is_ev = '是' THEN volume ELSE 0 END) as ev_vol,
+               SUM(CASE WHEN is_ev != '是' OR is_ev IS NULL THEN 1 ELSE 0 END) as fuel_trips,
+               SUM(CASE WHEN is_ev != '是' OR is_ev IS NULL THEN volume ELSE 0 END) as fuel_vol
         FROM vehicle_records
         WHERE direction = 'OUT' AND pass_time BETWEEN ? AND ?
-        GROUP BY day_date, dump_site
-        ORDER BY day_date ASC
+        GROUP BY dt
+        ORDER BY dt ASC
     """, (query_start, query_end))
-    matrix_rows = cursor.fetchall()
-    
-    dates_set = set()
-    site_daily_trips = {}
-    site_daily_vols = {}
-    site_daily_revs = {}
-    site_totals = {}
-    site_vol_totals = {}
-    
-    for r in matrix_rows:
-        day = r["day_date"]
-        site = r["dump_site"] or "首建恒纪建筑垃圾资源化处置场"
-        cnt = r["trips"]
-        d_vol = float(r["vol_sum"] or 0.0)
-        d_rev = round(d_vol * 30.0, 2)
-        dates_set.add(day)
-        if site not in site_daily_trips:
-            site_daily_trips[site] = {}
-            site_daily_vols[site] = {}
-            site_daily_revs[site] = {}
-            site_totals[site] = 0
-            site_vol_totals[site] = 0.0
-        site_daily_trips[site][day] = cnt
-        site_daily_vols[site][day] = round(d_vol, 2)
-        site_daily_revs[site][day] = d_rev
-        site_totals[site] += cnt
-        site_vol_totals[site] = round(site_vol_totals[site] + d_vol, 2)
-        
-    sorted_dates = sorted(list(dates_set))
-    sorted_site_names = sorted(list(site_totals.keys()), key=lambda s: site_totals[s], reverse=True)
-    
-    sites_list = []
-    for site_name in sorted_site_names:
-        sites_list.append({
-            "dump_site": site_name,
-            "total_trips": site_totals[site_name],
-            "total_volume": site_vol_totals[site_name],
-            "total_revenue": round(site_vol_totals[site_name] * 30.0, 2),
-            "daily_trips": site_daily_trips[site_name],
-            "daily_volumes": site_daily_vols[site_name],
-            "daily_revenues": site_daily_revs[site_name]
+    daily_trend = []
+    for r in cursor.fetchall():
+        vol = round(float(r[2] or 0.0), 2)
+        daily_trend.append({
+            "date": r[0],
+            "trips": r[1],
+            "volume": vol,
+            "revenue": round(vol * 30.0, 2),
+            "ev_trips": r[3],
+            "ev_volume": round(float(r[4] or 0.0), 2),
+            "fuel_trips": r[5],
+            "fuel_volume": round(float(r[6] or 0.0), 2),
+            "avg_volume": round(vol / r[1], 2) if r[1] > 0 else 0.0
         })
+
+    # 6. 构建车辆工作量与吨数排行榜 TOP 20
+    cursor.execute("""
+        SELECT plate_no, plate_color, is_ev, COUNT(*) as trips, SUM(volume) as total_vol
+        FROM vehicle_records
+        WHERE direction = 'OUT' AND pass_time BETWEEN ? AND ?
+        GROUP BY plate_no
+        ORDER BY total_vol DESC
+    """, (query_start, query_end))
+    vehicle_ranking = []
+    for r in cursor.fetchall():
+        vol = round(float(r[4] or 0.0), 2)
+        vehicle_ranking.append({
+            "plate_no": r[0],
+            "plate_color": r[1] or ("绿色" if r[2] == "是" else "蓝色"),
+            "is_ev": r[2] or "否",
+            "trips": r[3],
+            "volume": vol,
+            "revenue": round(vol * 30.0, 2),
+            "avg_volume": round(vol / r[3], 2) if r[3] > 0 else 0.0
+        })
+
+    # 7. 构建车辆 × 每日吨数交叉透视矩阵 (严密复刻 Excel 台账结构)
+    cursor.execute("""
+        SELECT plate_no, plate_color, substr(pass_time, 1, 10) as dt, SUM(volume) as d_vol, COUNT(*) as d_trips
+        FROM vehicle_records
+        WHERE direction = 'OUT' AND pass_time BETWEEN ? AND ?
+        GROUP BY plate_no, dt
+    """, (query_start, query_end))
+    v_matrix_rows = cursor.fetchall()
     
+    v_dates_set = set()
+    v_daily_vols = {}
+    v_daily_trips = {}
+    v_total_vols = {}
+    v_total_trips = {}
+    v_plate_colors = {}
+    
+    for r in v_matrix_rows:
+        plate = r[0]
+        color = r[1] or "蓝色"
+        dt = r[2]
+        d_vol = round(float(r[3] or 0.0), 2)
+        d_trips = r[4]
+        v_dates_set.add(dt)
+        v_plate_colors[plate] = color
+        
+        if plate not in v_daily_vols:
+            v_daily_vols[plate] = {}
+            v_daily_trips[plate] = {}
+            v_total_vols[plate] = 0.0
+            v_total_trips[plate] = 0
+            
+        v_daily_vols[plate][dt] = d_vol
+        v_daily_trips[plate][dt] = d_trips
+        v_total_vols[plate] = round(v_total_vols[plate] + d_vol, 2)
+        v_total_trips[plate] += d_trips
+        
+    sorted_v_dates = sorted(list(v_dates_set))
+    sorted_v_plates = sorted(list(v_total_vols.keys()), key=lambda p: v_total_vols[p], reverse=True)
+    
+    vehicle_pivot_list = []
+    for plate in sorted_v_plates:
+        vehicle_pivot_list.append({
+            "plate_no": plate,
+            "plate_color": v_plate_colors.get(plate, "蓝色"),
+            "total_trips": v_total_trips[plate],
+            "total_volume": v_total_vols[plate],
+            "total_revenue": round(v_total_vols[plate] * 30.0, 2),
+            "daily_volumes": v_daily_vols[plate],
+            "daily_trips": v_daily_trips[plate]
+        })
+        
+    # 计算每日合计 (矩阵底部总计行)
+    daily_sum_row = {"total_volume": 0.0, "total_trips": 0, "daily_volumes": {}, "daily_trips": {}}
+    for dt in sorted_v_dates:
+        dt_vol = sum(v_daily_vols[p].get(dt, 0.0) for p in sorted_v_plates)
+        dt_trips = sum(v_daily_trips[p].get(dt, 0) for p in sorted_v_plates)
+        daily_sum_row["daily_volumes"][dt] = round(dt_vol, 2)
+        daily_sum_row["daily_trips"][dt] = dt_trips
+        daily_sum_row["total_volume"] = round(daily_sum_row["total_volume"] + dt_vol, 2)
+        daily_sum_row["total_trips"] += dt_trips
+
     conn.close()
     
     return {
@@ -1287,9 +1347,12 @@ def get_summary_analytics(
         "unit_price": 30.0,
         "by_soil_type": by_soil_type,
         "by_dump_site": by_dump_site,
-        "pivot_matrix": {
-            "dates": sorted_dates,
-            "sites": sites_list
+        "daily_trend": daily_trend,
+        "vehicle_ranking": vehicle_ranking,
+        "vehicle_pivot": {
+            "dates": sorted_v_dates,
+            "vehicles": vehicle_pivot_list,
+            "summary_row": daily_sum_row
         },
         "db_range": {
             "min": db_min,
