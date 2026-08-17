@@ -66,7 +66,10 @@ def init_db() -> None:
             image_path TEXT,
             confidence REAL,
             dump_site TEXT DEFAULT '未分配',
-            soil_type TEXT DEFAULT '渣土'
+            soil_type TEXT DEFAULT '开槽砂石',
+            dump_paid INTEGER DEFAULT 0,
+            soil_paid INTEGER DEFAULT 0,
+            volume REAL DEFAULT 0.0
         )
     """)
     
@@ -78,7 +81,7 @@ def init_db() -> None:
         print("[Database] vehicle_records 表成功升级，添加了 dump_site 字段。")
         
     if "soil_type" not in columns:
-        cursor.execute("ALTER TABLE vehicle_records ADD COLUMN soil_type TEXT DEFAULT '渣土'")
+        cursor.execute("ALTER TABLE vehicle_records ADD COLUMN soil_type TEXT DEFAULT '开槽砂石'")
         print("[Database] vehicle_records 表成功升级，添加了 soil_type 字段。")
         
     if "dump_paid" not in columns:
@@ -88,6 +91,10 @@ def init_db() -> None:
     if "soil_paid" not in columns:
         cursor.execute("ALTER TABLE vehicle_records ADD COLUMN soil_paid INTEGER DEFAULT 0")
         print("[Database] vehicle_records 表成功升级，添加了 soil_paid 字段。")
+        
+    if "volume" not in columns:
+        cursor.execute("ALTER TABLE vehicle_records ADD COLUMN volume REAL DEFAULT 0.0")
+        print("[Database] vehicle_records 表成功升级，添加了 volume 字段。")
         
     # 创建 dump_sites 表
     cursor.execute("""
@@ -102,21 +109,10 @@ def init_db() -> None:
     cursor.execute("SELECT COUNT(*) FROM dump_sites")
     if cursor.fetchone()[0] == 0:
         default_sites = [
-            ("外运", 120.0),
-            ("鲁矿", 100.0),
-            ("焦化厂", 110.0),
-            ("生活区", 80.0),
-            ("冯村", 90.0),
-            ("南宫", 95.0),
-            ("梧桐", 90.0),
-            ("谭拓寺", 95.0),
-            ("黄志刚", 90.0),
-            ("首钢河堤", 105.0),
-            ("三号桥", 100.0),
-            ("未知", 0.0)
+            ("首建恒纪建筑垃圾资源化处置场", 0.0)
         ]
         cursor.executemany("INSERT INTO dump_sites (name, unit_price) VALUES (?, ?)", default_sites)
-        print("[Database] 默认中央电视台项目卸土点数据灌入成功。")
+        print("[Database] 默认卸土点数据灌入成功。")
         
     # 创建 soil_types 土方价格配置表
     cursor.execute("""
@@ -136,26 +132,17 @@ def init_db() -> None:
         cursor.execute("UPDATE soil_types SET is_income = 1 WHERE name = '级配石'")
         print("[Database] soil_types 表成功升级，添加了 is_income 字段。")
         
-    # 填充默认的土方单价
+    # 填充默认的土方单价 (开槽砂石实际收入 30元/吨)
     cursor.execute("SELECT COUNT(*) FROM soil_types")
     if cursor.fetchone()[0] == 0:
         default_soils = [
-            ("十轮二混子", 100.0, 0),
-            ("十轮好土", 80.0, 0),
-            ("好土", 80.0, 0),
-            ("沙子", 90.0, 0),
-            ("二混子", 100.0, 0),
-            ("十轮沙子", 90.0, 0),
-            ("水泥块", 110.0, 0),
-            ("8米好土", 85.0, 0),
-            ("级配石", 150.0, 1),
-            ("8米二混子", 105.0, 0),
-            ("8米枢间土", 95.0, 0),
-            ("大块", 120.0, 0),
-            ("8米桩间土", 95.0, 0)
+            ("开槽砂石", 30.0, 1)
         ]
         cursor.executemany("INSERT INTO soil_types (name, unit_price, is_income) VALUES (?, ?, ?)", default_soils)
-        print("[Database] 默认中央电视台项目土方单价灌入成功。")
+        print("[Database] 默认开槽砂石单价(30元/吨收入)灌入成功。")
+    else:
+        cursor.execute("UPDATE soil_types SET unit_price = 30.0, is_income = 1 WHERE name = '开槽砂石'")
+        cursor.execute("INSERT OR IGNORE INTO soil_types (name, unit_price, is_income) VALUES ('开槽砂石', 30.0, 1)")
         
     # 创建 vehicle_bindings 车辆默认去向绑定表
     cursor.execute("""
@@ -731,26 +718,27 @@ def get_daily_ledger(date: Optional[str] = Query(None, description="格式 YYYY-
     soil_prices = {s["name"]: s["unit_price"] for s in soils}
     soil_incomes = {s["name"]: s["is_income"] for s in soils}
     
-    # 2. 查询该日出场车辆及其卸土点去向与土方记录计数
+    # 2. 查询该日出场车辆及其卸土点去向与土方记录计数及吨数
     cursor.execute("""
-        SELECT plate_no, plate_color, dump_site, soil_type, COUNT(*) as trip_cnt 
+        SELECT plate_no, plate_color, dump_site, soil_type, COUNT(*) as trip_cnt, SUM(volume) as total_vol 
         FROM vehicle_records 
         WHERE direction = 'OUT' AND pass_time BETWEEN ? AND ?
         GROUP BY plate_no, dump_site, soil_type
     """, (query_start, query_end))
     rows = cursor.fetchall()
     
-    # 3. 按车牌聚合趟数与金额
+    # 3. 按车牌聚合趟数、吨数与金额 (开槽砂石收入 30元/吨)
     ledger_map = {}
     for r in rows:
         plate_no = r["plate_no"]
         plate_color = r["plate_color"] or "蓝色"
-        dump_site = r["dump_site"] or "未分配"
-        soil_type = r["soil_type"] or "渣土"
+        dump_site = r["dump_site"] or "首建恒纪建筑垃圾资源化处置场"
+        soil_type = r["soil_type"] or "开槽砂石"
         trip_cnt = r["trip_cnt"]
-        price = soil_prices.get(soil_type, 0.0)
-        is_inc = soil_incomes.get(soil_type, 0)
-        cost_val = trip_cnt * price
+        vol_sum = float(r["total_vol"] or 0.0)
+        price = soil_prices.get(soil_type, 30.0)
+        is_inc = soil_incomes.get(soil_type, 1)
+        cost_val = round(vol_sum * price, 2)
         
         if plate_no not in ledger_map:
             ledger_map[plate_no] = {
@@ -759,6 +747,8 @@ def get_daily_ledger(date: Optional[str] = Query(None, description="格式 YYYY-
                 "site_trips": {s_name: 0 for s_name in site_names},
                 "unassigned_trips": 0,
                 "total_trips": 0,
+                "total_volume": 0.0,
+                "unit_price": price,
                 "total_income": 0.0,
                 "total_expense": 0.0,
                 "total_cost": 0.0
@@ -766,32 +756,31 @@ def get_daily_ledger(date: Optional[str] = Query(None, description="格式 YYYY-
         
         if dump_site in site_names:
             ledger_map[plate_no]["site_trips"][dump_site] += trip_cnt
-        elif dump_site == "自行消纳":
-            pass
         else:
             ledger_map[plate_no]["unassigned_trips"] += trip_cnt
             
         ledger_map[plate_no]["total_trips"] += trip_cnt
+        ledger_map[plate_no]["total_volume"] = round(ledger_map[plate_no]["total_volume"] + vol_sum, 2)
         if is_inc == 1:
-            ledger_map[plate_no]["total_income"] += cost_val
-            ledger_map[plate_no]["total_cost"] += cost_val
+            ledger_map[plate_no]["total_income"] = round(ledger_map[plate_no]["total_income"] + cost_val, 2)
+            ledger_map[plate_no]["total_cost"] = round(ledger_map[plate_no]["total_cost"] + cost_val, 2)
         else:
-            ledger_map[plate_no]["total_expense"] += cost_val
-            ledger_map[plate_no]["total_cost"] -= cost_val
+            ledger_map[plate_no]["total_expense"] = round(ledger_map[plate_no]["total_expense"] + cost_val, 2)
+            ledger_map[plate_no]["total_cost"] = round(ledger_map[plate_no]["total_cost"] - cost_val, 2)
         
     ledger_rows = list(ledger_map.values())
     # 按照出场总趟数和今日总账金额降序排列
     ledger_rows.sort(key=lambda x: (x["total_trips"], x["total_cost"]), reverse=True)
     
-    # 4. 计算各个土点今日汇总信息（车数、趟数、总金额）
+    # 4. 计算各个土点今日汇总信息（车数、趟数、总吨数、总金额）
     site_summaries = []
     for s_name in site_names:
         trips_sum = sum(item["site_trips"].get(s_name, 0) for item in ledger_rows)
         trucks_sum = sum(1 for item in ledger_rows if item["site_trips"].get(s_name, 0) > 0)
         
-        # 计算该土点下的运费汇总 (基于土方价格，区分收支)
+        # 计算该土点下的运费汇总 (基于开槽砂石 30元/吨收入)
         cursor.execute("""
-            SELECT vr.soil_type, COUNT(*)
+            SELECT vr.soil_type, COUNT(*), SUM(vr.volume)
             FROM vehicle_records vr
             WHERE vr.direction = 'OUT' AND vr.dump_site = ? AND vr.pass_time BETWEEN ? AND ?
             GROUP BY vr.soil_type
@@ -800,26 +789,31 @@ def get_daily_ledger(date: Optional[str] = Query(None, description="格式 YYYY-
         
         site_income = 0.0
         site_expense = 0.0
+        site_tons = 0.0
         for row in site_soil_counts:
-            s_type = row[0] or "渣土"
+            s_type = row[0] or "开槽砂石"
             cnt = row[1]
-            price = soil_prices.get(s_type, 0.0)
-            is_inc = soil_incomes.get(s_type, 0)
+            t_vol = float(row[2] or 0.0)
+            site_tons += t_vol
+            price = soil_prices.get(s_type, 30.0)
+            is_inc = soil_incomes.get(s_type, 1)
+            amt = round(t_vol * price, 2)
             if is_inc == 1:
-                site_income += price * cnt
+                site_income += amt
             else:
-                site_expense += price * cnt
+                site_expense += amt
         
-        cost_sum = site_income - site_expense
+        cost_sum = round(site_income - site_expense, 2)
         
         site_summaries.append({
             "site_name": s_name,
-            "unit_price": 0.0,
+            "unit_price": 30.0,
             "total_trips": trips_sum,
             "total_trucks": trucks_sum,
+            "total_volume": round(site_tons, 2),
             "total_cost": cost_sum,
-            "total_income": site_income,
-            "total_expense": site_expense
+            "total_income": round(site_income, 2),
+            "total_expense": round(site_expense, 2)
         })
         
     # 未分配汇总
@@ -828,6 +822,9 @@ def get_daily_ledger(date: Optional[str] = Query(None, description="格式 YYYY-
     
     conn.close()
     
+    total_day_tons = sum(item["total_volume"] for item in ledger_rows)
+    total_day_income = sum(item["total_income"] for item in ledger_rows)
+    
     return {
         "success": True,
         "selected_date": date,
@@ -835,6 +832,9 @@ def get_daily_ledger(date: Optional[str] = Query(None, description="格式 YYYY-
         "soil_types": soils,
         "ledger_rows": ledger_rows,
         "site_summaries": site_summaries,
+        "total_day_trips": sum(item["total_trips"] for item in ledger_rows),
+        "total_day_tons": round(total_day_tons, 2),
+        "total_day_income": round(total_day_income, 2),
         "unassigned_summary": {
             "total_trips": total_unassigned_trips,
             "total_trucks": unassigned_trucks
@@ -852,9 +852,9 @@ def get_vehicle_out_records(plate_no: str, date: str = Query(..., description="�
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     
-    # 1. 查询离场记录
+    # 1. 查询离场记录（含吨数与金额）
     cursor.execute("""
-        SELECT id, plate_no, plate_color, direction, pass_time, image_path, confidence, dump_site, soil_type, dump_paid, soil_paid
+        SELECT id, plate_no, plate_color, direction, pass_time, image_path, confidence, dump_site, soil_type, dump_paid, soil_paid, volume, is_ev
         FROM vehicle_records
         WHERE plate_no = ? AND direction = 'OUT' AND pass_time BETWEEN ? AND ?
         ORDER BY pass_time ASC
@@ -864,33 +864,47 @@ def get_vehicle_out_records(plate_no: str, date: str = Query(..., description="�
     # 2. 查询默认自动分账去向
     cursor.execute("SELECT default_dump_site FROM vehicle_bindings WHERE plate_no = ?", (plate_no,))
     binding = cursor.fetchone()
-    default_dump_site = binding["default_dump_site"] if binding else "未分配"
+    default_dump_site = binding["default_dump_site"] if binding else "首建恒纪建筑垃圾资源化处置场"
     
-    # 3. 查询所属车队 (废弃原查询，一律返回个人车主)
-    company_name = "个人车主"
+    # 3. 所属车队
+    cursor.execute("SELECT company_name FROM frequent_plates WHERE plate_no = ?", (plate_no,))
+    comp_row = cursor.fetchone()
+    company_name = comp_row["company_name"] if comp_row and comp_row["company_name"] else "主力运输车队"
     
     conn.close()
     
-    records = []
+    records_list = []
     for r in rows:
-        records.append({
+        vol = float(r["volume"] or 0.0)
+        amt = round(vol * 30.0, 2)
+        records_list.append({
             "id": r["id"],
             "plate_no": r["plate_no"],
             "plate_color": r["plate_color"],
             "direction": r["direction"],
             "pass_time": r["pass_time"],
-            "image_url": f"/uploaded_imgs/{r['image_path']}" if r["image_path"] else None,
-            "confidence": f"{r['confidence']:.2f}" if r["confidence"] else "1.00",
-            "dump_site": r["dump_site"] or "未分配",
-            "soil_type": r["soil_type"] or "渣土",
-            "dump_paid": r["dump_paid"] if r["dump_paid"] is not None else 0,
-            "soil_paid": r["soil_paid"] if r["soil_paid"] is not None else 0
+            "image_path": r["image_path"],
+            "confidence": r["confidence"],
+            "dump_site": r["dump_site"] or "首建恒纪建筑垃圾资源化处置场",
+            "soil_type": r["soil_type"] or "开槽砂石",
+            "volume": vol,
+            "unit_price": 30.0,
+            "amount": amt,
+            "dump_paid": r["dump_paid"],
+            "soil_paid": r["soil_paid"],
+            "is_ev": r["is_ev"]
         })
+        
     return {
-        "success": True, 
-        "records": records,
+        "success": True,
+        "plate_no": plate_no,
+        "date": date,
         "default_dump_site": default_dump_site,
-        "company_name": company_name
+        "company_name": company_name,
+        "records": records_list,
+        "total_trips": len(records_list),
+        "total_volume": round(sum(r["volume"] for r in records_list), 2),
+        "total_income": round(sum(r["amount"] for r in records_list), 2)
     }
 
 @app.post("/api/adjust_trip_destination")
@@ -1114,27 +1128,36 @@ def get_summary_analytics(
     query_start = f"{s_date} 00:00:00"
     query_end = f"{e_date} 23:59:59"
     
-    # 2. 查询总趟数与电车/燃油车趟数
+    # 2. 查询总趟数、总吨数与电车/燃油车统计
     cursor.execute("""
         SELECT COUNT(*) as total_out,
+               SUM(volume) as total_vol,
                SUM(CASE WHEN is_ev = '是' THEN 1 ELSE 0 END) as ev_cnt,
-               SUM(CASE WHEN is_ev != '是' OR is_ev IS NULL THEN 1 ELSE 0 END) as fuel_cnt
+               SUM(CASE WHEN is_ev = '是' THEN volume ELSE 0 END) as ev_vol,
+               SUM(CASE WHEN is_ev != '是' OR is_ev IS NULL THEN 1 ELSE 0 END) as fuel_cnt,
+               SUM(CASE WHEN is_ev != '是' OR is_ev IS NULL THEN volume ELSE 0 END) as fuel_vol
         FROM vehicle_records
         WHERE direction = 'OUT' AND pass_time BETWEEN ? AND ?
     """, (query_start, query_end))
     kpi_row = cursor.fetchone()
     total_out = kpi_row["total_out"] or 0
+    total_vol = float(kpi_row["total_vol"] or 0.0)
+    total_revenue = round(total_vol * 30.0, 2)
     ev_count = kpi_row["ev_cnt"] or 0
+    ev_volume = float(kpi_row["ev_vol"] or 0.0)
     fuel_count = kpi_row["fuel_cnt"] or 0
+    fuel_volume = float(kpi_row["fuel_vol"] or 0.0)
     
-    # 3. 按土方/货物规格汇总
+    # 3. 按土方/货物规格汇总 (开槽砂石按 30元/吨收入核算)
     cursor.execute("SELECT name, unit_price, is_income FROM soil_types")
     soil_info = {r["name"]: {"price": r["unit_price"], "is_income": r["is_income"]} for r in cursor.fetchall()}
     
     cursor.execute("""
         SELECT soil_type,
                COUNT(*) as trips,
-               SUM(CASE WHEN is_ev = '是' THEN 1 ELSE 0 END) as ev_trips
+               SUM(volume) as vol_sum,
+               SUM(CASE WHEN is_ev = '是' THEN 1 ELSE 0 END) as ev_trips,
+               SUM(CASE WHEN is_ev = '是' THEN volume ELSE 0 END) as ev_vol
         FROM vehicle_records
         WHERE direction = 'OUT' AND pass_time BETWEEN ? AND ?
         GROUP BY soil_type
@@ -1143,33 +1166,34 @@ def get_summary_analytics(
     soil_rows = cursor.fetchall()
     by_soil_type = []
     for r in soil_rows:
-        name = r["soil_type"] or "渣土"
+        name = r["soil_type"] or "开槽砂石"
         trips = r["trips"]
+        s_vol = float(r["vol_sum"] or 0.0)
         ev_t = r["ev_trips"] or 0
-        info = soil_info.get(name, {"price": 90.0, "is_income": 0})
+        info = soil_info.get(name, {"price": 30.0, "is_income": 1})
         price = info["price"]
         is_inc = info["is_income"]
-        cost = trips * price
+        revenue = round(s_vol * price, 2)
         pct = f"{(trips / total_out * 100):.1f}" if total_out > 0 else "0.0"
         ev_pct = f"{(ev_t / trips * 100):.1f}" if trips > 0 else "0.0"
         by_soil_type.append({
             "soil_type": name,
             "trips": trips,
+            "volume": round(s_vol, 2),
             "percentage": pct,
             "unit_price": price,
-            "total_cost": cost,
+            "total_cost": revenue,
+            "total_revenue": revenue,
             "is_income": is_inc,
             "ev_trips": ev_t,
             "ev_percentage": ev_pct
         })
         
     # 4. 按消纳场地/卸土点汇总
-    cursor.execute("SELECT name, unit_price FROM dump_sites")
-    site_prices = {r["name"]: r["unit_price"] for r in cursor.fetchall()}
-    
     cursor.execute("""
         SELECT dump_site,
                COUNT(*) as trips,
+               SUM(volume) as vol_sum,
                SUM(CASE WHEN is_ev = '是' THEN 1 ELSE 0 END) as ev_trips
         FROM vehicle_records
         WHERE direction = 'OUT' AND pass_time BETWEEN ? AND ?
@@ -1179,46 +1203,60 @@ def get_summary_analytics(
     site_rows = cursor.fetchall()
     by_dump_site = []
     for r in site_rows:
-        name = r["dump_site"] or "未分配"
+        name = r["dump_site"] or "首建恒纪建筑垃圾资源化处置场"
         trips = r["trips"]
+        s_vol = float(r["vol_sum"] or 0.0)
         ev_t = r["ev_trips"] or 0
-        price = site_prices.get(name, 90.0) if name != "未分配" else 0.0
-        cost = trips * price
+        revenue = round(s_vol * 30.0, 2)
         pct = f"{(trips / total_out * 100):.1f}" if total_out > 0 else "0.0"
         ev_pct = f"{(ev_t / trips * 100):.1f}" if trips > 0 else "0.0"
         by_dump_site.append({
             "dump_site": name,
             "trips": trips,
+            "volume": round(s_vol, 2),
             "percentage": pct,
-            "unit_price": price,
-            "total_cost": cost,
+            "unit_price": 30.0,
+            "total_cost": revenue,
+            "total_revenue": revenue,
             "ev_trips": ev_t,
             "ev_percentage": ev_pct
         })
         
-    # 5. 构建交叉透视矩阵
+    # 5. 构建交叉透视矩阵（包含每日车次、每日吨数、每日收入）
     cursor.execute("""
-        SELECT substr(pass_time,1,10) as day_date, dump_site, COUNT(*) as trips
+        SELECT substr(pass_time,1,10) as day_date, dump_site, COUNT(*) as trips, SUM(volume) as vol_sum
         FROM vehicle_records
         WHERE direction = 'OUT' AND pass_time BETWEEN ? AND ?
         GROUP BY day_date, dump_site
+        ORDER BY day_date ASC
     """, (query_start, query_end))
     matrix_rows = cursor.fetchall()
     
     dates_set = set()
-    site_daily_map = {}
+    site_daily_trips = {}
+    site_daily_vols = {}
+    site_daily_revs = {}
     site_totals = {}
+    site_vol_totals = {}
     
     for r in matrix_rows:
         day = r["day_date"]
-        site = r["dump_site"] or "未分配"
+        site = r["dump_site"] or "首建恒纪建筑垃圾资源化处置场"
         cnt = r["trips"]
+        d_vol = float(r["vol_sum"] or 0.0)
+        d_rev = round(d_vol * 30.0, 2)
         dates_set.add(day)
-        if site not in site_daily_map:
-            site_daily_map[site] = {}
+        if site not in site_daily_trips:
+            site_daily_trips[site] = {}
+            site_daily_vols[site] = {}
+            site_daily_revs[site] = {}
             site_totals[site] = 0
-        site_daily_map[site][day] = cnt
+            site_vol_totals[site] = 0.0
+        site_daily_trips[site][day] = cnt
+        site_daily_vols[site][day] = round(d_vol, 2)
+        site_daily_revs[site][day] = d_rev
         site_totals[site] += cnt
+        site_vol_totals[site] = round(site_vol_totals[site] + d_vol, 2)
         
     sorted_dates = sorted(list(dates_set))
     sorted_site_names = sorted(list(site_totals.keys()), key=lambda s: site_totals[s], reverse=True)
@@ -1228,7 +1266,11 @@ def get_summary_analytics(
         sites_list.append({
             "dump_site": site_name,
             "total_trips": site_totals[site_name],
-            "daily_trips": site_daily_map[site_name]
+            "total_volume": site_vol_totals[site_name],
+            "total_revenue": round(site_vol_totals[site_name] * 30.0, 2),
+            "daily_trips": site_daily_trips[site_name],
+            "daily_volumes": site_daily_vols[site_name],
+            "daily_revenues": site_daily_revs[site_name]
         })
     
     conn.close()
@@ -1236,8 +1278,13 @@ def get_summary_analytics(
     return {
         "success": True,
         "total_out_trips": total_out,
+        "total_volume": round(total_vol, 2),
+        "total_revenue": total_revenue,
         "ev_count": ev_count,
+        "ev_volume": round(ev_volume, 2),
         "fuel_count": fuel_count,
+        "fuel_volume": round(fuel_volume, 2),
+        "unit_price": 30.0,
         "by_soil_type": by_soil_type,
         "by_dump_site": by_dump_site,
         "pivot_matrix": {
@@ -1377,18 +1424,19 @@ async def execute_remote_sync(start_month: int = 5, end_month: Optional[int] = N
                         """, (r_id, code, plate, trans_name, abs_name, leave_p, leave_t, arrive_t, rubbish_t, vol, state, abs_area, created_t, now_str))
                         new_inserted += 1
 
-                        # 自动同步【首建恒纪 · 开槽砂石】到台账明细 vehicle_records
+                        # 自动同步【首建恒纪 · 开槽砂石】到台账明细 vehicle_records (排除42吨异常运单)
                         if ("首建" in abs_name or "恒纪" in abs_name) and ("砂石" in rubbish_t or "开槽" in rubbish_t):
-                            is_ev = '是' if len(plate) == 8 else '否'
-                            plate_color = '绿色' if len(plate) == 8 else '蓝色'
-                            cursor.execute("SELECT id FROM vehicle_records WHERE plate_no = ? AND pass_time = ?", (plate, leave_t))
-                            if not cursor.fetchone():
-                                cursor.execute("""
-                                    INSERT INTO vehicle_records 
-                                    (plate_no, plate_color, direction, pass_time, image_path, confidence, dump_site, soil_type, is_ev, soil_paid, dump_paid)
-                                    VALUES (?, ?, 'OUT', ?, NULL, 1.0, '首建恒纪建筑垃圾资源化处置场', '开槽砂石', ?, 0, 0)
-                                """, (plate, plate_color, leave_t, is_ev))
-                                ensure_frequent_plate(plate, plate_color)
+                            if not (abs(vol - 42.0) < 0.05 and state == "异常"):
+                                is_ev = '是' if len(plate) == 8 else '否'
+                                plate_color = '绿色' if len(plate) == 8 else '蓝色'
+                                cursor.execute("SELECT id FROM vehicle_records WHERE plate_no = ? AND pass_time = ?", (plate, leave_t))
+                                if not cursor.fetchone():
+                                    cursor.execute("""
+                                        INSERT INTO vehicle_records 
+                                        (plate_no, plate_color, direction, pass_time, image_path, confidence, dump_site, soil_type, is_ev, volume, soil_paid, dump_paid)
+                                        VALUES (?, ?, 'OUT', ?, NULL, 1.0, '首建恒纪建筑垃圾资源化处置场', '开槽砂石', ?, ?, 0, 0)
+                                    """, (plate, plate_color, leave_t, is_ev, vol))
+                                    ensure_frequent_plate(plate, plate_color)
                         
                     total_fetched += len(records)
                     conn.commit()
@@ -2434,15 +2482,16 @@ def get_records_by_date(
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     
-    # 1. 查询该日所有通行记录
+    # 1. 查询该日所有通行记录 (含吨数)
     cursor.execute(
-        "SELECT id, plate_no, plate_color, direction, pass_time, image_path, confidence, dump_site, soil_type, dump_paid, soil_paid FROM vehicle_records WHERE pass_time BETWEEN ? AND ? ORDER BY pass_time DESC LIMIT ?",
+        "SELECT id, plate_no, plate_color, direction, pass_time, image_path, confidence, dump_site, soil_type, dump_paid, soil_paid, volume FROM vehicle_records WHERE pass_time BETWEEN ? AND ? ORDER BY pass_time DESC LIMIT ?",
         (query_start, query_end, limit)
     )
     rows = cursor.fetchall()
     
     records = []
     for r in rows:
+        vol = float(r["volume"] or 0.0)
         records.append({
             "id": r["id"],
             "plate_no": r["plate_no"],
@@ -2451,13 +2500,16 @@ def get_records_by_date(
             "pass_time": r["pass_time"],
             "image_url": f"/uploaded_imgs/{r['image_path']}" if r["image_path"] else None,
             "confidence": f"{r['confidence']:.2f}" if r["confidence"] else "1.00",
-            "dump_site": r["dump_site"] or "未分配",
-            "soil_type": r["soil_type"] or "渣土",
+            "dump_site": r["dump_site"] or "首建恒纪建筑垃圾资源化处置场",
+            "soil_type": r["soil_type"] or "开槽砂石",
+            "volume": vol,
+            "unit_price": 30.0,
+            "amount": round(vol * 30.0, 2),
             "dump_paid": r["dump_paid"] if r["dump_paid"] is not None else 0,
             "soil_paid": r["soil_paid"] if r["soil_paid"] is not None else 0
         })
         
-    # 2. 统计该日进出总数
+    # 2. 统计该日进出总数及总吨数
     cursor.execute(
         "SELECT COUNT(*) FROM vehicle_records WHERE direction = 'IN' AND pass_time BETWEEN ? AND ?",
         (query_start, query_end)
@@ -2465,12 +2517,14 @@ def get_records_by_date(
     total_in = cursor.fetchone()[0]
     
     cursor.execute(
-        "SELECT COUNT(*) FROM vehicle_records WHERE direction = 'OUT' AND pass_time BETWEEN ? AND ?",
+        "SELECT COUNT(*), SUM(volume) FROM vehicle_records WHERE direction = 'OUT' AND pass_time BETWEEN ? AND ?",
         (query_start, query_end)
     )
-    total_out = cursor.fetchone()[0]
+    out_stat = cursor.fetchone()
+    total_out = out_stat[0] or 0
+    total_out_tons = float(out_stat[1] or 0.0)
     
-    # 3. 统计当前场内滞留车辆 (此指标维持全系统最新的在场车数，不限日期，以保持其实时指导意义)
+    # 3. 统计当前场内滞留车辆
     cursor.execute("""
         WITH latest_records AS (
             SELECT plate_no, direction,
@@ -2481,32 +2535,14 @@ def get_records_by_date(
     """)
     current_stay = cursor.fetchone()[0]
 
-    # 【新增运输对账相关指标】
-    # 3.1 统计今日结算总金额与收支细项 (根据土方单价和收支分类计算)
+    # 3.1 统计今日结算总金额 (按开槽砂石 30元/吨收入核算)
     cursor.execute("SELECT name, unit_price, is_income FROM soil_types")
     soils_data = cursor.fetchall()
     soil_info = {r[0]: {"price": r[1], "is_income": r[2]} for r in soils_data}
     
-    cursor.execute("""
-        SELECT vr.soil_type, COUNT(*) 
-        FROM vehicle_records vr
-        WHERE vr.direction = 'OUT' AND vr.pass_time BETWEEN ? AND ?
-        GROUP BY vr.soil_type
-    """, (query_start, query_end))
-    soil_counts = cursor.fetchall()
-    
-    total_income = 0.0
+    total_income = round(total_out_tons * 30.0, 2)
     total_expense = 0.0
-    for row in soil_counts:
-        s_name = row[0] or "渣土"
-        cnt = row[1]
-        info = soil_info.get(s_name, {"price": 60.0, "is_income": 0})
-        if info["is_income"] == 1:
-            total_income += info["price"] * cnt
-        else:
-            total_expense += info["price"] * cnt
-            
-    total_cost = total_income - total_expense
+    total_cost = total_income
 
     # 3.2 统计待对账出场趟数（未分配趟数，排除级配石）
     cursor.execute("""
@@ -2695,6 +2731,7 @@ def get_records_by_date(
         "kpis": {
             "total_in": total_in,
             "total_out": total_out,
+            "total_volume": round(total_out_tons, 2),
             "current_stay": current_stay,
             "total_cost": total_cost,
             "total_income": total_income,

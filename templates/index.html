@@ -2082,12 +2082,12 @@
                     </div>
                 </div>
 
-                <!-- 核心 KPI 汇总卡 -->
+                <!-- 核心 KPI 汇总卡 (首建恒纪 · 开槽砂石 30元/吨收入核算) -->
                 <div class="kpi-grid" style="grid-template-columns: repeat(4, 1fr); gap: 14px;">
                     <div class="kpi-card">
                         <div class="kpi-icon kpi-icon-out"><i data-lucide="truck"></i></div>
                         <div class="kpi-info">
-                            <span class="kpi-label">累计拉运趟数</span>
+                            <span class="kpi-label">累计出场车次</span>
                             <div style="display:flex; align-items:baseline; gap:4px;">
                                 <span class="kpi-value" id="sum-total-trips">0</span>
                                 <span style="font-size:12px; color:var(--text-secondary);">趟</span>
@@ -2095,34 +2095,31 @@
                         </div>
                     </div>
                     <div class="kpi-card">
+                        <div class="kpi-icon" style="background:rgba(59,130,246,0.15); color:var(--color-primary);"><i data-lucide="scale"></i></div>
+                        <div class="kpi-info">
+                            <span class="kpi-label">实际拉运总吨数</span>
+                            <div style="display:flex; align-items:baseline; gap:4px;">
+                                <span class="kpi-value" id="sum-total-tons" style="color:var(--color-primary);">0.00</span>
+                                <span style="font-size:12px; color:var(--text-secondary);">吨</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon" style="background:rgba(16,185,129,0.15); color:var(--color-in);"><i data-lucide="coins"></i></div>
+                        <div class="kpi-info">
+                            <span class="kpi-label">开槽砂石实际总收入 (30元/吨)</span>
+                            <div style="display:flex; align-items:baseline; gap:4px;">
+                                <span class="kpi-value" id="sum-total-revenue" style="color:var(--color-in); font-size:20px;">￥0.00</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
                         <div class="kpi-icon" style="background:rgba(16,185,129,0.15); color:var(--color-in);"><i data-lucide="zap"></i></div>
                         <div class="kpi-info">
-                            <span class="kpi-label">自有电车拉运</span>
+                            <span class="kpi-label">新能源电车拉运</span>
                             <div style="display:flex; align-items:baseline; gap:4px;">
                                 <span class="kpi-value" id="sum-ev-trips" style="color:var(--color-in);">0</span>
                                 <span style="font-size:12px; color:var(--text-secondary);" id="sum-ev-pct">(0%)</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="kpi-card">
-                        <div class="kpi-icon" style="background:rgba(245,158,11,0.15); color:var(--color-stay);"><i data-lucide="fuel"></i></div>
-                        <div class="kpi-info">
-                            <span class="kpi-label">外协燃油车拉运</span>
-                            <div style="display:flex; align-items:baseline; gap:4px;">
-                                <span class="kpi-value" id="sum-fuel-trips" style="color:var(--color-stay);">0</span>
-                                <span style="font-size:12px; color:var(--text-secondary);" id="sum-fuel-pct">(0%)</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="kpi-card">
-                        <div class="kpi-icon kpi-icon-cost"><i data-lucide="map-pin"></i></div>
-                        <div class="kpi-info">
-                            <span class="kpi-label">覆盖消纳点与规格</span>
-                            <div style="display:flex; align-items:baseline; gap:4px;">
-                                <span class="kpi-value" id="sum-sites-cnt">0</span>
-                                <span style="font-size:12px; color:var(--text-secondary);">场地 / </span>
-                                <span class="kpi-value" id="sum-soils-cnt" style="font-size:16px;">0</span>
-                                <span style="font-size:12px; color:var(--text-secondary);">规格</span>
                             </div>
                         </div>
                     </div>
@@ -2134,18 +2131,18 @@
                 <!-- 按【土方/车辆规格】汇总 -->
                 <div class="glass-card">
                     <h3 class="card-header-title">
-                        <i data-lucide="box"></i>按【土方/车辆规格】汇总明细
+                        <i data-lucide="box"></i>按【货物/土方规格】汇总明细
                     </h3>
                     <div class="table-responsive" style="max-height: 360px;">
                         <table class="ledger-table">
                             <thead>
                                 <tr>
                                     <th>序号</th>
-                                    <th>货物/车辆规格</th>
+                                    <th>货物规格</th>
                                     <th>总拉运趟数</th>
-                                    <th>趟数占比</th>
-                                    <th>运费单价</th>
-                                    <th>运费估算</th>
+                                    <th>总拉运吨数</th>
+                                    <th>收入单价</th>
+                                    <th>实际总收入</th>
                                     <th>电车占比</th>
                                 </tr>
                             </thead>
@@ -2159,18 +2156,18 @@
                 <!-- 按【消纳场地/卸土点】汇总 -->
                 <div class="glass-card">
                     <h3 class="card-header-title">
-                        <i data-lucide="map-pin"></i>按【消纳场地/卸土点】汇总明细
+                        <i data-lucide="map-pin"></i>按【消纳场地】汇总明细
                     </h3>
                     <div class="table-responsive" style="max-height: 360px;">
                         <table class="ledger-table">
                             <thead>
                                 <tr>
                                     <th>序号</th>
-                                    <th>消纳场/卸土点</th>
+                                    <th>消纳目的地</th>
                                     <th>总拉运趟数</th>
-                                    <th>趟数占比</th>
-                                    <th>消纳单价</th>
-                                    <th>消纳费估算</th>
+                                    <th>总拉运吨数</th>
+                                    <th>单价标准</th>
+                                    <th>实际产生收入</th>
                                     <th>电车占比</th>
                                 </tr>
                             </thead>
@@ -2182,11 +2179,11 @@
                 </div>
             </div>
 
-            <!-- 交互式日期 × 场地拉运趟数透视矩阵 -->
+            <!-- 交互式日期 × 场地拉运趟数与吨数透视矩阵 -->
             <div class="glass-card" style="margin-top:16px;">
                 <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:14px;">
                     <h3 class="card-header-title" style="margin-bottom:0;">
-                        <i data-lucide="table"></i>消纳场地 × 每日拉运趟数交叉透视矩阵
+                        <i data-lucide="table"></i>消纳场地 × 每日拉运趟数与吨数交叉透视矩阵
                     </h3>
                     <div style="display:flex; align-items:center; gap:8px;">
                         <input type="text" class="input-control" id="pivot-search-input" placeholder="搜索消纳点名称..." oninput="filterPivotMatrix()" style="width:180px; height:32px; font-size:12px;">
@@ -4832,8 +4829,10 @@
                                 <tr>
                                     <th>序号</th>
                                     <th>车牌号码</th>
-                                    <th>累计趟数</th>
-                                    <th>累计运费</th>
+                                    <th>今日拉运趟数</th>
+                                    <th>今日拉运总吨数</th>
+                                    <th>单价</th>
+                                    <th>今日实际收入 (元)</th>
                                     <th>操作</th>
                                 </tr>
                             `;
@@ -4843,7 +4842,9 @@
                                     <th>序号</th>
                                     <th>车牌号码</th>
                                     <th>该场出运</th>
-                                    <th>场地净结算</th>
+                                    <th>拉运总吨数</th>
+                                    <th>单价</th>
+                                    <th>实际总收入</th>
                                     <th>操作</th>
                                 </tr>
                             `;
@@ -4855,85 +4856,49 @@
                         displayRows.forEach((row, idx) => {
                             const globalIdx = (ledgerCurrentPage - 1) * ledgerPageSize + idx + 1;
                             let vTrips = row.total_trips;
-                            let vCost = row.total_cost;
-                            let vIncome = row.total_income || 0;
-                            let vExpense = row.total_expense || 0;
-                            let vUnassigned = row.unassigned_trips;
-
-                            if (activeSiteFilter !== "车辆账单") {
-                                vTrips = row.site_trips[activeSiteFilter];
-                                let siteInc = 0;
-                                let siteExp = 0;
-                                data.records.forEach(rec => {
-                                    if (rec.direction === 'OUT' && rec.plate_no === row.plate_no && rec.dump_site === activeSiteFilter) {
-                                        const mSoil = currentSoilsList.find(s => s.name === rec.soil_type);
-                                        if (mSoil) {
-                                            if (mSoil.is_income === 1) siteInc += mSoil.unit_price;
-                                            else siteExp += mSoil.unit_price;
-                                        }
-                                    }
-                                });
-                                vCost = siteInc - siteExp;
-                                vIncome = siteInc;
-                                vExpense = siteExp;
-                                vUnassigned = 0;
-                            }
-
-                            // 动态计算累计运费的符号和颜色 (代数收支)
-                            const netSoilCost = row.total_income - row.total_expense;
-                            const soilSign = netSoilCost >= 0 ? '+' : '';
-                            const soilCostColor = netSoilCost >= 0 ? 'var(--color-in)' : 'var(--color-danger)';
-
+                            let vVol = row.total_volume || 0;
+                            let vIncome = row.total_income || (vVol * 30.0);
+                            
                             const plateBadgeHTML = renderPlateBadge(row.plate_no, row.plate_color);
-                            const vSign = vCost >= 0 ? '+' : '';
-                            const costColor = vCost >= 0 ? 'var(--color-in)' : 'var(--color-danger)';
 
                             let actionHtml = `
                                 <button class="btn btn-secondary" style="padding: 2px 6px; font-size:11px; display:inline-flex; align-items:center; gap:2px;" onclick="openAdjustModal('${row.plate_no}')">
-                                    <i data-lucide="edit-3" style="width:10px; height:10px;"></i>账目明细
+                                    <i data-lucide="edit-3" style="width:10px; height:10px;"></i>账目流水
                                 </button>
                             `;
 
-                            if (activeSiteFilter === "车辆账单") {
-                                tbodyHtml += `
-                                    <tr>
-                                        <td>${globalIdx}</td>
-                                        <td style="font-weight:700; padding: 6px 12px;">${plateBadgeHTML}</td>
-                                        <td style="color:var(--color-out); font-weight:700;">${vTrips} 趟</td>
-                                        <td style="font-weight:700; color:${soilCostColor};">${soilSign}￥${Math.abs(netSoilCost).toFixed(2)}</td>
-                                        <td>${actionHtml}</td>
-                                    </tr>
-                                `;
-                            } else {
-                                tbodyHtml += `
-                                    <tr>
-                                        <td>${globalIdx}</td>
-                                        <td style="font-weight:700; padding: 6px 12px;">${plateBadgeHTML}</td>
-                                        <td style="color:var(--color-out); font-weight:700;">${vTrips} 趟</td>
-                                        <td style="font-weight:700; color:${costColor};">${vSign}￥${vCost.toFixed(2)}</td>
-                                        <td>${actionHtml}</td>
-                                    </tr>
-                                `;
-                            }
+                            tbodyHtml += `
+                                <tr>
+                                    <td>${globalIdx}</td>
+                                    <td style="font-weight:700; padding: 6px 12px;">${plateBadgeHTML}</td>
+                                    <td style="color:var(--color-out); font-weight:700;">${vTrips} 趟</td>
+                                    <td style="color:var(--color-primary); font-weight:700;">${vVol.toFixed(2)} 吨</td>
+                                    <td>￥30.0 / 吨</td>
+                                    <td style="font-weight:700; color:var(--color-in);">+￥${vIncome.toLocaleString('zh-CN', {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                                    <td>${actionHtml}</td>
+                                </tr>
+                            `;
                         });
 
                         if (totalItems === 0) {
-                            document.getElementById('ledger-table-body').innerHTML = `<tr><td colspan="5" style="color:var(--text-secondary); padding: 40px 10px; text-align:center;">当前筛选条件下没有出运的泥头车记录</td></tr>`;
+                            document.getElementById('ledger-table-body').innerHTML = `<tr><td colspan="7" style="color:var(--text-secondary); padding: 40px 10px; text-align:center;">当前筛选条件下没有出运的泥头车记录</td></tr>`;
                         } else {
                             document.getElementById('ledger-table-body').innerHTML = tbodyHtml;
                         }
                     }
 
                     // 全部汇总横幅依然基于完整的累计数值渲染
-                    const sign = grandCost >= 0 ? '+' : '';
+                    const totalDayTons = data.total_day_tons || (data.kpis ? data.kpis.total_volume : 0) || 0;
+                    const totalDayInc = data.total_day_income || (data.kpis ? data.kpis.total_income : 0) || (totalDayTons * 30.0);
+                    
                     if (activeSiteFilter === "车辆账单") {
                         summaryBar.innerHTML = `
-                            <div>【车辆整体拉运出车统计】</div>
-                            <div style="display:flex; gap:20px;">
+                            <div>【首建恒纪 · 开槽砂石 每日出车与收入汇总】</div>
+                            <div style="display:flex; gap:20px; align-items:center;">
                                 <span>出运泥头车: <strong style="color:var(--text-primary); font-size:15px;">${numVehicles} 辆</strong></span>
-                                <span>累计总出运: <strong style="color:var(--color-out); font-size:15px;">${grandTrips} 趟</strong></span>
-                                <span>净收支运费: <strong style="${grandCost >= 0 ? 'color:var(--color-in);' : 'color:var(--color-danger);'} font-size:15px;">${sign}￥${grandCost.toLocaleString('zh-CN', {minimumFractionDigits:2, maximumFractionDigits:2})}</strong></span>
-                                <span style="font-size:11px; color:var(--text-secondary); display:flex; align-items:center;">(收入: ￥${grandIncome.toFixed(2)} | 支出: ￥${grandExpense.toFixed(2)})</span>
+                                <span>当日总趟数: <strong style="color:var(--color-out); font-size:15px;">${grandTrips} 趟</strong></span>
+                                <span>当日总吨数: <strong style="color:var(--color-primary); font-size:15px;">${totalDayTons.toFixed(2)} 吨</strong></span>
+                                <span>当日实际总收入: <strong style="color:var(--color-in); font-size:16px;">￥${totalDayInc.toLocaleString('zh-CN', {minimumFractionDigits:2, maximumFractionDigits:2})}</strong></span>
                             </div>
                         `;
                     } else {
@@ -5142,8 +5107,15 @@
                     deleteHtml = `<button class="btn btn-danger" style="padding:4px 8px; height:30px;" onclick="submitDeleteRecord(${r.id})"><i data-lucide="trash-2" style="width:12px; height:12px;"></i></button>`;
                 }
                 html += `
-                    <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; background:rgba(255,255,255,0.015); border:1px solid var(--card-border); border-radius:6px; padding:6px 10px;">
-                        <span style="font-size:12px; font-family:monospace; color:var(--text-secondary);">${r.pass_time.split(' ')[1]}</span>
+                    <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; background:rgba(255,255,255,0.015); border:1px solid var(--card-border); border-radius:6px; padding:8px 12px;">
+                        <div style="display:flex; flex-direction:column; gap:2px;">
+                            <span style="font-size:12px; font-family:monospace; color:var(--text-secondary);">${r.pass_time.split(' ')[1]}</span>
+                            <div style="display:flex; gap:8px; font-size:11px;">
+                                <span>拉运: <strong style="color:var(--color-primary);">${r.volume ? r.volume.toFixed(2) : '0.00'} 吨</strong></span>
+                                <span>单价: <strong>￥30.0/t</strong></span>
+                                <span>收入: <strong style="color:var(--color-in);">￥${r.amount ? r.amount.toFixed(2) : '0.00'}</strong></span>
+                            </div>
+                        </div>
                         <div style="display:flex; align-items:center; gap:8px;">
                             ${selectHtml}
                             ${soilSelectHtml}
@@ -5901,40 +5873,41 @@
 
         function renderSummaryKPIs(data) {
             const totalOut = data.total_out_trips || 0;
+            const totalVol = data.total_volume || 0;
+            const totalRevenue = data.total_revenue || 0;
             const evCount = data.ev_count || 0;
+            const evVol = data.ev_volume || 0;
             const fuelCount = data.fuel_count || 0;
             
             const evPct = totalOut > 0 ? ((evCount / totalOut) * 100).toFixed(1) : '0.0';
             const fuelPct = totalOut > 0 ? ((fuelCount / totalOut) * 100).toFixed(1) : '0.0';
 
-            document.getElementById('sum-total-trips').innerText = totalOut.toLocaleString('zh-CN');
-            document.getElementById('sum-ev-trips').innerText = evCount.toLocaleString('zh-CN');
-            document.getElementById('sum-ev-pct').innerText = `(${evPct}%)`;
-            document.getElementById('sum-fuel-trips').innerText = fuelCount.toLocaleString('zh-CN');
-            document.getElementById('sum-fuel-pct').innerText = `(${fuelPct}%)`;
-            
-            document.getElementById('sum-sites-cnt').innerText = (data.by_dump_site || []).length;
-            document.getElementById('sum-soils-cnt').innerText = (data.by_soil_type || []).length;
+            if (document.getElementById('sum-total-trips')) document.getElementById('sum-total-trips').innerText = totalOut.toLocaleString('zh-CN');
+            if (document.getElementById('sum-total-tons')) document.getElementById('sum-total-tons').innerText = totalVol.toLocaleString('zh-CN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            if (document.getElementById('sum-total-revenue')) document.getElementById('sum-total-revenue').innerText = '￥' + totalRevenue.toLocaleString('zh-CN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            if (document.getElementById('sum-ev-trips')) document.getElementById('sum-ev-trips').innerText = `${evCount} 趟 / ${evVol.toFixed(1)} 吨`;
+            if (document.getElementById('sum-ev-pct')) document.getElementById('sum-ev-pct').innerText = `(${evPct}%)`;
         }
 
         function renderSoilSummaryTable(list) {
             const tbody = document.getElementById('table-body-soil-summary');
             if (!tbody) return;
             if (list.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" style="color:var(--text-muted);">暂无土方规格汇总数据</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="7" style="color:var(--text-muted);">暂无货物规格汇总数据</td></tr>`;
                 return;
             }
             let html = '';
             list.forEach((item, idx) => {
-                const costStr = item.total_cost ? `￥${parseFloat(item.total_cost).toLocaleString('zh-CN', {minimumFractionDigits:2, maximumFractionDigits:2})}` : '￥0.00';
+                const volStr = item.volume ? `${parseFloat(item.volume).toLocaleString('zh-CN', {minimumFractionDigits:2, maximumFractionDigits:2})} 吨` : '0.00 吨';
+                const revStr = item.total_cost ? `￥${parseFloat(item.total_cost).toLocaleString('zh-CN', {minimumFractionDigits:2, maximumFractionDigits:2})}` : '￥0.00';
                 html += `
                     <tr>
                         <td style="font-weight:700;">${idx + 1}</td>
                         <td style="font-weight:700; color:var(--text-primary); text-align:left;">${item.soil_type}</td>
-                        <td style="font-weight:800; color:var(--color-out);">${item.trips} 趟</td>
-                        <td><span class="direction-pill out" style="width:auto; padding:2px 8px;">${item.percentage}%</span></td>
-                        <td>￥${item.unit_price}</td>
-                        <td style="font-weight:700; color:${item.is_income === 1 ? 'var(--color-in)' : 'var(--text-primary)'};">${costStr}</td>
+                        <td style="font-weight:800; color:var(--color-out);">${item.trips} 趟 (${item.percentage}%)</td>
+                        <td style="font-weight:800; color:var(--color-primary);">${volStr}</td>
+                        <td>￥${item.unit_price} / 吨 (收入)</td>
+                        <td style="font-weight:800; color:var(--color-in);">${revStr}</td>
                         <td style="font-weight:700; color:var(--color-in);">${item.ev_trips} 趟 (${item.ev_percentage}%)</td>
                     </tr>
                 `;
@@ -5946,20 +5919,21 @@
             const tbody = document.getElementById('table-body-site-summary');
             if (!tbody) return;
             if (list.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" style="color:var(--text-muted);">暂无消纳点汇总数据</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="7" style="color:var(--text-muted);">暂无消纳场地汇总数据</td></tr>`;
                 return;
             }
             let html = '';
             list.forEach((item, idx) => {
-                const costStr = item.total_cost ? `￥${parseFloat(item.total_cost).toLocaleString('zh-CN', {minimumFractionDigits:2, maximumFractionDigits:2})}` : '￥0.00';
+                const volStr = item.volume ? `${parseFloat(item.volume).toLocaleString('zh-CN', {minimumFractionDigits:2, maximumFractionDigits:2})} 吨` : '0.00 吨';
+                const revStr = item.total_cost ? `￥${parseFloat(item.total_cost).toLocaleString('zh-CN', {minimumFractionDigits:2, maximumFractionDigits:2})}` : '￥0.00';
                 html += `
                     <tr>
                         <td style="font-weight:700;">${idx + 1}</td>
                         <td style="font-weight:700; color:var(--text-primary); text-align:left;">${item.dump_site}</td>
-                        <td style="font-weight:800; color:var(--color-out);">${item.trips} 趟</td>
-                        <td><span class="direction-pill out" style="width:auto; padding:2px 8px;">${item.percentage}%</span></td>
-                        <td>￥${item.unit_price}</td>
-                        <td style="font-weight:700;">${costStr}</td>
+                        <td style="font-weight:800; color:var(--color-out);">${item.trips} 趟 (${item.percentage}%)</td>
+                        <td style="font-weight:800; color:var(--color-primary);">${volStr}</td>
+                        <td>￥30.0 / 吨 (收入)</td>
+                        <td style="font-weight:800; color:var(--color-in);">${revStr}</td>
                         <td style="font-weight:700; color:var(--color-in);">${item.ev_trips} 趟 (${item.ev_percentage}%)</td>
                     </tr>
                 `;
@@ -5982,7 +5956,7 @@
             }
 
             // 表头
-            let headHtml = `<tr><th style="position:sticky; left:0; z-index:15; background:var(--table-th-bg); min-width:140px;">消纳场/卸土点</th><th style="min-width:90px;">累计趟数</th>`;
+            let headHtml = `<tr><th style="position:sticky; left:0; z-index:15; background:var(--table-th-bg); min-width:140px;">消纳目的地</th><th style="min-width:70px;">累计车次</th><th style="min-width:90px;">累计吨数</th><th style="min-width:110px;">累计收入(￥)</th>`;
             dates.forEach(d => {
                 headHtml += `<th style="min-width:70px; font-size:11px;">${d.slice(5)}</th>`;
             });
@@ -5992,14 +5966,20 @@
             // 数据行
             let bodyHtml = '';
             sites.forEach(siteItem => {
+                const totalVolStr = siteItem.total_volume ? `${siteItem.total_volume.toLocaleString('zh-CN', {minimumFractionDigits:1, maximumFractionDigits:1})}t` : '0t';
+                const totalRevStr = siteItem.total_revenue ? `￥${siteItem.total_revenue.toLocaleString('zh-CN', {minimumFractionDigits:2, maximumFractionDigits:2})}` : '￥0.00';
                 bodyHtml += `<tr class="pivot-site-row" data-site="${siteItem.dump_site}">`;
                 bodyHtml += `<td style="position:sticky; left:0; z-index:5; background:var(--table-th-bg); font-weight:800; text-align:left;">${siteItem.dump_site}</td>`;
-                bodyHtml += `<td style="font-weight:800; color:var(--color-out);">${siteItem.total_trips}</td>`;
+                bodyHtml += `<td style="font-weight:800; color:var(--color-out);">${siteItem.total_trips} 趟</td>`;
+                bodyHtml += `<td style="font-weight:800; color:var(--color-primary);">${totalVolStr}</td>`;
+                bodyHtml += `<td style="font-weight:800; color:var(--color-in);">${totalRevStr}</td>`;
                 
                 dates.forEach(d => {
-                    const cnt = siteItem.daily_trips[d] || 0;
+                    const cnt = siteItem.daily_trips ? siteItem.daily_trips[d] || 0 : 0;
+                    const vol = siteItem.daily_volumes ? siteItem.daily_volumes[d] || 0 : 0;
+                    const rev = siteItem.daily_revenues ? siteItem.daily_revenues[d] || 0 : 0;
                     if (cnt > 0) {
-                        bodyHtml += `<td><span class="direction-pill out" style="width:auto; padding:1px 6px; font-size:11px;">${cnt}</span></td>`;
+                        bodyHtml += `<td title="${d}: ${cnt}车, ${vol}吨, ￥${rev}"><span class="direction-pill out" style="width:auto; padding:1px 5px; font-size:10px;">${cnt}车<br/><span style="opacity:0.8; font-size:9px;">${vol.toFixed(0)}t</span></span></td>`;
                     } else {
                         bodyHtml += `<td style="color:var(--text-muted); opacity:0.3;">-</td>`;
                     }
