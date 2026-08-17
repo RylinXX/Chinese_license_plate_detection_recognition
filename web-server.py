@@ -1376,6 +1376,19 @@ async def execute_remote_sync(start_month: int = 5, end_month: Optional[int] = N
                             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                         """, (r_id, code, plate, trans_name, abs_name, leave_p, leave_t, arrive_t, rubbish_t, vol, state, abs_area, created_t, now_str))
                         new_inserted += 1
+
+                        # 自动同步【首建恒纪 · 开槽砂石】到台账明细 vehicle_records
+                        if ("首建" in abs_name or "恒纪" in abs_name) and ("砂石" in rubbish_t or "开槽" in rubbish_t):
+                            is_ev = '是' if len(plate) == 8 else '否'
+                            plate_color = '绿色' if len(plate) == 8 else '蓝色'
+                            cursor.execute("SELECT id FROM vehicle_records WHERE plate_no = ? AND pass_time = ?", (plate, leave_t))
+                            if not cursor.fetchone():
+                                cursor.execute("""
+                                    INSERT INTO vehicle_records 
+                                    (plate_no, plate_color, direction, pass_time, image_path, confidence, dump_site, soil_type, is_ev, soil_paid, dump_paid)
+                                    VALUES (?, ?, 'OUT', ?, NULL, 1.0, '首建恒纪建筑垃圾资源化处置场', '开槽砂石', ?, 0, 0)
+                                """, (plate, plate_color, leave_t, is_ev))
+                                ensure_frequent_plate(plate, plate_color)
                         
                     total_fetched += len(records)
                     conn.commit()

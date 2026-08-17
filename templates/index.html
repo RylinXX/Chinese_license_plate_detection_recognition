@@ -2024,10 +2024,6 @@
                 <i data-lucide="file-spreadsheet" style="width:14px; height:14px;"></i>
                 <span>项目明细台账</span>
             </a>
-            <a class="nav-item" id="menu-capacity" onclick="switchTab('capacity')">
-                <i data-lucide="layers" style="width:14px; height:14px;"></i>
-                <span>土点容量分析</span>
-            </a>
             <a class="nav-item" id="menu-import" onclick="switchTab('import')">
                 <i data-lucide="upload-cloud" style="width:14px; height:14px;"></i>
                 <span>Excel 导入与导出</span>
@@ -2395,282 +2391,6 @@
                                 <tr>
                                     <td colspan="7" style="color:var(--text-secondary); padding: 40px 10px; text-align:center;">暂无任何通行记录</td>
                                 </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- 📊 面板：土点容量分析与流向监控看板 -->
-        <section class="main-content" id="panel-capacity">
-            <!-- 顶部控制与同步概览 -->
-            <div class="glass-card">
-                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
-                    <div>
-                        <h3 class="card-header-title" style="margin-bottom:4px;">
-                            <i data-lucide="layers"></i>消纳土点容量分析与流向全景监控
-                        </h3>
-                        <div style="font-size:12px; color:var(--text-muted); display:flex; align-items:center; gap:8px;">
-                            <span>数据来源: CapCloud 渣土云联单系统</span>
-                            <span class="sync-indicator-pill" id="cap-sync-indicator">
-                                <i data-lucide="refresh-cw" style="width:12px; height:12px;"></i>
-                                <span id="cap-last-sync-text">上次同步: 读取中...</span>
-                            </span>
-                        </div>
-                    </div>
-                    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-                        <button class="btn btn-sm btn-primary" onclick="triggerRemoteSyncManually()" id="btn-trigger-sync">
-                            <i data-lucide="refresh-cw"></i><span>立即同步数据</span>
-                        </button>
-                        <button class="btn btn-sm btn-secondary" onclick="openSitesConfigModal()">
-                            <i data-lucide="sliders"></i><span>土点配额配置</span>
-                        </button>
-                        <button class="btn btn-sm btn-secondary" onclick="openSyncConfigModal()">
-                            <i data-lucide="settings"></i><span>自动同步设置</span>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- 核心 5 大 KPI 汇总卡 -->
-                <div class="capacity-kpi-grid">
-                    <div class="kpi-card">
-                        <div class="kpi-icon" style="background:rgba(99, 102, 241, 0.15); color:#818cf8;"><i data-lucide="database"></i></div>
-                        <div class="kpi-info">
-                            <span class="kpi-label">项目总土方体量</span>
-                            <div style="display:flex; align-items:baseline; gap:4px;">
-                                <span class="kpi-value" id="kpi-cap-proj-vol">938,164.0</span>
-                                <span style="font-size:12px; color:var(--text-secondary);">m³</span>
-                            </div>
-                            <span style="font-size:10px; color:var(--text-muted);">央视项目核准设计体量</span>
-                        </div>
-                    </div>
-
-                    <div class="kpi-card">
-                        <div class="kpi-icon" style="background:rgba(56, 189, 248, 0.15); color:#38bdf8;"><i data-lucide="shield-check"></i></div>
-                        <div class="kpi-info">
-                            <span class="kpi-label">已落实消纳容量</span>
-                            <div style="display:flex; align-items:baseline; gap:4px;">
-                                <span class="kpi-value" id="kpi-cap-handled-vol" style="color:#38bdf8;">857,750.0</span>
-                                <span style="font-size:12px; color:var(--text-secondary);">m³</span>
-                            </div>
-                            <span style="font-size:10px; color:var(--text-muted);" id="kpi-cap-handled-pct">占比 91.4%</span>
-                        </div>
-                    </div>
-
-                    <div class="kpi-card">
-                        <div class="kpi-icon" style="background:rgba(239, 68, 68, 0.15); color:#f87171;"><i data-lucide="alert-triangle"></i></div>
-                        <div class="kpi-info">
-                            <span class="kpi-label">待落实消纳缺口</span>
-                            <div style="display:flex; align-items:baseline; gap:4px;">
-                                <span class="kpi-value" id="kpi-cap-unhandled-vol" style="color:#f87171;">80,414.0</span>
-                                <span style="font-size:12px; color:var(--text-secondary);">m³</span>
-                            </div>
-                            <span style="font-size:10px; color:#f87171;" id="kpi-cap-gap-pct">需补办 8.6%</span>
-                        </div>
-                    </div>
-
-                    <div class="kpi-card">
-                        <div class="kpi-icon" style="background:rgba(16, 185, 129, 0.15); color:#34d399;"><i data-lucide="check-circle-2"></i></div>
-                        <div class="kpi-info">
-                            <span class="kpi-label">全周期累计已消化</span>
-                            <div style="display:flex; align-items:baseline; gap:4px;">
-                                <span class="kpi-value" id="kpi-cap-consumed-vol" style="color:#34d399;">0.0</span>
-                                <span style="font-size:12px; color:var(--text-secondary);">m³</span>
-                            </div>
-                            <span style="font-size:10px; color:var(--text-secondary);" id="kpi-cap-trips-info">共 0 车次</span>
-                        </div>
-                    </div>
-
-                    <div class="kpi-card">
-                        <div class="kpi-icon" style="background:rgba(245, 158, 11, 0.15); color:#fbbf24;"><i data-lucide="pie-chart"></i></div>
-                        <div class="kpi-info">
-                            <span class="kpi-label">全周期剩余可用容量</span>
-                            <div style="display:flex; align-items:baseline; gap:4px;">
-                                <span class="kpi-value" id="kpi-cap-remaining-vol" style="color:#fbbf24;">0.0</span>
-                                <span style="font-size:12px; color:var(--text-secondary);">m³</span>
-                            </div>
-                            <div class="progress-bar-container">
-                                <div class="progress-bar-fill progress-fill-amber" id="kpi-cap-progress-fill" style="width:0%;"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 第一分区：各土点消纳月度消耗矩阵 -->
-            <div class="glass-card" style="margin-top:16px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:14px;">
-                    <h3 class="card-header-title" style="margin-bottom:0;">
-                        <i data-lucide="table-2"></i>各消纳土点核定容量与月度消纳矩阵分析
-                    </h3>
-                    <div style="display:flex; align-items:center; gap:8px;">
-                        <input type="text" class="input-control" id="cap-site-search" placeholder="搜索土点..." style="width:140px; height:32px; font-size:12px;" oninput="filterCapacityTable()">
-                        <select class="input-control" id="cap-status-filter" style="width:120px; height:32px; font-size:12px;" onchange="filterCapacityTable()">
-                            <option value="all">全部状态</option>
-                            <option value="warning">临期预警</option>
-                            <option value="expired">已过期</option>
-                            <option value="normal">正常有效</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="table-responsive" style="max-height:420px;">
-                    <table class="ledger-table" id="table-capacity-matrix">
-                        <thead>
-                            <tr>
-                                <th>序号</th>
-                                <th>消纳土点 / 处置场名称</th>
-                                <th>类型</th>
-                                <th>核定总容量(m³)</th>
-                                <th>5月消纳(m³)</th>
-                                <th>6月消纳(m³)</th>
-                                <th>7月消纳(m³)</th>
-                                <th>8月消纳(m³)</th>
-                                <th>累计消纳(m³)</th>
-                                <th>剩余容量(m³)</th>
-                                <th style="width:130px;">消纳进度</th>
-                                <th>到期时间</th>
-                                <th>状态预警</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tbody-capacity-matrix">
-                            <tr><td colspan="13" style="text-align:center; color:var(--text-muted); padding:30px;">正在加载土点容量分析数据...</td></tr>
-                        </tbody>
-                        <tfoot id="tfoot-capacity-matrix" style="background:rgba(255,255,255,0.03); font-weight:700;">
-                            <!-- 汇总行 -->
-                        </tfoot>
-                    </table>
-                </div>
-            </div>
-
-            <!-- 第二分区：每日车辆拉运流向与车次统计看板 -->
-            <div class="glass-card" style="margin-top:16px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
-                    <div>
-                        <h3 class="card-header-title" style="margin-bottom:2px;">
-                            <i data-lucide="navigation"></i>每日车辆拉运流向与车次统计看板
-                        </h3>
-                        <span style="font-size:12px; color:var(--text-muted);">查看指定日期各消纳去向流向分布、24小时拉运曲线及单车拉运明细</span>
-                    </div>
-                    <div style="display:flex; align-items:center; gap:8px;">
-                        <span style="font-size:12px; color:var(--text-secondary);">查询日期:</span>
-                        <select class="input-control" id="flow-date-select" style="width:140px; height:32px; font-size:12px;" onchange="onFlowDateChange(this.value)">
-                            <option value="">加载中...</option>
-                        </select>
-                        <button class="btn btn-sm btn-secondary" onclick="stepFlowDate(-1)" title="前一天"><i data-lucide="chevron-left"></i></button>
-                        <button class="btn btn-sm btn-secondary" onclick="stepFlowDate(1)" title="后一天"><i data-lucide="chevron-right"></i></button>
-                        <button class="btn btn-sm btn-secondary" onclick="loadLatestFlowDate()" title="最新日期">最新</button>
-                    </div>
-                </div>
-
-                <!-- 当日 4 个微型 KPI -->
-                <div class="kpi-grid" style="grid-template-columns: repeat(4, 1fr); gap:12px; margin-bottom:16px;">
-                    <div class="kpi-card" style="padding:10px 14px;">
-                        <div class="kpi-info">
-                            <span class="kpi-label">当日总拉运车次</span>
-                            <span class="kpi-value" id="flow-sum-trips" style="color:var(--color-out); font-size:18px;">0 趟</span>
-                        </div>
-                    </div>
-                    <div class="kpi-card" style="padding:10px 14px;">
-                        <div class="kpi-info">
-                            <span class="kpi-label">当日拉运总方量</span>
-                            <span class="kpi-value" id="flow-sum-volume" style="color:var(--color-in); font-size:18px;">0.00 m³</span>
-                        </div>
-                    </div>
-                    <div class="kpi-card" style="padding:10px 14px;">
-                        <div class="kpi-info">
-                            <span class="kpi-label">当日出车车辆数</span>
-                            <span class="kpi-value" id="flow-sum-vehicles" style="color:#818cf8; font-size:18px;">0 辆</span>
-                        </div>
-                    </div>
-                    <div class="kpi-card" style="padding:10px 14px;">
-                        <div class="kpi-info">
-                            <span class="kpi-label">涉及消纳场地数</span>
-                            <span class="kpi-value" id="flow-sum-sites" style="color:var(--color-stay); font-size:18px;">0 个</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 左右分栏：消纳去向流向占比 + 24小时拉运曲线 -->
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-bottom:16px;">
-                    <!-- 消纳去向流向占比 -->
-                    <div style="background:rgba(15,23,42,0.3); border:1px solid var(--card-border); border-radius:8px; padding:14px;">
-                        <span style="font-size:13px; font-weight:700; color:var(--text-primary); display:block; margin-bottom:10px;">
-                            📍 消纳去向分布占比
-                        </span>
-                        <div id="flow-sites-list" style="display:flex; flex-direction:column; gap:8px; max-height:220px; overflow-y:auto;">
-                            <div style="color:var(--text-muted); font-size:12px;">加载中...</div>
-                        </div>
-                    </div>
-
-                    <!-- 24小时时段拉运分布 -->
-                    <div style="background:rgba(15,23,42,0.3); border:1px solid var(--card-border); border-radius:8px; padding:14px;">
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                            <span style="font-size:13px; font-weight:700; color:var(--text-primary);">
-                                ⏰ 24小时时段拉运峰值曲线
-                            </span>
-                            <span style="font-size:11px; color:var(--text-muted);">单位: 趟次</span>
-                        </div>
-                        <div class="hourly-bar-chart" id="flow-hourly-chart">
-                            <!-- 24 柱 -->
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 当日车辆拉运趟数与流向排行表 -->
-                <div style="background:rgba(15,23,42,0.3); border:1px solid var(--card-border); border-radius:8px; padding:14px; margin-bottom:16px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                        <span style="font-size:13px; font-weight:700; color:var(--text-primary);">
-                            🚛 当日车辆拉运工作量与流向排行
-                        </span>
-                        <input type="text" class="input-control" id="flow-veh-search" placeholder="筛选车牌..." style="width:130px; height:28px; font-size:11px;" oninput="filterFlowVehicleTable()">
-                    </div>
-                    <div class="table-responsive" style="max-height:240px;">
-                        <table class="ledger-table" id="table-flow-vehicles">
-                            <thead>
-                                <tr>
-                                    <th>排名</th>
-                                    <th>车牌号码</th>
-                                    <th>所属运输单位</th>
-                                    <th>今日拉运趟数</th>
-                                    <th>今日拉运方量(m³)</th>
-                                    <th>去向消纳场</th>
-                                    <th>拉运类型</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tbody-flow-vehicles">
-                                <tr><td colspan="7" style="text-align:center; color:var(--text-muted);">暂无拉运数据</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- 当日电子联单流水明细 (前50条) -->
-                <div style="background:rgba(15,23,42,0.3); border:1px solid var(--card-border); border-radius:8px; padding:14px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                        <span style="font-size:13px; font-weight:700; color:var(--text-primary);">
-                            📄 当日电子联单原始流水
-                        </span>
-                        <span style="font-size:11px; color:var(--text-muted);" id="flow-waybill-count-label">共 0 条</span>
-                    </div>
-                    <div class="table-responsive" style="max-height:260px;">
-                        <table class="ledger-table">
-                            <thead>
-                                <tr>
-                                    <th>联单编号</th>
-                                    <th>车牌号码</th>
-                                    <th>运输企业</th>
-                                    <th>消纳目的地</th>
-                                    <th>出场时间</th>
-                                    <th>到达时间</th>
-                                    <th>货物类型</th>
-                                    <th>方量(m³)</th>
-                                    <th>状态</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tbody-flow-waybills">
-                                <tr><td colspan="9" style="text-align:center; color:var(--text-muted);">暂无联单数据</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -3319,26 +3039,24 @@
             if (headerActions) headerActions.innerHTML = '';
             
             if (tab === 'summary') {
-                if (headerTitle) headerTitle.innerText = "数据汇总中心";
+                if (headerTitle) headerTitle.innerText = "数据汇总中心 (首建恒纪 · 开槽砂石)";
                 if (headerIcon) headerIcon.setAttribute('data-lucide', 'pie-chart');
-                loadSummaryAnalytics('all');
-            } else if (tab === 'capacity') {
-                if (headerTitle) headerTitle.innerText = "土点容量分析与流向监控";
-                if (headerIcon) headerIcon.setAttribute('data-lucide', 'layers');
                 if (headerActions) {
                     headerActions.innerHTML = `
                         <button class="btn btn-sm btn-primary" onclick="triggerRemoteSyncManually()" id="btn-sync-top">
-                            <i data-lucide="refresh-cw"></i><span>🔄 立即同步远程数据</span>
+                            <i data-lucide="refresh-cw"></i><span>🔄 立即同步远程运单</span>
                         </button>
                     `;
                 }
-                loadCapacityAnalysis();
-                loadDailyFlowStats();
+                loadSummaryAnalytics('all');
             } else if (tab === 'ledger') {
-                if (headerTitle) headerTitle.innerText = "项目明细台账";
+                if (headerTitle) headerTitle.innerText = "项目明细台账 (首建恒纪 · 开槽砂石)";
                 if (headerIcon) headerIcon.setAttribute('data-lucide', 'file-spreadsheet');
                 if (headerActions) {
                     headerActions.innerHTML = `
+                        <button class="btn btn-sm btn-primary" onclick="triggerRemoteSyncManually()" style="margin-right:6px;">
+                            <i data-lucide="refresh-cw"></i><span>同步运单</span>
+                        </button>
                         <button class="btn btn-accent" onclick="exportCurrentDateCSV()">
                             <i data-lucide="download"></i><span>导出当前日流水</span>
                         </button>
