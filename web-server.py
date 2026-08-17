@@ -1424,8 +1424,8 @@ async def execute_remote_sync(start_month: int = 5, end_month: Optional[int] = N
                         """, (r_id, code, plate, trans_name, abs_name, leave_p, leave_t, arrive_t, rubbish_t, vol, state, abs_area, created_t, now_str))
                         new_inserted += 1
 
-                        # 自动同步【首建恒纪 · 开槽砂石】到台账明细 vehicle_records (排除42吨异常运单)
-                        if ("首建" in abs_name or "恒纪" in abs_name) and ("砂石" in rubbish_t or "开槽" in rubbish_t):
+                        # 自动同步【首建恒纪】到台账明细 vehicle_records (排除42吨异常运单)
+                        if ("首建" in abs_name or "恒纪" in abs_name):
                             if not (abs(vol - 42.0) < 0.05 and state == "异常"):
                                 is_ev = '是' if len(plate) == 8 else '否'
                                 plate_color = '绿色' if len(plate) == 8 else '蓝色'
