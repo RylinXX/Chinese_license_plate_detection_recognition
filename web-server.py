@@ -50,9 +50,19 @@ DEBOUNCE_SECONDS = 300  # 去重防抖时间（5分钟）
 # 创建上传图片存储目录
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-# ----------------- 数据库初始化 -----------------
+# ----------------- 数据库连接与初始化 -----------------
+def get_db_connection(row_factory: bool = False, timeout: float = 30.0) -> sqlite3.Connection:
+    """获取配置了 WAL 模式和 Busy Timeout 的高并发 SQLite 连接"""
+    conn = sqlite3.connect(DB_PATH, timeout=timeout)
+    conn.execute("PRAGMA journal_mode=WAL;")
+    conn.execute("PRAGMA busy_timeout=30000;")
+    conn.execute("PRAGMA synchronous=NORMAL;")
+    if row_factory:
+        conn.row_factory = sqlite3.Row
+    return conn
+
 def init_db() -> None:
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db_connection()
     cursor = conn.cursor()
     
     # 创建 vehicle_records 表
@@ -109,10 +119,12 @@ def init_db() -> None:
     cursor.execute("SELECT COUNT(*) FROM dump_sites")
     if cursor.fetchone()[0] == 0:
         default_sites = [
-            ("首建恒纪建筑垃圾资源化处置场", 0.0)
+            ("首建恒纪建筑垃圾资源化处置场", 0.0),
+            ("石景山区首钢园区东南区", 0.0),
+            ("其他处置点", 0.0)
         ]
         cursor.executemany("INSERT INTO dump_sites (name, unit_price) VALUES (?, ?)", default_sites)
-        print("[Database] 默认卸土点数据灌入成功。")
+        print("[Database] 默认卸土点数据填充成功。")
         
     # 创建 soil_types 土方价格配置表
     cursor.execute("""
@@ -189,7 +201,7 @@ def init_db() -> None:
         INSERT OR IGNORE INTO frequent_plates (plate_no, plate_color)
         SELECT DISTINCT plate_no, COALESCE(plate_color, '蓝色') 
         FROM vehicle_records 
-        WHERE plate_no IS NOT NULL AND plate_no != ''
+        WHERE plate_no IS NOT NULL AND TRIM(plate_no) != ''
     """)
     print("[Database] 已自动将历史记录中的车牌同步至常用车牌库。")
     
@@ -1406,7 +1418,7 @@ REMOTE_ORIGIN = "http://ztxn.capcloud.com.cn:8080"
 REMOTE_REFERER = "http://ztxn.capcloud.com.cn:8080/dist/index.html"
 
 def get_remote_sync_config() -> Dict[str, str]:
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT key, value FROM remote_sync_config")
     rows = cursor.fetchall()
@@ -1414,13 +1426,13 @@ def get_remote_sync_config() -> Dict[str, str]:
     return {r[0]: r[1] for r in rows}
 
 def set_remote_sync_config(key: str, value: str):
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("INSERT OR REPLACE INTO remote_sync_config (key, value) VALUES (?, ?)", (key, str(value)))
     conn.commit()
     conn.close()
 
-async def execute_remote_sync(start_month: int = 5, end_month: Optional[int] = None, year: int = 2026, sync_type: str = "manual") -> Dict[str, Any]:
+async def execute_remote_sync(start_month: Optional[int] = None, end_month: Optional[int] = None, year: int = 2026, sync_type: str = "manual") -> Dict[str, Any]:
     cfg = get_remote_sync_config()
     authtoken = cfg.get("authtoken", "").strip()
     worksite_id = cfg.get("worksite_id", "225642").strip()
@@ -1444,6 +1456,9 @@ async def execute_remote_sync(start_month: int = 5, end_month: Optional[int] = N
     today_str = today_dt.strftime("%Y-%m-%d")
     current_m = today_dt.month
     
+    # 默认增量同步范围：如果是手动/定时同步，默认同步当月和前一个月，极速响应且防遗漏；若显式指定 start_month 则全量同步
+    if start_month is None:
+        start_month = max(5, current_m - 1)
     if end_month is None:
         end_month = max(8, current_m)
     end_month = max(start_month, min(12, end_month))
@@ -1453,9 +1468,7 @@ async def execute_remote_sync(start_month: int = 5, end_month: Optional[int] = N
     new_inserted = 0
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     
-    conn = sqlite3.connect(DB_PATH, timeout=30.0)
-    conn.execute("PRAGMA journal_mode=WAL;")
-    conn.execute("PRAGMA busy_timeout=10000;")
+    conn = get_db_connection(timeout=30.0)
     cursor = conn.cursor()
     
     status_msg = "同步成功"
@@ -1473,7 +1486,7 @@ async def execute_remote_sync(start_month: int = 5, end_month: Optional[int] = N
                     e_date = today_str
                     
                 page = 1
-                limit = 1000
+                limit = 500
                 while True:
                     body = {
                         "page": page,
@@ -1538,7 +1551,7 @@ async def execute_remote_sync(start_month: int = 5, end_month: Optional[int] = N
                                         (plate_no, plate_color, direction, pass_time, image_path, confidence, dump_site, soil_type, is_ev, volume, soil_paid, dump_paid)
                                         VALUES (?, ?, 'OUT', ?, NULL, 1.0, '首建恒纪建筑垃圾资源化处置场', '开槽砂石', ?, ?, 0, 0)
                                     """, (plate, plate_color, leave_t, is_ev, vol))
-                                    ensure_frequent_plate(plate, plate_color)
+                                    cursor.execute("INSERT OR IGNORE INTO frequent_plates (plate_no, plate_color) VALUES (?, ?)", (plate, plate_color))
                         
                     total_fetched += len(records)
                     conn.commit()

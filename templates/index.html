@@ -3185,11 +3185,13 @@
                 const res = await fetch('/api/sync/execute', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({start_month: 5, year: 2026, sync_type: 'manual'})
+                    body: JSON.stringify({start_month: 8, year: 2026, sync_type: 'manual'})
                 });
                 const data = await res.json();
                 if (data.success) {
                     showToast(`同步完成！共拉取 ${data.total_fetched} 条联单 (耗时 ${data.duration_ms}ms)`, 'success');
+                    loadSummaryAnalytics('all');
+                    refreshLedger();
                     await loadCapacityAnalysis();
                     await loadDailyFlowStats();
                 } else {
